@@ -125,35 +125,37 @@ export const DecisionDetail: React.FC = () => {
                 )}
 
                 {verification && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <span>Hash Matches:</span>
-              <span className={verification.hash_matches ? 'text-green-600'>✓ PASS' : 'text-red-600 font-bold'>✗ FAIL</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <span>Chain Link Valid:</span>
-              <span className={verification.chain_link_valid ? 'text-green-600' : 'text-red-600 font-bold'}>
-                {verification.chain_link_valid ? '✓ PASS' : '✗ FAIL'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <span>Record Valid:</span>
-              <span className={verification.record_valid ? 'text-green-600' : 'text-red-600 font-bold'}>
-                {verification.record_valid ? '✓ PASS' : '✗ FAIL'}
-              </span>
-            </div>
-            
-            {!verification.record_valid && (
-                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-                        <div className="font-bold text-red-800">⚠️ TAMPERING DETECTED</div>
-                        <div className="text-red-700 text-sm mt-1">
-                            This record has been tampered with or the chain is broken.
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <span>Hash Matches:</span>
+                            <span className={verification.hash_matches ? 'text-green-600' : 'text-red-600 font-bold'}>
+                                {verification.hash_matches ? '✓ PASS' : '✗ FAIL'}
+                            </span>
                         </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <span>Chain Link Valid:</span>
+                            <span className={verification.chain_link_valid ? 'text-green-600' : 'text-red-600 font-bold'}>
+                                {verification.chain_link_valid ? '✓ PASS' : '✗ FAIL'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <span>Record Valid:</span>
+                            <span className={verification.record_valid ? 'text-green-600' : 'text-red-600 font-bold'}>
+                                {verification.record_valid ? '✓ PASS' : '✗ FAIL'}
+                            </span>
+                        </div>
+
+                        {!verification.record_valid && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
+                                <div className="font-bold text-red-800">⚠️ TAMPERING DETECTED</div>
+                                <div className="text-red-700 text-sm mt-1">
+                                    This record has been tampered with or the chain is broken.
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-        )}
-        </div>
-    </div >
-  );
+        </div >
+    );
 };

@@ -1,6 +1,5 @@
 FROM python:3.10-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -17,7 +16,6 @@ RUN pip install --no-cache-dir -e .
 
 # Copy application
 COPY app/ ./app/
-COPY migrations/ ./migrations/
 
 # Create non-root user
 RUN useradd -m -u 1000 regulayer && \
@@ -25,12 +23,9 @@ RUN useradd -m -u 1000 regulayer && \
 
 USER regulayer
 
-# Expose port
-EXPOSE 8000
+EXPOSE 8001
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health').raise_for_status()"
+    CMD python -c "import requests; requests.get('http://localhost:8001/health').raise_for_status()"
 
-# Run application
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
