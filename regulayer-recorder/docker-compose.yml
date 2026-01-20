@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: regulayer
+      POSTGRES_PASSWORD: regulayer_dev_password
+      POSTGRES_DB: regulayer_recorder
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regulayer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  recorder:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://regulayer:regulayer_dev_password@postgres:5432/regulayer_recorder
+      HMAC_SECRET_KEY: development-secret-key-change-in-production-minimum-32-chars
+      LOG_LEVEL: INFO
+      ALLOWED_SDK_VERSIONS: "1.0.0"
+      MAX_TIMESTAMP_DRIFT_SECONDS: 300
+      CHAIN_ID: global
+      HOST: "0.0.0.0"
+      PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
