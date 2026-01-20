@@ -143,14 +143,24 @@ class VerificationMetadata(BaseModel):
 
 
 
+class ProofAttestation(BaseModel):
+    """Full attestation for proof bundles."""
+    identity_id: UUID
+    public_key: str
+    algorithm: str
+    signed_at: datetime
+    signature: str
+
 class ExportBundle(BaseModel):
     """
     Self-contained forensic proof bundle.
     
     Contains everything needed to verify the decision offline.
     """
+    proof_bundle_version: str = "1.0.0"
+    record_id: int
     canonical_event: dict
-    attestation: Optional[AttestationSummary]
+    attestation: Optional[ProofAttestation]
     record_hash: str
     previous_record_hash: Optional[str]
     chain_id: str

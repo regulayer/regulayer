@@ -16,6 +16,7 @@ from fastapi import APIRouter, Header, HTTPException, Depends, status
 from typing import Optional, Union
 from uuid import UUID
 from datetime import datetime, timezone
+import base64
 
 from .models import (
     DecisionEvent, 
@@ -25,7 +26,8 @@ from .models import (
     DecisionRecord,
     AttestationSummary,
     VerificationMetadata,
-    ExportBundle
+    ExportBundle,
+    ProofAttestation
 )
 from .storage import AsyncSession, get_db_session
 from .validator import validate_decision_event
@@ -261,14 +263,36 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
         if not record:
             raise HTTPException(status_code=404, detail={"error": "NotFound", "message": f"Decision {decision_id} not found"})
             
-        return ExportBundle(
-            canonical_event=record.canonical_payload,
-            attestation=AttestationSummary(
+        # Prepare attestation object
+        attestation_obj = None
+        if record.signature_algorithm:
+            # Fetch public key from registry
+            try:
+                identity = guard.registry.get_identity(str(record.identity_id))
+                # Registry has HEX key, Spec requires Base64. Convert.
+                pub_key_bytes = bytes.fromhex(identity.public_key)
+                pub_key = base64.b64encode(pub_key_bytes).decode('utf-8')
+            except Exception:
+                pub_key = "UNKNOWN-IDENTITY-NOT-FOUND"
+
+            # Extract signature from stored envelope
+            sig = "MISSING"
+            if record.attestation_payload:
+                sig = record.attestation_payload.get('attestation', {}).get('signature', "MISSING")
+
+            attestation_obj = ProofAttestation(
                 identity_id=record.identity_id,
+                public_key=pub_key,
                 algorithm=record.signature_algorithm,
                 signed_at=record.signed_at,
-                identity_status_at_signing="active"
-            ) if record.signature_algorithm else None,
+                signature=sig
+            )
+
+        return ExportBundle(
+            proof_bundle_version="1.0.0",
+            record_id=record.record_id,
+            canonical_event=record.canonical_payload,
+            attestation=attestation_obj,
             record_hash=record.record_hash,
             previous_record_hash=record.previous_record_hash,
             chain_id=record.chain_id,
@@ -277,7 +301,7 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
                 verified_at=datetime.now(timezone.utc),
                 verifier_version="2.3.0",
                 recorder_version="1.0.0",
-                verification_result="VALID" # For export we assume valid if it exists in DB (which passed ingestion guard)
+                verification_result="VALID"
             )
         )
     except ValueError:
