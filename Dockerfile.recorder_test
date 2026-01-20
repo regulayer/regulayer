@@ -1,0 +1,27 @@
+FROM python:3.10-slim
+
+WORKDIR /workspace
+
+# Rename to underscore for python import compatibility
+# The source allows 'from regulayer_attestation.app...'
+COPY regulayer-attestation /workspace/regulayer_attestation
+
+# Copy recorder
+COPY regulayer-recorder /workspace/regulayer-recorder
+
+# Install dependencies (merged from both modules requirements)
+RUN pip install fastapi uvicorn pydantic pydantic-settings sqlalchemy asyncpg alembic "python-jose[cryptography]" httpx pytest pytest-asyncio cryptography
+
+# Add workspace to PYTHONPATH so 'regulayer_attestation' package is found
+# Add recorder so 'app' package inside it is found relative to CWD
+ENV PYTHONPATH=/workspace:/workspace/regulayer-recorder
+
+# Dummy Config for Tests (Settings validation runs on import)
+ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db
+# Must be >=32 chars
+ENV HMAC_SECRET_KEY=test_secret_key_00000000000000000000000000000000
+
+WORKDIR /workspace/regulayer-recorder
+
+# Run tests
+CMD ["pytest", "tests", "-v"]

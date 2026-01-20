@@ -42,6 +42,12 @@ class DecisionRecordDB(Base):
     canonical_payload_hash = Column(String(64), unique=True, nullable=False)
     chain_id = Column(String(50), nullable=False, default="global")
     server_timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    # Phase 2.2: Attestation fields (WRITE-ONCE, enforced by application)
+    signature_algorithm = Column(String(20), nullable=True)
+    identity_id = Column(PGUUID(as_uuid=True), nullable=True)
+    signed_at = Column(DateTime(timezone=True), nullable=True)
+    attestation_payload = Column(JSON, nullable=True)  # Full attestation envelope
     
     # Flattened event data for querying
     sdk_instance_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
@@ -53,6 +59,7 @@ class DecisionRecordDB(Base):
     __table_args__ = (
         Index('idx_decisions_chain', 'chain_id', 'record_id'),
         Index('idx_decisions_timestamp', 'server_timestamp'),
+        Index('idx_decisions_identity', 'identity_id'), # New index for querying by signer
         # Table comment
         {'comment': 'Append-only decision records. record_id ordering MUST always match hash-chain order.'}
     )
@@ -140,31 +147,15 @@ async def insert_record(
     system_name: str,
     risk_level: str,
     event_state: str,
-    sdk_version: str
+    sdk_version: str,
+    # New attested fields
+    signature_algorithm: Optional[str] = None,
+    identity_id: Optional[UUID] = None,
+    signed_at: Optional[datetime] = None,
+    attestation_payload: Optional[dict] = None
 ) -> DecisionRecordDB:
     """
     Insert a new decision record (append-only).
-    
-    Args:
-        session: Database session
-        decision_id: Decision ID
-        record_hash: Record hash
-        previous_record_hash: Previous record hash (None for first)
-        canonical_payload: Canon ical JSON payload
-        canonical_payload_hash: Hash of canonical payload
-        chain_id: Chain identifier
-        sdk_instance_id: SDK instance ID
-        system_name: System name
-        risk_level: Risk level
-        event_state: Event state
-        sdk_version: SDK version
-    
-    Returns:
-        Created DecisionRecordDB
-    
-    Raises:
-        DuplicateDecisionError: If decision_id already exists
-        StorageError: If insert fails
     """
     # Create record
     record = DecisionRecordDB(
@@ -179,7 +170,12 @@ async def insert_record(
         system_name=system_name,
         risk_level=risk_level,
         event_state=event_state,
-        sdk_version=sdk_version
+        sdk_version=sdk_version,
+        # Attestation
+        signature_algorithm=signature_algorithm,
+        identity_id=identity_id,
+        signed_at=signed_at,
+        attestation_payload=attestation_payload
     )
     
     session.add(record)

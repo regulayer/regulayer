@@ -12,6 +12,7 @@ from uuid import uuid4
 
 # Add SDK to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../regulayer'))
+pytest.importorskip("regulayer")
 
 from regulayer import trace
 from regulayer.hasher import hash_data
@@ -69,7 +70,7 @@ async def test_sdk_to_recorder_integration():
         )
     )
     
-2. Record it (simulating recorder ingestion)
+    # 2. Record it (simulating recorder ingestion)
     async with AsyncSessionLocal() as session:
         confirmation = await record_decision(session, event)
         

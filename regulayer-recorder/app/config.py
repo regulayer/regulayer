@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     allowed_sdk_versions: str = "1.0.0"  # Comma-separated
     max_timestamp_drift_seconds: int = 300  # 5 minutes
     
+    # Ingestion configuration
+    allow_legacy_ingestion: bool = True  # Phase 2.2 default
+
+    
     # Chain configuration
     chain_id: str = "global"  # Constant in Phase 1, future-proofs sharding
     

@@ -29,6 +29,8 @@ class AttestationVerifier:
 
         try:
             identity = self.registry.get_identity(identity_id)
+            if identity is None:
+                raise IdentityNotFoundError(f"Identity {identity_id} not found")
         except IdentityNotFoundError:
             errors.append(f"Identity {identity_id} not found locally")
             return VerificationResult(

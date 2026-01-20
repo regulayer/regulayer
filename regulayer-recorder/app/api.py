@@ -6,26 +6,23 @@ Ingestion endpoint for decision events.
 Contract:
     POST /v1/decisions
     - 201 Created → accepted & recorded
-    - 400 Bad Request → schema violation
+    - 400 Bad Request → schema validation
     - 401 Unauthorized → auth/signature invalid
     - 409 Conflict → duplicate
     - 422 Unprocessable Entity → semantic inconsistency
 """
 
 from fastapi import APIRouter, Header, HTTPException, Depends, status
-from typing import Optional
+from typing import Optional, Union
 
-from .models import DecisionEvent, RecordConfirmation, ErrorResponse
+from .models import DecisionEvent, RecordConfirmation, ErrorResponse, IngestRequest
 from .storage import AsyncSession, get_db_session
 from .validator import validate_decision_event
-from .signer import create_verifier
-from .canonicalizer import canonicalize_event
 from .recorder import record_decision
-from .config import settings
+from .attestation_guard import guard, LegacyIngestionDisabledError, InvalidAttestationError
 from .errors import (
     RecorderError,
     SchemaValidationError,
-    SignatureVerificationError,
     DuplicateDecisionError,
     SemanticValidationError,
     TimestampAnomalyError
@@ -49,84 +46,65 @@ router = APIRouter(prefix="/v1")
     }
 )
 async def ingest_decision(
-    event: DecisionEvent,
-    x_regulayer_signature: str = Header(..., alias="X-Regulayer-Signature"),
-    x_regulayer_algorithm: str = Header(..., alias="X-Regulayer-Algorithm"),
-    x_regulayer_sdk_version: str = Header(..., alias="X-Regulayer-SDK-Version"),
+    body: Union[IngestRequest, DecisionEvent],
+    x_regulayer_signature: Optional[str] = Header(None, alias="X-Regulayer-Signature"),
+    x_regulayer_algorithm: Optional[str] = Header(None, alias="X-Regulayer-Algorithm"),
+    x_regulayer_sdk_version: Optional[str] = Header(None, alias="X-Regulayer-SDK-Version"),
     session: AsyncSession = Depends(get_db_session)
 ) -> RecordConfirmation:
     """
     Ingest a decision event.
     
+    Supports:
+    1. Legacy: Raw DecisionEvent + Headers (backward compatible)
+    2. Attested: IngestRequest(ingestion_type="attested", payload=AttestationEnvelope)
+    
     Flow:
-    1. Validate schema (Pydantic - automatic)
-    2. Verify signature
+    1. Normalize input to IngestRequest
+    2. AttestationGuard.validate_ingestion (Enforce crypto/revocation)
     3. Validate semantics
-    4. Record decision (append-only)
-    
-    Args:
-        event: DecisionEvent from SDK
-        x_regulayer_signature: Event signature
-        x_regulayer_algorithm: Signature algorithm
-        x_regulayer_sdk_version: SDK version
-        session: Database session
-    
-    Returns:
-        RecordConfirmation
-    
-    Raises:
-        HTTPException: Various error codes based on failure type
+    4. Record decision
     """
     try:
-        # 1. Schema validation (already done by Pydantic)
-        
-        # 2. Verify signature
-        canonical_payload = canonicalize_event(event)
-        verifier = create_verifier(settings.hmac_secret_key)
-        
-        # Check algorithm matches
-        if x_regulayer_algorithm != verifier.get_algorithm():
-            raise SignatureVerificationError(
-                f"Unsupported algorithm: {x_regulayer_algorithm}",
-                decision_id=str(event.decision_id)
-            )
-        
-        # Verify signature
-        if not verifier.verify(canonical_payload, x_regulayer_signature):
-            raise SignatureVerificationError(
-                "Signature verification failed",
-                decision_id=str(event.decision_id)
-            )
+        # 1. Normalize input
+        if isinstance(body, DecisionEvent):
+            # Legacy SDK sending raw event
+            request = IngestRequest(ingestion_type="legacy", payload=body)
+        else:
+            # New SDK sending IngestRequest
+            request = body
+
+        # 2. Guard Validation (Enforce crypto & revocation)
+        # Pass legacy headers for legacy verification if needed
+        event, attestation = await guard.validate_ingestion(
+            request, 
+            legacy_signature=x_regulayer_signature,
+            legacy_algorithm=x_regulayer_algorithm
+        )
         
         # 3. Semantic validation
         validate_decision_event(event)
         
         # 4. Record decision
-        confirmation = await record_decision(session, event)
+        confirmation = await record_decision(session, event, attestation=attestation)
         
         logger.info(f"Decision recorded: {confirmation.decision_id}, record_id={confirmation.record_id}")
         
         return confirmation
     
-    except SchemaValidationError as e:
-        logger.warning(f"Schema validation failed: {e.message}")
+    except (SchemaValidationError, LegacyIngestionDisabledError, InvalidAttestationError) as e:
+        logger.warning(f"Validation failed: {str(e)}")
+        # Map Attestation errors to 401/400 appropriately
+        status_code = status.HTTP_400_BAD_REQUEST
+        if isinstance(e, (LegacyIngestionDisabledError, InvalidAttestationError)):
+             status_code = status.HTTP_401_UNAUTHORIZED
+
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status_code,
             detail={
-                "error": "SchemaValidationError",
-                "message": e.message,
-                "decision_id": e.decision_id
-            }
-        )
-    
-    except SignatureVerificationError as e:
-        logger.warning(f"Signature verification failed: {e.message}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error": "SignatureVerificationError",
-                "message": e.message,
-                "decision_id": e.decision_id
+                "error": e.__class__.__name__,
+                "message": str(e),
+                "decision_id": str(getattr(e, 'decision_id', 'unknown'))
             }
         )
     
@@ -164,7 +142,6 @@ async def ingest_decision(
         )
     
     except Exception as e:
-        # Unexpected error - log but don't expose stack trace
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

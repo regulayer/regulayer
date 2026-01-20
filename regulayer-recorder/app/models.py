@@ -5,9 +5,10 @@ Canonical schemas matching SDK DecisionEvent with additional record fields.
 """
 
 from datetime import datetime
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Union
 from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
+from regulayer_attestation.app.models import AttestationEnvelope
 
 
 class RuntimeFingerprint(BaseModel):
@@ -137,3 +138,13 @@ class ErrorResponse(BaseModel):
     error: str  # Error class name
     message: str
     decision_id: Optional[UUID] = None
+
+
+class IngestRequest(BaseModel):
+    """
+    Ingestion request wrapper.
+    
+    Discriminated union to strictly separate legacy vs attested events.
+    """
+    ingestion_type: Literal["legacy", "attested"]
+    payload: Union[DecisionEvent, AttestationEnvelope]
