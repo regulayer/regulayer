@@ -84,6 +84,24 @@ class DecisionEvent(BaseModel):
         extra = "forbid"  # No unknown fields allowed
 
 
+class IngestRequest(BaseModel):
+    """
+    Ingestion request wrapper.
+    
+    Discriminated union to strictly separate legacy vs attested events.
+    """
+    ingestion_type: Literal["legacy", "attested"]
+    payload: Union[DecisionEvent, AttestationEnvelope]
+
+
+class AttestationSummary(BaseModel):
+    """Summary of cryptographic attestation for a record."""
+    identity_id: UUID
+    algorithm: str
+    signed_at: datetime
+    identity_status_at_signing: Literal["active", "revoked_after"]
+
+
 class DecisionRecord(BaseModel):
     """
     Decision record (stored format with chain fields).
@@ -108,9 +126,36 @@ class DecisionRecord(BaseModel):
     event_state: str
     sdk_version: str
     
+    # Attestation (Phase 2.2+)
+    attestation: Optional[AttestationSummary] = None
+    
     class Config:
         frozen = True
         extra = "forbid"
+
+
+class VerificationMetadata(BaseModel):
+    """Context about who verified the export and when."""
+    verified_at: datetime
+    verifier_version: str
+    recorder_version: str
+    verification_result: Literal["VALID", "INVALID"]
+
+
+
+class ExportBundle(BaseModel):
+    """
+    Self-contained forensic proof bundle.
+    
+    Contains everything needed to verify the decision offline.
+    """
+    canonical_event: dict
+    attestation: Optional[AttestationSummary]
+    record_hash: str
+    previous_record_hash: Optional[str]
+    chain_id: str
+    server_timestamp: datetime
+    verification_metadata: VerificationMetadata
 
 
 class RecordConfirmation(BaseModel):
@@ -120,6 +165,52 @@ class RecordConfirmation(BaseModel):
     decision_id: UUID
     record_hash: str
     server_timestamp: datetime
+
+
+    server_timestamp: datetime
+
+
+class ChainStatus(BaseModel):
+    chain_id: str
+    total_records: int
+    first_record_timestamp: Optional[datetime] = None
+    last_record_timestamp: Optional[datetime] = None
+    integrity_status: Literal["PASS", "FAIL", "UNKNOWN"]
+    failure_reason: Optional[str] = None
+
+
+class VerificationResult(BaseModel):
+    is_valid: bool
+    total_records_checked: int
+    broken_at_record_id: Optional[int] = None
+    verification_duration_ms: float
+    errors: List[str]
+    # Phase 2.3 additions
+    attested_records_count: int = 0
+    legacy_records_count: int = 0
+    revoked_records_count: int = 0
+
+
+
+class ChainStatus(BaseModel):
+    chain_id: str
+    total_records: int
+    first_record_timestamp: Optional[datetime] = None
+    last_record_timestamp: Optional[datetime] = None
+    integrity_status: Literal["PASS", "FAIL", "UNKNOWN"]
+    failure_reason: Optional[str] = None
+
+
+class VerificationResult(BaseModel):
+    is_valid: bool
+    total_records_checked: int
+    broken_at_record_id: Optional[int] = None
+    verification_duration_ms: float
+    errors: List[str]
+    # Phase 2.3 additions
+    attested_records_count: int = 0
+    legacy_records_count: int = 0
+    revoked_records_count: int = 0
 
 
 class HealthStatus(BaseModel):
@@ -140,11 +231,3 @@ class ErrorResponse(BaseModel):
     decision_id: Optional[UUID] = None
 
 
-class IngestRequest(BaseModel):
-    """
-    Ingestion request wrapper.
-    
-    Discriminated union to strictly separate legacy vs attested events.
-    """
-    ingestion_type: Literal["legacy", "attested"]
-    payload: Union[DecisionEvent, AttestationEnvelope]

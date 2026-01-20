@@ -57,6 +57,8 @@ export const DecisionList: React.FC = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">System</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attestation</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Identity</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
@@ -77,6 +79,20 @@ export const DecisionList: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <StatusBadge status={decision.event_state as any} size="sm" />
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    {decision.attestation ? (
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Signed
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                            Legacy
+                                        </span>
+                                    )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
+                                    {decision.attestation ? `${decision.attestation.identity_id.slice(0, 8)}...` : '-'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                     <a
@@ -123,6 +139,6 @@ export const DecisionList: React.FC = () => {
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

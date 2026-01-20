@@ -15,6 +15,30 @@ const client = axios.create({
     },
 });
 
+export interface AttestationSummary {
+    identity_id: string;
+    algorithm: string;
+    signed_at: string;
+    identity_status_at_signing: 'active' | 'revoked_after';
+}
+
+export interface VerificationMetadata {
+    verified_at: string;
+    verifier_version: string;
+    recorder_version: string;
+    verification_result: 'VALID' | 'INVALID';
+}
+
+export interface ExportBundle {
+    canonical_event: any;
+    attestation: AttestationSummary | null;
+    record_hash: string;
+    previous_record_hash: string | null;
+    chain_id: string;
+    server_timestamp: string;
+    verification_metadata: VerificationMetadata;
+}
+
 export interface ChainStatus {
     chain_id: string;
     total_records: number;
@@ -39,6 +63,8 @@ export interface DecisionSummary {
     system_name: string;
     event_state: string;
     record_hash: string;
+    // Phase 2.3 fields
+    attestation?: AttestationSummary | null; // Optional if backend doesn't return it in list yet
 }
 
 export interface DecisionListResponse {
@@ -61,7 +87,7 @@ export interface DecisionDetail {
     risk_level: string;
     event_state: string;
     sdk_version: string;
-    verification_status: string;
+    attestation: AttestationSummary | null;
 }
 
 export interface SpotVerification {
@@ -70,6 +96,8 @@ export interface SpotVerification {
     chain_link_valid: boolean;
     record_valid: boolean;
     verification_timestamp: string;
+    signature_valid: boolean;
+    identity_status_at_signing: 'active' | 'revoked_after' | 'unknown';
 }
 
 export const verifierAPI = {
@@ -101,4 +129,20 @@ export const verifierAPI = {
         const { data } = await client.get(`/v1/verify/decision/${decisionId}`);
         return data;
     },
+
+    // Export proof
+    exportProof: async (decisionId: string): Promise<void> => {
+        // Trigger browser download manually to avoid handling blob in UI state
+        // Or return blob. For simplicity, we can let UI handle the download logic via window.open
+        // But better to fetch as blob to auth headers if needed. Here, no auth. 
+        // Let's implement fetch blob and trigger download in client helper.
+        const response = await client.get(`/v1/decisions/${decisionId}/export`, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `proof-bundle-${decisionId}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+    }
 };

@@ -92,8 +92,8 @@ export const VerificationReport: React.FC = () => {
                 <div className="space-y-6">
                     {/* Summary Card */}
                     <div className={`border-2 rounded-lg p-6 ${result.is_valid
-                            ? 'bg-green-50 border-green-300'
-                            : 'bg-red-50 border-red-300'
+                        ? 'bg-green-50 border-green-300'
+                        : 'bg-red-50 border-red-300'
                         }`}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="text-2xl font-bold">
@@ -119,6 +119,31 @@ export const VerificationReport: React.FC = () => {
                             <div>
                                 <div className="text-sm text-gray-600">Errors Found</div>
                                 <div className="text-2xl font-bold">{result.errors.length}</div>
+                            </div>
+                        </div>
+
+                        {/* Attestation Stats (Phase 2.3) */}
+                        <div className="border-t border-gray-200 mt-6 pt-4">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Attestation Statistics</h3>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <div className="text-xs text-gray-500">Signed Records</div>
+                                    <div className="text-xl font-bold text-green-700">
+                                        {(result as any).attested_records_count || 0}
+                                    </div>
+                                </div>
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <div className="text-xs text-gray-500">Legacy Records</div>
+                                    <div className="text-xl font-bold text-gray-600">
+                                        {(result as any).legacy_records_count || 0}
+                                    </div>
+                                </div>
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <div className="text-xs text-gray-500">Revoked Identities</div>
+                                    <div className="text-xl font-bold text-orange-600">
+                                        {(result as any).revoked_records_count || 0}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
