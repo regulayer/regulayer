@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Recorder database (shared - read-only access for verifier)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: regulayer
+      POSTGRES_PASSWORD: regulayer_dev_password
+      POSTGRES_DB: regulayer_recorder
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U regulayer" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Verifier backend (read-only API)
+  verifier-backend:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL_READONLY: postgresql://regulayer_readonly:readonly_password@postgres:5432/regulayer_recorder
+      CORS_ORIGINS: "http://localhost:3000"
+      LOG_LEVEL: INFO
+      HOST: "0.0.0.0"
+      PORT: 8001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8001/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Verifier frontend (React)
+  verifier-frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: http://localhost:8001
+    depends_on:
+      - verifier-backend
+
+volumes:
+  postgres_data:
