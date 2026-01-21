@@ -273,3 +273,50 @@ async def update_review_state(
     
     # Return full metadata
     return await get_governance(decision_id, session)
+
+
+# ============ Evidence Export Endpoints (Phase 4.3) ============
+
+from .evidence_models import GovernanceEvidenceBundle, GovernanceTimeline
+from .evidence import evidence_generator
+
+
+@router.get(
+    "/{decision_id}/evidence",
+    response_model=GovernanceEvidenceBundle,
+    summary="Export governance evidence bundle"
+)
+async def export_evidence(
+    decision_id: UUID,
+    session: AsyncSession = Depends(get_governance_session)
+) -> GovernanceEvidenceBundle:
+    """
+    Export a complete governance evidence bundle.
+    
+    This is READ-ONLY and SAFE to share with auditors.
+    
+    WARNING: This does NOT include cryptographic data.
+    It documents ORGANIZATIONAL PROCESS, not cryptographic facts.
+    """
+    return await evidence_generator.generate_evidence(decision_id, session)
+
+
+@router.get(
+    "/{decision_id}/timeline",
+    response_model=GovernanceTimeline,
+    summary="Get governance timeline"
+)
+async def get_timeline(
+    decision_id: UUID,
+    session: AsyncSession = Depends(get_governance_session)
+) -> GovernanceTimeline:
+    """
+    Get a human-readable governance timeline.
+    
+    Shows all governance events in chronological order:
+    - Annotations
+    - Policy matches
+    - State changes
+    - Approvals
+    """
+    return await evidence_generator.generate_timeline(decision_id, session)

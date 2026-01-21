@@ -79,15 +79,25 @@ export const DecisionDetail: React.FC = () => {
                     <h1 className="text-3xl font-bold mb-2">Decision Record Inspector</h1>
                     <p className="text-gray-600">Read-only forensic view</p>
                 </div>
-                <button
-                    onClick={exportBundle}
-                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center"
-                >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export Proof Bundle
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={exportBundle}
+                        className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center"
+                    >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export Proof Bundle
+                    </button>
+                    <button
+                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center"
+                    >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export Governance Evidence
+                    </button>
+                </div>
             </div>
 
             {/* Cryptographic Attestation */}
@@ -395,6 +405,68 @@ export const DecisionDetail: React.FC = () => {
                     <button className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
                         ✗ Reject
                     </button>
+                </div>
+            </div>
+
+            {/* Governance Timeline Panel */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-bold">Governance Timeline</h2>
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded border border-purple-200">
+                        📄 Process Evidence
+                    </span>
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded mb-4 text-sm text-gray-600">
+                    This timeline documents organizational review actions.
+                    It does NOT attest to AI correctness or cryptographic integrity.
+                </div>
+
+                <div className="relative">
+                    {/* Timeline line */}
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                    {/* Timeline events */}
+                    <div className="space-y-4 ml-10">
+                        <div className="relative">
+                            <div className="absolute -left-8 w-4 h-4 bg-orange-500 rounded-full border-2 border-white"></div>
+                            <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+                                <div className="flex justify-between text-xs text-orange-600 mb-1">
+                                    <span className="font-medium">Policy Match</span>
+                                    <span>2026-01-21 09:00</span>
+                                </div>
+                                <div className="text-sm text-orange-800">
+                                    <strong>high_risk_escalation</strong> triggered 2 action(s)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="relative">
+                            <div className="absolute -left-8 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                                <div className="flex justify-between text-xs text-blue-600 mb-1">
+                                    <span className="font-medium">State Change</span>
+                                    <span>2026-01-21 09:01</span>
+                                </div>
+                                <div className="text-sm text-blue-800">
+                                    unreviewed → in_review (triggered by policy)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="relative">
+                            <div className="absolute -left-8 w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>
+                            <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span className="font-medium">Annotation</span>
+                                    <span>2026-01-21 10:30</span>
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                    <span className="text-gray-500">[analyst]</span> Flagged for quarterly review.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
