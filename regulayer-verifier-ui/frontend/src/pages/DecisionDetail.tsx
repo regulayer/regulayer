@@ -1,20 +1,38 @@
 /**
  * Regulayer Verification UI - Decision Detail Page
+ * 
+ * Phase 4.4: Access Control & Segregation of Duties
+ * - Role-based button states
+ * - Auditor read-only mode
  */
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { verifierAPI, DecisionDetail as DecisionDetailType, SpotVerification } from '../api/verifier';
 import { HashDisplay } from '../components/HashDisplay';
 import { StatusBadge } from '../components/StatusBadge';
 
+// Role capabilities (mirrored from backend)
+const ROLE_CAPABILITIES = {
+    analyst: { can_annotate: true, can_tag: true, can_approve: false, can_change_state: false },
+    compliance: { can_annotate: false, can_tag: false, can_approve: true, can_change_state: true },
+    auditor: { can_annotate: false, can_tag: false, can_approve: false, can_change_state: false, read_only: true },
+    admin: { can_annotate: false, can_tag: false, can_approve: false, can_change_state: false },
+};
+
 export const DecisionDetail: React.FC = () => {
     const { decisionId } = useParams<{ decisionId: string }>();
+    const [searchParams] = useSearchParams();
     const [decision, setDecision] = useState<DecisionDetailType | null>(null);
     const [verification, setVerification] = useState<SpotVerification | null>(null);
     const [loading, setLoading] = useState(true);
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Role-based access control (Phase 4.4)
+    const userRole = (searchParams.get('role') || 'analyst') as keyof typeof ROLE_CAPABILITIES;
+    const capabilities = ROLE_CAPABILITIES[userRole] || ROLE_CAPABILITIES.analyst;
+    const isAuditor = userRole === 'auditor';
 
     useEffect(() => {
         if (decisionId) {
@@ -74,12 +92,27 @@ export const DecisionDetail: React.FC = () => {
 
     return (
         <div className="p-8">
+            {/* Auditor Read-Only Banner */}
+            {isAuditor && (
+                <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Read-Only Audit Mode</strong>
+                    <span className="ml-2 text-sm">You have view and export access only. No modifications permitted.</span>
+                </div>
+            )}
+
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Decision Record Inspector</h1>
                     <p className="text-gray-600">Read-only forensic view</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    {/* Role indicator */}
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm border">
+                        Role: <strong>{userRole}</strong>
+                    </span>
                     <button
                         onClick={exportBundle}
                         className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center"
@@ -393,18 +426,34 @@ export const DecisionDetail: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
-                    <select className="border rounded px-3 py-2 text-sm bg-white">
+                    <select
+                        className="border rounded px-3 py-2 text-sm bg-white disabled:opacity-50"
+                        disabled={!capabilities.can_approve || isAuditor}
+                    >
                         <option value="analyst">Analyst</option>
                         <option value="compliance">Compliance</option>
                         <option value="legal">Legal</option>
                         <option value="manager">Manager</option>
                     </select>
-                    <button className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                    <button
+                        className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!capabilities.can_approve || isAuditor}
+                        title={!capabilities.can_approve ? `Role '${userRole}' cannot approve decisions` : 'Record approval'}
+                    >
                         ✓ Approve
                     </button>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                    <button
+                        className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!capabilities.can_approve || isAuditor}
+                        title={!capabilities.can_approve ? `Role '${userRole}' cannot reject decisions` : 'Record rejection'}
+                    >
                         ✗ Reject
                     </button>
+                    {!capabilities.can_approve && (
+                        <span className="text-xs text-gray-500 italic self-center">
+                            {userRole === 'analyst' ? "Analysts cannot approve" : "View only"}
+                        </span>
+                    )}
                 </div>
             </div>
 

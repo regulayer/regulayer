@@ -77,6 +77,29 @@ class GovernanceAnnotationDB(Base):
     )
 
 
+class GovernanceAccessLogDB(Base):
+    """
+    Immutable log of all governance actions.
+    
+    APPEND-ONLY: Used for audit trails and evidence bundles.
+    Every governance action emits a log entry.
+    """
+    __tablename__ = "governance_access_logs"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    decision_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
+    actor_role = Column(String(50), nullable=False)
+    action = Column(String(100), nullable=False)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_governance_access_logs_decision', 'decision_id'),
+        Index('idx_governance_access_logs_timestamp', 'timestamp'),
+        {'comment': 'APPEND-ONLY audit log of all governance actions.'}
+    )
+
+
 # Async database session factory
 async_engine = create_async_engine(
     settings.governance_database_url.replace('postgresql://', 'postgresql+asyncpg://'),
@@ -101,3 +124,4 @@ async def init_governance_db():
     """Initialize governance tables."""
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+

@@ -7,14 +7,15 @@ CRITICAL CONSTRAINTS:
 3. Tags cannot be deleted in Phase 4.1
 4. Invalid review state transitions return 409 Conflict
 5. Governance data NEVER affects cryptographic verification
+6. Access control enforces Segregation of Duties (Phase 4.4)
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 
 from .models import (
     GovernanceMetadata,
@@ -32,8 +33,54 @@ from .storage import (
     GovernanceTagDB,
     GovernanceAnnotationDB
 )
+from .access_control import (
+    GovernanceRole,
+    GovernancePermission,
+    require_permission,
+    raise_403,
+    raise_conflict_403,
+    check_approver_conflict,
+    AccessControlError,
+    ConflictOfInterestError,
+    get_role_capabilities
+)
+from .audit_logger import log_governance_action, GovernanceAction
 
 router = APIRouter(prefix="/v1/governance", tags=["governance"])
+
+
+def get_actor_role(x_actor_role: Optional[str] = Header(None, alias="X-Actor-Role")) -> GovernanceRole:
+    """
+    Extract actor role from request header.
+    
+    In production, this would come from authentication/authorization middleware.
+    """
+    if not x_actor_role:
+        return GovernanceRole.ANALYST  # Default for demo
+    
+    try:
+        return GovernanceRole(x_actor_role.lower())
+    except ValueError:
+        return GovernanceRole.ANALYST
+
+
+@router.get("/roles/{role}/capabilities")
+async def get_capabilities(role: str):
+    """
+    Get capabilities for a role (for UI state).
+    
+    Returns what actions a role can perform.
+    """
+    try:
+        governance_role = GovernanceRole(role.lower())
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Unknown role: {role}")
+    
+    return {
+        "role": role,
+        "capabilities": get_role_capabilities(governance_role)
+    }
+
 
 
 @router.get(
