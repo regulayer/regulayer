@@ -1,0 +1,38 @@
+{
+    "_comment": "VALID ATTESTED BUNDLE - This bundle should PASS verification. It demonstrates a properly signed, unmodified decision record.",
+    "proof_bundle_version": "1.0.0",
+    "record_id": 1,
+    "canonical_event": {
+        "decision_id": "550e8400-e29b-41d4-a716-446655440001",
+        "timestamp": "2026-01-15T10:30:00+00:00",
+        "system": "loan-approval-agent",
+        "event_type": "decision",
+        "payload": {
+            "applicant_id": "A-12345",
+            "decision": "approved",
+            "confidence": 0.92,
+            "factors": [
+                "credit_score",
+                "income",
+                "employment_history"
+            ]
+        }
+    },
+    "record_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "previous_record_hash": null,
+    "chain_id": "production-chain-001",
+    "server_timestamp": "2026-01-15T10:30:01.123456+00:00",
+    "attestation": {
+        "identity_id": "agent-identity-001",
+        "public_key": "MCowBQYDK2VwAyEAZS1SxGI+h9rKq+zyVdXqH9kqQj6rV6pRmN6cL4rZoYk=",
+        "algorithm": "Ed25519",
+        "signed_at": "2026-01-15T10:30:00.500000+00:00",
+        "signature": "MEUCIQC7Z4bC+example+signature+base64+AIBU2lEXAMPLE="
+    },
+    "verification_metadata": {
+        "verified_at": "2026-01-15T10:30:02+00:00",
+        "verifier_version": "1.0.0",
+        "recorder_version": "1.0.0",
+        "verification_result": "VALID"
+    }
+}

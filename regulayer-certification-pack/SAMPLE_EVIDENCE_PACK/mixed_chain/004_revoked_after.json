@@ -1,0 +1,28 @@
+{
+    "_comment": "CHAIN RECORD 4 - Signed by identity that was later revoked. Valid at time of signing.",
+    "proof_bundle_version": "1.0.0",
+    "record_id": 4,
+    "canonical_event": {
+        "decision_id": "chain-001-decision-004",
+        "timestamp": "2026-01-20T11:00:00+00:00",
+        "system": "chain-demo-agent"
+    },
+    "record_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+    "previous_record_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+    "chain_id": "demo-chain",
+    "server_timestamp": "2026-01-20T11:00:01+00:00",
+    "attestation": {
+        "identity_id": "demo-identity-REVOKED",
+        "public_key": "MCowBQYDK2VwAyEArevokedDemoPublicKeyBase64Example=",
+        "algorithm": "Ed25519",
+        "signed_at": "2026-01-20T11:00:00+00:00",
+        "signature": "MEUCIQDrevokedDemoSignatureBase64Example="
+    },
+    "verification_metadata": {
+        "verified_at": "2026-01-21T00:00:00+00:00",
+        "verifier_version": "1.0.0",
+        "recorder_version": "1.0.0",
+        "verification_result": "VALID",
+        "identity_status_at_verification": "revoked_after"
+    }
+}

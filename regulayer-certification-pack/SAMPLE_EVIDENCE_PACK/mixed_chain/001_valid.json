@@ -1,0 +1,27 @@
+{
+    "_comment": "CHAIN RECORD 1 - First record in chain (no previous hash). Valid attested record.",
+    "proof_bundle_version": "1.0.0",
+    "record_id": 1,
+    "canonical_event": {
+        "decision_id": "chain-001-decision-001",
+        "timestamp": "2026-01-20T08:00:00+00:00",
+        "system": "chain-demo-agent"
+    },
+    "record_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+    "previous_record_hash": null,
+    "chain_id": "demo-chain",
+    "server_timestamp": "2026-01-20T08:00:01+00:00",
+    "attestation": {
+        "identity_id": "demo-identity",
+        "public_key": "MCowBQYDK2VwAyEAdemoPublicKeyBase64ForChainExample=",
+        "algorithm": "Ed25519",
+        "signed_at": "2026-01-20T08:00:00+00:00",
+        "signature": "MEUCIQDdemoSignature1Base64Example="
+    },
+    "verification_metadata": {
+        "verified_at": "2026-01-21T00:00:00+00:00",
+        "verifier_version": "1.0.0",
+        "recorder_version": "1.0.0",
+        "verification_result": "VALID"
+    }
+}
