@@ -1,0 +1,17 @@
+{
+    "challenge_type": "degraded_trust",
+    "description": "This bundle represents a decision affected by an incident. The cryptographic proof is valid but trust is caveated.",
+    "expected_result": "DEGRADED",
+    "incident_id": "inc-2026-001",
+    "decision_id": "d7e8f9a0-1234-5678-90ab-cdef12345678",
+    "incident_severity": "high",
+    "affected_time_range": [
+        "2026-02-01T00:00:00Z",
+        "2026-02-14T00:00:00Z"
+    ],
+    "decision_timestamp": "2026-02-10T14:30:00Z",
+    "cryptographic_status": "VALID",
+    "trust_status": "DEGRADED",
+    "verification_command": "regulayer-proof-verifier verify degraded_bundle/decision.json && curl /v1/trust-status/d7e8f9a0...",
+    "expected_output": "Signature: VALID\nHash: VALID\nChain: VALID\nTrust Status: DEGRADED (affected by incident inc-2026-001)"
+}

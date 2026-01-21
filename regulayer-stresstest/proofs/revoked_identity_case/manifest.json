@@ -1,0 +1,15 @@
+{
+    "challenge_type": "revoked_identity",
+    "description": "This bundle was signed by an identity that was later revoked. The signature was made BEFORE revocation and should remain VALID.",
+    "expected_result": "VALID (historical context)",
+    "identity_id": "guard-001",
+    "signature_timestamp": "2026-01-15T10:00:00Z",
+    "revocation_timestamp": "2026-02-14T00:00:00Z",
+    "relationship": "signature_before_revocation",
+    "cryptographic_status": "VALID",
+    "attestation_status": "SIGNED",
+    "trust_status": "TRUSTED",
+    "verification_command": "regulayer-proof-verifier verify revoked_identity_case/decision.json --archival",
+    "expected_output": "Signature: VALID\nIdentity: guard-001 (revoked after signing)\nHistorical Context: Applied\nResult: VERIFIED",
+    "explanation": "Key rotation policy states that revocation does NOT invalidate past signatures. Signatures made before revocation remain valid forever."
+}

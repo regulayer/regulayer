@@ -1,0 +1,172 @@
+REGULAYER Q&A TRANSCRIPT: OPPOSING EXPERT CROSS-EXAMINATION
+============================================================
+
+This document contains technical answers for cryptography/security experts.
+Written for adversarial technical examination.
+
+---
+
+EXPERT: "SHA-256 will eventually be broken. What then?"
+
+RESPONSE: "You're correct that cryptographic algorithms have limited lifespans. 
+Our approach:
+
+1. Original SHA-256 hashes are NEVER modified - they are historical record
+2. We compute secondary hashes using newer algorithms (SHA3-512)
+3. These are LAYERED, not replacements
+4. Archival verification uses the algorithm context from creation time
+
+If SHA-256 is deprecated in 2040, records from 2026 are verified using:
+- Original SHA-256 hash (historical context)
+- OR secondary SHA3-512 hash (future-proof path)
+
+Both are stored. Neither replaces the other."
+
+---
+
+EXPERT: "Your JSON canonicalization could have edge cases."
+
+RESPONSE: "We use RFC 8785 JSON Canonicalization Scheme. This is a formally 
+specified, deterministic algorithm. Specifically:
+
+- Keys are sorted lexicographically
+- Numbers use specific representation rules
+- Strings use specific escape sequences
+- No whitespace ambiguity
+
+Our implementation uses the reference library. Edge cases:
+- Unicode: Handled per spec
+- Numbers: Specific precision rules
+- Null vs missing: Both have deterministic representation
+
+You can audit our canonicalization by running the same algorithm on the 
+payload and comparing the bytes."
+
+---
+
+EXPERT: "Ed25519 is vulnerable to quantum computers."
+
+RESPONSE: "Current assessment:
+
+1. Ed25519 is secure against classical computers
+2. Quantum threat timeline is uncertain (10-20+ years)
+3. NIST post-quantum standardization is ongoing
+
+Our mitigation:
+1. Cryptographic snapshots record context at signing time
+2. Secondary signatures can be added when post-quantum is ready
+3. Original signatures preserved for historical context
+
+We are not claiming quantum resistance. We are claiming audit trails and 
+agility to adapt."
+
+---
+
+EXPERT: "Your key rotation window creates a race condition."
+
+RESPONSE: "Explain the attack scenario you're proposing."
+
+EXPERT: "If I know rotation is imminent, I could sign with the old key 
+just before it's revoked and claim the signature is valid."
+
+RESPONSE: "That attack fails because:
+
+1. Signatures include a timestamp in the signed payload
+2. The timestamp is part of what's signed - can't be changed
+3. Chain position reveals when the record was actually created
+4. We check: is timestamp consistent with chain position?
+
+If you sign at time T but claim time T-1, the chain shows you're lying. 
+Records are sequentially numbered."
+
+---
+
+EXPERT: "You mark governance as 'non-authoritative'. That's a cop-out."
+
+RESPONSE: "It's a precise boundary statement. Here's the distinction:
+
+AUTHORITATIVE (cryptographic):
+- Record hash: mathematically verified
+- Chain linkage: mathematically verified
+- Signature: mathematically verified
+
+NON-AUTHORITATIVE (organizational):
+- Review state: reflects process, not proof
+- Approvals: organizational workflow, not cryptographic
+- Tags: metadata, not evidence
+
+We clearly separate what we can PROVE from what we can only RECORD. 
+Calling governance 'authoritative' would be a false claim."
+
+---
+
+EXPERT: "How do I know the 'canonical payload' matches what the AI actually did?"
+
+RESPONSE: "The SDK captures the decision at the point of execution. The 
+canonical payload is generated from what the AI system provides.
+
+We cannot prove the AI provided accurate information. We can only prove:
+1. What was provided to us
+2. That it wasn't changed after we received it
+
+The gap between 'what AI did' and 'what AI reported' is outside our scope. 
+This is clearly documented in our disclaimers."
+
+---
+
+EXPERT: "Your incident disclosure is self-serving."
+
+RESPONSE: "Disclosures are:
+
+1. Append-only - we cannot retract an incident
+2. Time-bounded - scope is fixed at declaration
+3. Deterministic - same inputs produce same disclosure
+4. Reproducible - you can verify affected scope yourself
+
+The disclosure algorithm is documented. You can:
+1. Get the incident record
+2. Get a list of decisions
+3. Run the trust resolution algorithm
+4. Compare to our disclosure
+
+If they don't match, that's evidence of manipulation."
+
+---
+
+EXPERT: "Offline verification could be different from your production system."
+
+RESPONSE: "The offline verifier is:
+
+1. Open source - you can audit every line
+2. Deterministic - same algorithm as production
+3. No network calls - completely isolated
+
+The verification algorithm is:
+1. Parse JSON
+2. Compute hash
+3. Compare to stored hash
+4. Return result
+
+There are no hidden parameters, no server-side logic, no network dependencies. 
+You can fork our repo and run your own version."
+
+---
+
+EXPERT: "You're asking me to trust your documentation."
+
+RESPONSE: "No. I'm asking you to trust the math.
+
+- SHA-256: publicly specified, implemented everywhere
+- Ed25519: publicly specified, implemented everywhere  
+- JSON canonicalization: RFC 8785, publicly specified
+
+Our documentation explains how we use these standards. You can verify:
+1. We're actually using these algorithms (audit the code)
+2. The algorithms work as specified (run the math)
+3. The evidence matches the claims (independent verification)
+
+Trust is in the cryptography, not the vendor."
+
+---
+
+END OF OPPOSING EXPERT TRANSCRIPT

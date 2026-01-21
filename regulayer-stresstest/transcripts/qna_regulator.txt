@@ -1,0 +1,121 @@
+REGULAYER Q&A TRANSCRIPT: REGULATOR EXAMINATION
+================================================
+
+This document contains plain-English answers to common regulator questions.
+No acronyms without explanation. Written for non-technical audiences.
+
+---
+
+Q: "What is Regulayer?"
+
+A: Regulayer is a system that records AI decisions in a way that cannot be 
+   changed later. Think of it like a tamper-evident seal on a package - you 
+   can tell if someone tried to open it.
+
+---
+
+Q: "How do I know this decision record wasn't changed?"
+
+A: Every decision record has a digital fingerprint (called a hash). This 
+   fingerprint is calculated from the exact contents of the record. If even 
+   one character was changed, the fingerprint would be completely different.
+   
+   You can calculate the fingerprint yourself using standard software and 
+   compare it to what we stored. If they match, the record wasn't changed.
+
+---
+
+Q: "What if someone changes the fingerprint too?"
+
+A: Each record's fingerprint includes the previous record's fingerprint. They 
+   are all linked together like a chain. If someone changes one fingerprint, 
+   it breaks the chain - all the following fingerprints would be wrong.
+   
+   To fake a record, you would need to regenerate all subsequent fingerprints, 
+   which is computationally impossible.
+
+---
+
+Q: "Who authorized this decision to be recorded?"
+
+A: Each record can be digitally signed by an authorized identity. The signature 
+   proves who authorized it and when. It works like a wax seal - only the 
+   person with the seal can create it, but anyone can verify it's authentic.
+
+---
+
+Q: "What if the person who signed it is no longer with the company?"
+
+A: The signature is permanent. Even if the person leaves, their historical 
+   signatures remain valid. We keep a log of who had signing authority and when.
+   
+   If their key was revoked, signatures made BEFORE revocation are still valid.
+   Only signatures made AFTER revocation are questioned.
+
+---
+
+Q: "What if your company goes out of business?"
+
+A: You don't need us to verify the records. We give you:
+   
+   1. The complete evidence package (a zip file)
+   2. A verification tool (open source, you can audit it)
+   3. Documentation of how verification works
+   
+   The tool uses standard cryptography. Any cryptography expert can verify 
+   the records without contacting us or using our systems.
+
+---
+
+Q: "How do I verify this myself?"
+
+A: Step by step:
+   
+   1. Download the evidence package we provided
+   2. Download the verification tool from GitHub
+   3. Run the command: regulayer-proof-verifier verify package.zip
+   4. The tool will tell you if everything checks out
+   
+   No internet connection to our servers is required.
+
+---
+
+Q: "What does Regulayer NOT verify?"
+
+A: Regulayer proves that the record exists and wasn't changed. It does NOT:
+   
+   - Prove the AI made. the right decision
+   - Prove the AI was fair or unbiased
+   - Prove compliance with any regulation
+   - Guarantee the AI will behave the same way in the future
+   
+   We prove the recording is authentic. We don't judge the content.
+
+---
+
+Q: "There was a security incident. Are my records still valid?"
+
+A: It depends on when your records were created:
+   
+   - Records created BEFORE the incident: Still fully valid
+   - Records created DURING the incident: Marked as "degraded" (extra caution)
+   - Records created AFTER the incident was fixed: Fully valid
+   
+   We explicitly mark which records are affected. Nothing is silently invalid.
+
+---
+
+Q: "How long will these records be verifiable?"
+
+A: Forever, in principle. The cryptographic algorithms we use (SHA-256, Ed25519) 
+   are expected to remain secure for decades. If they ever become obsolete:
+   
+   - We add backup fingerprints using newer algorithms
+   - Original fingerprints are preserved
+   - Historical verification still works using the original context
+   
+   We've designed this for 10+ year verification horizons.
+
+---
+
+END OF REGULATOR TRANSCRIPT

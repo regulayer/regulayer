@@ -1,0 +1,10 @@
+{
+    "challenge_type": "tampered_record",
+    "description": "This bundle has been intentionally tampered with. The record hash has been modified to simulate a malicious alteration.",
+    "expected_result": "FAIL",
+    "expected_error": "HASH_MISMATCH",
+    "original_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tampered_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "verification_command": "regulayer-proof-verifier verify challenged_bundle/tampered_record.json",
+    "expected_output": "ERROR: Hash mismatch detected. Record integrity compromised."
+}

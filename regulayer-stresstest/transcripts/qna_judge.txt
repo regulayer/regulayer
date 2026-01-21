@@ -1,0 +1,137 @@
+REGULAYER Q&A TRANSCRIPT: COURTROOM EXAMINATION
+================================================
+
+This document contains plain-English answers for judges and juries.
+No technical jargon. Written for legal audiences.
+
+---
+
+JUDGE: "Explain to the court what this Regulayer system does."
+
+WITNESS: "Your Honor, Regulayer is like a notary for AI decisions. When an AI 
+system makes a decision, we create a permanent record of exactly what it 
+decided. This record cannot be changed later without detection.
+
+Think of it as a tamper-evident lockbox. Anyone can verify the seal wasn't 
+broken, even years later."
+
+---
+
+JUDGE: "How can I trust that this record wasn't altered?"
+
+WITNESS: "Your Honor, each record has a unique digital fingerprint - like a 
+DNA sequence. This fingerprint is mathematically calculated from the record's 
+contents.
+
+If even a single character was changed, the fingerprint would be completely 
+different. You can calculate this fingerprint yourself using standard software 
+that is publicly available and compare it to what we stored.
+
+Furthermore, each record's fingerprint includes the previous record's 
+fingerprint. They form an unbreakable chain. Changing any record breaks the 
+entire chain from that point forward."
+
+---
+
+JUDGE: "I don't understand computers. How do I verify this independently?"
+
+WITNESS: "Your Honor, you don't need to understand computers to verify this. 
+Here's what you can do:
+
+1. Appoint a technical expert of your choosing
+2. Give them the evidence package - it's a standard zip file
+3. Give them the verification software - it's publicly available
+4. Have them run the verification process
+5. They will confirm whether the records are intact
+
+The expert doesn't need to contact us or use our systems. Everything needed 
+for verification is in the package."
+
+---
+
+ATTORNEY: "How do we know the company didn't pre-compute these fingerprints?"
+
+WITNESS: "That's mathematically impossible. Let me explain:
+
+Each new fingerprint includes the previous fingerprint. To pre-compute future 
+fingerprints, you would need to know what decisions the AI would make in the 
+future. That's impossible.
+
+It's like asking someone to forge tomorrow's newspaper headline. They can't 
+know what news will happen."
+
+---
+
+ATTORNEY: "What if the signing key was stolen?"
+
+WITNESS: "If a key is compromised, we take these steps:
+
+1. We revoke the key and issue a new one
+2. We record when the compromise was discovered
+3. Records signed BEFORE the compromise remain valid
+4. Only records signed DURING the compromise period are questioned
+
+We don't retroactively invalidate all historical records. Each record is 
+evaluated based on when it was created relative to any incident."
+
+---
+
+JUDGE: "The defendant claims this record was fabricated. How do you respond?"
+
+WITNESS: "Your Honor, fabrication would require the defendant to:
+
+1. Create a fake record
+2. Compute a fingerprint that matches all subsequent records
+3. Insert it into the chain without breaking the chain
+4. Forge a digital signature from an authorized identity
+
+This is mathematically impossible. The chain would immediately show the break. 
+The verification tool would report failure."
+
+---
+
+ATTORNEY: "Does this system prove the AI made the right decision?"
+
+WITNESS: "No. And we never claim it does.
+
+Regulayer proves that a decision was recorded and the record wasn't changed. 
+It does not prove:
+
+- The decision was correct
+- The AI was fair
+- The outcome was legal
+
+Think of it like a security camera. The camera proves what happened. It 
+doesn't prove whether what happened was right or wrong."
+
+---
+
+JUDGE: "What are the limitations of this evidence?"
+
+WITNESS: "Your Honor, I want to be completely clear about our limitations:
+
+1. We prove records exist and weren't changed
+2. We prove who signed records and when
+3. We do NOT prove AI correctness or fairness
+4. We do NOT guarantee compliance with any law
+5. We do NOT evaluate the quality of AI decisions
+
+Our evidence is like certified mail receipt. It proves delivery. It doesn't 
+prove the contents of the letter were true."
+
+---
+
+ATTORNEY: "Can you produce all records for the relevant time period?"
+
+WITNESS: "Yes. We have prepared a complete evidence package containing:
+
+1. All decision records from the requested period
+2. A master list of all fingerprints (called a manifest)
+3. Verification that no records are missing
+4. Chain integrity report showing the sequence is complete
+
+Every record can be independently verified using the tools we provide."
+
+---
+
+END OF COURTROOM TRANSCRIPT
