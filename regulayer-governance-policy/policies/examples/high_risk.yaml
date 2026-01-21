@@ -1,0 +1,28 @@
+# High Risk Decision Policy
+#
+# This policy triggers when a decision has high risk level.
+# Actions: Move to in_review, add high-risk tag, require compliance approval.
+
+name: high_risk_escalation
+description: Escalate high-risk decisions for compliance review
+
+applies_to: []  # All systems
+
+conditions:
+  - field: risk_level
+    operator: eq
+    value: high
+
+actions:
+  - type: set_review_state
+    parameters:
+      state: in_review
+  
+  - type: add_tag
+    parameters:
+      name: high-risk
+      category: risk
+  
+  - type: require_approval
+    parameters:
+      role: compliance

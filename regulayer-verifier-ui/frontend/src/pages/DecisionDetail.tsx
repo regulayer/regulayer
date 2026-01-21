@@ -321,6 +321,82 @@ export const DecisionDetail: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Policies Applied Panel */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-bold">Policies Applied</h2>
+                    <button className="text-xs px-2 py-1 border rounded text-gray-600 hover:bg-gray-50">
+                        Re-evaluate
+                    </button>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded">
+                        <div>
+                            <div className="font-medium text-orange-800">high_risk_escalation</div>
+                            <div className="text-xs text-orange-600">Matched • Escalate high-risk decisions</div>
+                        </div>
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                            🟠 Escalation Required
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded">
+                        <div>
+                            <div className="font-medium text-gray-700">gdpr_sensitive</div>
+                            <div className="text-xs text-gray-500">Not Matched • GDPR data handling</div>
+                        </div>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                            — No Action
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Approvals Panel */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-bold">Approval Workflow</h2>
+                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded border border-red-200">
+                        🔴 Compliance Approval Pending
+                    </span>
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded mb-4 text-sm text-gray-600">
+                    Approvals are append-only and immutable. They cannot be edited or deleted.
+                </div>
+
+                <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-2">Required Approvals</div>
+                    <div className="flex gap-2">
+                        <span className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm flex items-center">
+                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                            compliance
+                        </span>
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-2">Approval History</div>
+                    <div className="text-sm text-gray-400 italic">No approvals recorded yet.</div>
+                </div>
+
+                <div className="flex gap-2">
+                    <select className="border rounded px-3 py-2 text-sm bg-white">
+                        <option value="analyst">Analyst</option>
+                        <option value="compliance">Compliance</option>
+                        <option value="legal">Legal</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                    <button className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                        ✓ Approve
+                    </button>
+                    <button className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                        ✗ Reject
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

@@ -1,0 +1,24 @@
+# GDPR Sensitive Data Policy
+#
+# This policy triggers when a decision involves GDPR-tagged data.
+# Actions: Require legal approval, notify data protection team.
+
+name: gdpr_sensitive
+description: Handle decisions involving GDPR-sensitive data
+
+applies_to: []  # All systems
+
+conditions:
+  - field: tag
+    operator: contains
+    value: gdpr
+
+actions:
+  - type: require_approval
+    parameters:
+      role: legal
+  
+  - type: notify
+    parameters:
+      team: data-protection
+      message: "GDPR-tagged decision requires review"
