@@ -258,6 +258,69 @@ export const DecisionDetail: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div >
+
+            {/* Governance Metadata Panel */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-bold">Governance Metadata</h2>
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-200">
+                        ⚠️ Does not affect cryptographic validity
+                    </span>
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded mb-4 text-sm text-gray-600">
+                    Governance metadata is an organizational overlay. It does not alter, invalidate, or affect
+                    the cryptographic verification of this record. Auditors may ignore this section entirely.
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <div className="text-sm text-gray-600 mb-1">Review State</div>
+                        <select
+                            className="w-full border rounded px-3 py-2 bg-white"
+                            defaultValue="unreviewed"
+                        >
+                            <option value="unreviewed">Unreviewed</option>
+                            <option value="in_review">In Review</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="escalated">Escalated</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div className="text-sm text-gray-600 mb-1">Tags</div>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">high-risk</span>
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">gdpr</span>
+                            <button className="px-2 py-1 border border-dashed border-gray-300 rounded text-sm text-gray-500 hover:bg-gray-50">
+                                + Add Tag
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div className="text-sm text-gray-600 mb-2">Annotations</div>
+                    <div className="space-y-2 mb-3">
+                        <div className="p-3 bg-gray-50 border border-gray-100 rounded text-sm">
+                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>analyst</span>
+                                <span>2026-01-21 10:30</span>
+                            </div>
+                            <div>Flagged for quarterly review.</div>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Add annotation..."
+                            className="flex-1 border rounded px-3 py-2 text-sm"
+                        />
+                        <button className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
