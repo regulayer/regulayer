@@ -1,0 +1,78 @@
+{
+    "$schema": "https://regulayer.io/schemas/registry/schema-versions.schema.json",
+    "registry_version": "1.0.0",
+    "last_updated": "2026-01-25T00:00:00Z",
+    "schemas": [
+        {
+            "schema_id": "evidence-v1.0.0",
+            "name": "Evidence Bundle Schema",
+            "version": "1.0.0",
+            "description": "Canonical schema for cryptographically verifiable decision evidence",
+            "schema_hash": "sha256:pending_computation",
+            "schema_url": "https://regulayer.io/schemas/evidence/v1.0.0/evidence.schema.json",
+            "local_path": "regulayer-interop/formats/evidence.schema.json",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "published_at": "2026-01-25",
+            "status": "current",
+            "breaking_changes": false
+        },
+        {
+            "schema_id": "provenance-v1.0.0",
+            "name": "Provenance Graph Schema",
+            "version": "1.0.0",
+            "description": "Schema for multi-system decision relationships",
+            "schema_hash": "sha256:pending_computation",
+            "schema_url": "https://regulayer.io/schemas/provenance/v1.0.0/provenance.schema.json",
+            "local_path": "regulayer-interop/formats/provenance.schema.json",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "published_at": "2026-01-25",
+            "status": "current",
+            "breaking_changes": false
+        },
+        {
+            "schema_id": "governance-v1.0.0",
+            "name": "Governance Overlay Schema",
+            "version": "1.0.0",
+            "description": "Schema for governance metadata that overlays cryptographic evidence",
+            "schema_hash": "sha256:pending_computation",
+            "schema_url": "https://regulayer.io/schemas/governance/v1.0.0/governance.schema.json",
+            "local_path": "regulayer-interop/formats/governance.schema.json",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "published_at": "2026-01-25",
+            "status": "current",
+            "breaking_changes": false,
+            "notes": "Governance schemas never affect proof validity"
+        },
+        {
+            "schema_id": "evidence-v0.9.0",
+            "name": "Evidence Bundle Schema (Legacy)",
+            "version": "0.9.0",
+            "description": "Pre-attestation evidence schema (SRI only)",
+            "schema_hash": "sha256:pending_computation",
+            "schema_url": "https://regulayer.io/schemas/evidence/v0.9.0/evidence.schema.json",
+            "applies_to_trust_models": [
+                "regulayer-legacy-v0"
+            ],
+            "published_at": "2025-01-01",
+            "status": "deprecated",
+            "deprecation_date": "2026-01-01",
+            "migration_path": "evidence-v1.0.0",
+            "breaking_changes": false,
+            "notes": "Legacy records remain valid. New recordings use v1.0.0."
+        }
+    ],
+    "compatibility": {
+        "backward_compatible": true,
+        "policy": "New schema versions are always backward compatible with the previous minor version. Breaking changes require a new major version.",
+        "migration_support": "Regulayer provides migration tools for all deprecated schemas."
+    },
+    "metadata": {
+        "canonical_url": "https://trust.regulayer.io/v1/schemas"
+    }
+}

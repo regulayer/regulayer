@@ -1,0 +1,125 @@
+{
+    "$schema": "https://regulayer.io/schemas/registry/audit-versions.schema.json",
+    "registry_version": "1.0.0",
+    "last_updated": "2026-01-25T00:00:00Z",
+    "audits": [
+        {
+            "audit_id": "audit-scope-v1.0.0",
+            "name": "Audit Scope Definition",
+            "version": "1.0.0",
+            "description": "Defines what is in scope for cryptographic audits",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/scope/AUDIT_SCOPE.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        },
+        {
+            "audit_id": "hash-chain-invariants-v1.0.0",
+            "name": "Hash Chain Invariants",
+            "version": "1.0.0",
+            "description": "Formal invariants for hash chain integrity",
+            "applies_to_trust_models": [
+                "regulayer-core-v1",
+                "regulayer-legacy-v0"
+            ],
+            "invariants_tested": [
+                "hash_chain_immutability",
+                "hash_chain_ordering",
+                "append_only",
+                "hash_determinism",
+                "canonicalization_stability",
+                "previous_hash_binding"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/invariants/HASH_CHAIN_INVARIANTS.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        },
+        {
+            "audit_id": "attestation-invariants-v1.0.0",
+            "name": "Attestation Invariants",
+            "version": "1.0.0",
+            "description": "Formal invariants for cryptographic attestation",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "invariants_tested": [
+                "signature_validity",
+                "signature_coverage",
+                "key_binding",
+                "timestamp_inclusion",
+                "algorithm_correctness"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/invariants/ATTESTATION_INVARIANTS.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        },
+        {
+            "audit_id": "non-repudiation-invariants-v1.0.0",
+            "name": "Non-Repudiation Invariants",
+            "version": "1.0.0",
+            "description": "Formal invariants for legal non-repudiation",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "invariants_tested": [
+                "customer_cannot_deny_recording",
+                "regulayer_cannot_deny_attestation",
+                "timestamp_cannot_be_repudiated",
+                "content_cannot_be_repudiated"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/invariants/NON_REPUDIATION_INVARIANTS.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        },
+        {
+            "audit_id": "governance-separation-v1.0.0",
+            "name": "Governance Separation Invariants",
+            "version": "1.0.0",
+            "description": "Formal proof that governance never affects cryptography",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "invariants_tested": [
+                "governance_cannot_modify_hashes",
+                "deletion_does_not_delete",
+                "rbac_does_not_affect_proofs",
+                "retention_does_not_affect_crypto"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/invariants/GOVERNANCE_SEPARATION.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        },
+        {
+            "audit_id": "adversarial-scenarios-v1.0.0",
+            "name": "Adversarial Scenarios",
+            "version": "1.0.0",
+            "description": "Adversarial modeling and failure analysis",
+            "applies_to_trust_models": [
+                "regulayer-core-v1"
+            ],
+            "scenarios_modeled": [
+                "malicious_customer",
+                "compromised_sdk",
+                "key_compromise",
+                "insider_threat",
+                "total_regulayer_compromise",
+                "regulayer_shutdown"
+            ],
+            "document_hash": "sha256:pending_computation",
+            "document_url": "regulayer-audit/adversarial/ADVERSARIAL_SCENARIOS.md",
+            "published_at": "2026-01-25",
+            "status": "current"
+        }
+    ],
+    "metadata": {
+        "canonical_url": "https://trust.regulayer.io/v1/audits",
+        "note": "These are audit documentation versions, not third-party audit reports. Independent audit reports will be published separately when conducted."
+    }
+}

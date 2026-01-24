@@ -1,0 +1,178 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://regulayer.io/schemas/governance/v1.0.0/governance.schema.json",
+    "title": "Regulayer Governance Overlay",
+    "description": "Schema for governance metadata that overlays cryptographic evidence. Governance data never affects proof validity.",
+    "version": "1.0.0",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "decision_id",
+        "overlays"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "1.0.0"
+        },
+        "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The decision this governance data relates to"
+        },
+        "decision_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "description": "Unchanged by governance overlays"
+        },
+        "overlays": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "$ref": "#/definitions/Annotations"
+                },
+                "reviews": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Review"
+                    }
+                },
+                "classifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Classification"
+                    }
+                },
+                "retention": {
+                    "$ref": "#/definitions/RetentionPolicy"
+                },
+                "visibility": {
+                    "$ref": "#/definitions/Visibility"
+                }
+            }
+        },
+        "trust_statement": {
+            "type": "string",
+            "const": "Governance overlays do not affect cryptographic proof validity.",
+            "description": "Trust statement for consumers"
+        }
+    },
+    "definitions": {
+        "Annotations": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "content": {
+                                "type": "string"
+                            },
+                            "author": {
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "Review": {
+            "type": "object",
+            "required": [
+                "reviewer",
+                "status",
+                "reviewed_at"
+            ],
+            "properties": {
+                "reviewer": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "approved",
+                        "rejected",
+                        "needs_attention"
+                    ]
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "Classification": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "classified_by": {
+                    "type": "string"
+                },
+                "classified_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "RetentionPolicy": {
+            "type": "object",
+            "properties": {
+                "retention_days": {
+                    "type": "integer"
+                },
+                "scope": {
+                    "type": "string",
+                    "enum": [
+                        "metadata",
+                        "governance",
+                        "ui"
+                    ]
+                },
+                "cryptographic_records_affected": {
+                    "type": "boolean",
+                    "const": false,
+                    "description": "ALWAYS false - crypto records never deleted"
+                }
+            }
+        },
+        "Visibility": {
+            "type": "object",
+            "properties": {
+                "hidden": {
+                    "type": "boolean"
+                },
+                "hidden_reason": {
+                    "type": "string"
+                },
+                "hidden_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "proof_still_valid": {
+                    "type": "boolean",
+                    "const": true,
+                    "description": "ALWAYS true - hiding never invalidates proofs"
+                }
+            }
+        }
+    }
+}

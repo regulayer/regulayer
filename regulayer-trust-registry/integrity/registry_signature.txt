@@ -1,0 +1,50 @@
+# Trust Registry Signature
+
+This file contains the Ed25519 signature over the registry hash.
+
+---
+
+Registry Version: 1.0.0
+Signed At: 2026-01-25T00:00:00Z
+Key ID: trust-registry-signing-2026
+
+Signature: (base64-encoded signature will be computed at publish time)
+
+---
+
+## Verification
+
+```bash
+# 1. Verify registry hash first (see registry_hash.txt)
+
+# 2. Verify signature
+openssl dgst -sha256 -verify signing_key.pem \
+    -signature registry_signature.bin \
+    registry_hash.txt
+```
+
+## Signature Properties
+
+| Property | Value |
+|----------|-------|
+| Algorithm | Ed25519 |
+| Message | SHA-256 hash of combined registry |
+| Key | trust-registry-signing-2026 |
+
+## What This Proves
+
+A valid signature proves:
+
+1. **Authenticity**: Regulayer published this registry
+2. **Integrity**: Registry has not been modified
+3. **Non-repudiation**: Regulayer cannot deny publishing this version
+
+## What This Does NOT Prove
+
+The signature does NOT prove:
+
+- The correctness of the registry content
+- Compliance with any standard
+- Third-party endorsement
+
+The signature only proves Regulayer authored and published this specific registry version.

@@ -1,0 +1,101 @@
+{
+    "$schema": "https://regulayer.io/schemas/registry/trust-models.schema.json",
+    "registry_version": "1.0.0",
+    "last_updated": "2026-01-25T00:00:00Z",
+    "trust_models": [
+        {
+            "trust_model_id": "regulayer-core-v1",
+            "name": "Regulayer Core Trust Model",
+            "version": "1.0.0",
+            "description": "Hash-chained, append-only AI decision recording with cryptographic attestation and offline verifiability",
+            "invariants": [
+                {
+                    "id": "hash_chain_immutability",
+                    "description": "Once recorded, decision hashes cannot be modified",
+                    "reference": "regulayer-audit/invariants/HASH_CHAIN_INVARIANTS.md"
+                },
+                {
+                    "id": "hash_chain_ordering",
+                    "description": "Records are strictly ordered via previous_hash linking",
+                    "reference": "regulayer-audit/invariants/HASH_CHAIN_INVARIANTS.md"
+                },
+                {
+                    "id": "attestation_non_repudiation",
+                    "description": "Neither customer nor Regulayer can deny attestation",
+                    "reference": "regulayer-audit/invariants/NON_REPUDIATION_INVARIANTS.md"
+                },
+                {
+                    "id": "attestation_validity",
+                    "description": "Signatures are cryptographically valid and bound to keys",
+                    "reference": "regulayer-audit/invariants/ATTESTATION_INVARIANTS.md"
+                },
+                {
+                    "id": "governance_non_interference",
+                    "description": "Governance operations never affect cryptographic records",
+                    "reference": "regulayer-audit/invariants/GOVERNANCE_SEPARATION.md"
+                },
+                {
+                    "id": "offline_verifiability",
+                    "description": "Proofs can be verified without network access or Regulayer trust",
+                    "reference": "regulayer-audit/reproducibility/OFFLINE_VERIFICATION.md"
+                },
+                {
+                    "id": "deterministic_verification",
+                    "description": "Same input produces same verification result",
+                    "reference": "regulayer-audit/reproducibility/DETERMINISM_TESTS.md"
+                }
+            ],
+            "capabilities": [
+                "append_only_chain",
+                "cryptographic_attestation",
+                "offline_verification",
+                "proof_export",
+                "key_rotation",
+                "key_revocation"
+            ],
+            "schemas": [
+                "evidence-v1.0.0",
+                "provenance-v1.0.0",
+                "governance-v1.0.0"
+            ],
+            "introduced_at": "2026-01-01",
+            "status": "active",
+            "deprecation_date": null
+        },
+        {
+            "trust_model_id": "regulayer-legacy-v0",
+            "name": "Regulayer Legacy Trust Model",
+            "version": "0.9.0",
+            "description": "Pre-attestation SRI-based integrity (recorder-level non-repudiation only)",
+            "invariants": [
+                {
+                    "id": "hash_chain_immutability",
+                    "description": "Once recorded, decision hashes cannot be modified",
+                    "reference": "regulayer-audit/invariants/HASH_CHAIN_INVARIANTS.md"
+                },
+                {
+                    "id": "hash_chain_ordering",
+                    "description": "Records are strictly ordered via previous_hash linking",
+                    "reference": "regulayer-audit/invariants/HASH_CHAIN_INVARIANTS.md"
+                }
+            ],
+            "capabilities": [
+                "append_only_chain",
+                "sri_integrity",
+                "proof_export"
+            ],
+            "schemas": [
+                "evidence-v0.9.0"
+            ],
+            "introduced_at": "2025-01-01",
+            "status": "deprecated",
+            "deprecation_date": "2026-01-01",
+            "migration_path": "regulayer-core-v1",
+            "notes": "Legacy records remain valid. New recordings should use regulayer-core-v1."
+        }
+    ],
+    "metadata": {
+        "canonical_url": "https://trust.regulayer.io/v1/trust-models",
+        "integrity_note": "This registry is signed and versioned. See integrity/ for verification."
+    }
+}

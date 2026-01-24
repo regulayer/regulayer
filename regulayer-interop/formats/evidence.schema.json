@@ -1,0 +1,169 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://regulayer.io/schemas/evidence/v1.0.0/evidence.schema.json",
+    "title": "Regulayer Evidence Bundle",
+    "description": "Canonical schema for cryptographically verifiable decision evidence. This schema defines the public contract for proof bundles that can be consumed by external tools, courts, and auditors.",
+    "version": "1.0.0",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "bundle_id",
+        "decision",
+        "attestation",
+        "chain_position",
+        "verification"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "1.0.0",
+            "description": "Schema version for backward compatibility"
+        },
+        "bundle_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this proof bundle"
+        },
+        "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of bundle export"
+        },
+        "decision": {
+            "type": "object",
+            "description": "The decision record being proven",
+            "required": [
+                "decision_id",
+                "record_hash",
+                "recorded_at"
+            ],
+            "properties": {
+                "decision_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Unique decision identifier"
+                },
+                "record_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$",
+                    "description": "SHA-256 hash of the canonical decision record"
+                },
+                "recorded_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Timestamp when decision was recorded"
+                },
+                "system_id": {
+                    "type": "string",
+                    "description": "Identifier of the AI system that made the decision"
+                },
+                "model_version": {
+                    "type": "string",
+                    "description": "Version of the model used"
+                }
+            }
+        },
+        "attestation": {
+            "type": "object",
+            "description": "Cryptographic attestation of the decision",
+            "required": [
+                "signature",
+                "algorithm",
+                "key_id"
+            ],
+            "properties": {
+                "signature": {
+                    "type": "string",
+                    "description": "Base64-encoded digital signature"
+                },
+                "algorithm": {
+                    "type": "string",
+                    "enum": [
+                        "Ed25519",
+                        "ECDSA-P256",
+                        "RSA-PSS"
+                    ],
+                    "description": "Signature algorithm used"
+                },
+                "key_id": {
+                    "type": "string",
+                    "description": "Identifier of the signing key"
+                },
+                "certificate_chain": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Optional X.509 certificate chain"
+                }
+            }
+        },
+        "chain_position": {
+            "type": "object",
+            "description": "Position in the append-only chain",
+            "required": [
+                "sequence_number",
+                "previous_hash"
+            ],
+            "properties": {
+                "sequence_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Position in the chain (1-indexed)"
+                },
+                "previous_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$",
+                    "description": "Hash of the previous record in the chain"
+                },
+                "chain_id": {
+                    "type": "string",
+                    "description": "Identifier for the specific chain"
+                }
+            }
+        },
+        "verification": {
+            "type": "object",
+            "description": "Verification metadata",
+            "required": [
+                "verifiable_offline",
+                "verification_instructions"
+            ],
+            "properties": {
+                "verifiable_offline": {
+                    "type": "boolean",
+                    "const": true,
+                    "description": "Proof can be verified without network access"
+                },
+                "verification_instructions": {
+                    "type": "string",
+                    "description": "Human-readable verification instructions"
+                },
+                "verifier_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL to download the offline verifier"
+                }
+            }
+        },
+        "metadata": {
+            "type": "object",
+            "description": "Optional non-cryptographic metadata",
+            "properties": {
+                "org_id": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "project_name": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "additionalProperties": false
+}

@@ -1,0 +1,120 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://regulayer.io/schemas/provenance/v1.0.0/provenance.schema.json",
+    "title": "Regulayer Provenance Graph",
+    "description": "Schema for multi-system decision relationships. Provenance links are contextual metadata only and do not affect cryptographic verification.",
+    "version": "1.0.0",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "graph"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "1.0.0"
+        },
+        "graph": {
+            "type": "object",
+            "required": [
+                "nodes",
+                "edges"
+            ],
+            "properties": {
+                "root_decision_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Optional starting point for the graph"
+                },
+                "generated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProvenanceNode"
+                    }
+                },
+                "edges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProvenanceEdge"
+                    }
+                }
+            }
+        },
+        "verification_note": {
+            "type": "string",
+            "const": "Provenance links are contextual metadata. Each decision is independently verifiable.",
+            "description": "Trust statement for consumers"
+        }
+    },
+    "definitions": {
+        "ProvenanceNode": {
+            "type": "object",
+            "required": [
+                "decision_id",
+                "decision_hash"
+            ],
+            "properties": {
+                "decision_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "decision_hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[a-f0-9]{64}$"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                },
+                "system": {
+                    "type": "string"
+                },
+                "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "ProvenanceEdge": {
+            "type": "object",
+            "required": [
+                "source_id",
+                "target_id",
+                "relationship"
+            ],
+            "properties": {
+                "source_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "target_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "relationship": {
+                    "type": "string",
+                    "enum": [
+                        "input_to",
+                        "derived_from",
+                        "reviewed_by",
+                        "approved_by",
+                        "overrides",
+                        "aggregated_into",
+                        "depends_on",
+                        "validates"
+                    ]
+                },
+                "declared_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        }
+    }
+}

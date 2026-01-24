@@ -1,0 +1,56 @@
+# Trust Registry Integrity
+
+## Registry Hash
+
+This file contains the SHA-256 hash of the combined registry files.
+
+Computed from concatenation of:
+1. TRUST_MODELS.json
+2. AUDIT_VERSIONS.json
+3. SCHEMA_VERSIONS.json
+4. DEPRECATION_POLICY.json
+
+---
+
+Registry Version: 1.0.0
+Computed At: 2026-01-25T00:00:00Z
+
+Hash: sha256:pending_computation_at_publish_time
+
+---
+
+## How to Verify
+
+```bash
+# Concatenate registry files
+cat TRUST_MODELS.json AUDIT_VERSIONS.json SCHEMA_VERSIONS.json DEPRECATION_POLICY.json > combined.json
+
+# Compute hash
+sha256sum combined.json
+
+# Compare with this file
+# Hashes must match exactly
+```
+
+## Verification Script
+
+```python
+import hashlib
+import json
+from pathlib import Path
+
+files = [
+    "TRUST_MODELS.json",
+    "AUDIT_VERSIONS.json",
+    "SCHEMA_VERSIONS.json",
+    "DEPRECATION_POLICY.json"
+]
+
+combined = b""
+for f in files:
+    content = Path(f).read_bytes()
+    combined += content
+
+computed_hash = hashlib.sha256(combined).hexdigest()
+print(f"sha256:{computed_hash}")
+```

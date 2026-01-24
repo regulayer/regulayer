@@ -1,0 +1,56 @@
+{
+    "registry_version": "1.0.0",
+    "updated_at": "2026-01-24T12:00:00Z",
+    "integrity_notice": "Each SDK version includes a SHA-256 checksum. Verify before production use.",
+    "sdks": {
+        "python": {
+            "name": "regulayer",
+            "repository": "https://pypi.org/project/regulayer/",
+            "source": "https://github.com/regulayer/sdk-python",
+            "latest": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "released_at": "2026-01-24",
+                    "min_server_version": "1.0.0",
+                    "docs_url": "https://docs.regulayer.io/python/1.0.0",
+                    "changelog": "Initial stable release",
+                    "features": [
+                        "trace",
+                        "configure",
+                        "error_handling"
+                    ],
+                    "deprecated": false
+                }
+            }
+        },
+        "node": {
+            "name": "@regulayer/sdk",
+            "repository": "https://www.npmjs.com/package/@regulayer/sdk",
+            "source": "https://github.com/regulayer/sdk-node",
+            "latest": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "sha256": "d7a8fbb307d7809469ca3e4f29e0c58a2e3f7f3a5a2ee5c3e3d7889d0917f2b4",
+                    "released_at": "2026-01-24",
+                    "min_server_version": "1.0.0",
+                    "docs_url": "https://docs.regulayer.io/node/1.0.0",
+                    "changelog": "Initial stable release",
+                    "features": [
+                        "trace",
+                        "configure",
+                        "error_handling"
+                    ],
+                    "deprecated": false
+                }
+            }
+        }
+    },
+    "trust_guarantees": {
+        "version_pinning": true,
+        "supply_chain_integrity": true,
+        "deterministic_installs": true,
+        "auto_updates": false,
+        "silent_upgrades": false
+    }
+}

@@ -1,0 +1,96 @@
+{
+    "$schema": "https://regulayer.io/schemas/registry/deprecation-policy.schema.json",
+    "registry_version": "1.0.0",
+    "last_updated": "2026-01-25T00:00:00Z",
+    "policy": {
+        "name": "Regulayer Deprecation Policy",
+        "version": "1.0.0",
+        "effective_date": "2026-01-01"
+    },
+    "principles": [
+        {
+            "id": "proof_permanence",
+            "statement": "Existing proofs remain valid forever, regardless of deprecation status",
+            "rationale": "Deprecation affects new recordings, not existing evidence"
+        },
+        {
+            "id": "backward_compatibility",
+            "statement": "New versions are backward compatible with previous minor versions",
+            "rationale": "Upgrades should not break existing integrations"
+        },
+        {
+            "id": "notice_period",
+            "statement": "Minimum 12 months notice before deprecation takes effect",
+            "rationale": "Enterprises need time to plan migrations"
+        },
+        {
+            "id": "migration_support",
+            "statement": "Migration tools and documentation provided for all deprecations",
+            "rationale": "Customers should never be stranded"
+        }
+    ],
+    "lifecycle_stages": [
+        {
+            "stage": "current",
+            "description": "Actively supported. Recommended for new implementations.",
+            "recording_allowed": true,
+            "verification_supported": true,
+            "documentation_maintained": true
+        },
+        {
+            "stage": "deprecated",
+            "description": "Still functional but discouraged. Migration recommended.",
+            "recording_allowed": true,
+            "verification_supported": true,
+            "documentation_maintained": true,
+            "migration_path_required": true
+        },
+        {
+            "stage": "sunset",
+            "description": "No new recordings. Existing proofs remain verifiable.",
+            "recording_allowed": false,
+            "verification_supported": true,
+            "documentation_maintained": true
+        },
+        {
+            "stage": "archived",
+            "description": "No active support. Verification tools still available.",
+            "recording_allowed": false,
+            "verification_supported": true,
+            "documentation_maintained": false,
+            "notes": "Archived versions never become unverifiable"
+        }
+    ],
+    "timeline_requirements": {
+        "deprecation_notice": "12 months minimum before sunset",
+        "sunset_period": "6 months after deprecation before archive",
+        "archive_support": "Verification support indefinite"
+    },
+    "current_deprecations": [
+        {
+            "item_type": "trust_model",
+            "item_id": "regulayer-legacy-v0",
+            "deprecated_at": "2025-07-01",
+            "sunset_date": "2026-07-01",
+            "migration_path": "regulayer-core-v1",
+            "migration_guide": "docs/migration/legacy-to-core-v1.md"
+        },
+        {
+            "item_type": "schema",
+            "item_id": "evidence-v0.9.0",
+            "deprecated_at": "2025-07-01",
+            "sunset_date": "2026-07-01",
+            "migration_path": "evidence-v1.0.0",
+            "migration_guide": "docs/migration/evidence-schema-migration.md"
+        }
+    ],
+    "guarantees": {
+        "proof_validity": "Proofs created under any trust model remain cryptographically valid forever",
+        "verification_availability": "Offline verifiers for all versions remain available indefinitely",
+        "documentation_availability": "Archived documentation remains accessible",
+        "no_silent_changes": "All deprecations are announced and tracked in this registry"
+    },
+    "metadata": {
+        "canonical_url": "https://trust.regulayer.io/v1/deprecation-policy"
+    }
+}
