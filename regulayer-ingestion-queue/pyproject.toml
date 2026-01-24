@@ -1,0 +1,16 @@
+[project]
+name = "regulayer-ingestion-queue"
+version = "1.0.0"
+description = "Async ingestion queue for Regulayer"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "httpx>=0.26.0",
+    "redis>=5.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
