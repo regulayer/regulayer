@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 255, 255, 255;
+    --background-end-rgb: 249, 250, 251;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --foreground-rgb: 255, 255, 255;
+        --background-start-rgb: 15, 23, 42;
+        --background-end-rgb: 15, 23, 42;
+    }
+}
+
+body {
+    color: rgb(var(--foreground-rgb));
+    background: linear-gradient(to bottom,
+            rgb(var(--background-start-rgb)),
+            rgb(var(--background-end-rgb)));
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl;
+    }
+
+    .btn-secondary {
+        @apply bg-white text-primary-700 px-6 py-3 rounded-lg font-semibold border-2 border-primary-600 hover:bg-primary-50 transition-all duration-200;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-lg p-6 border border-gray-100;
+    }
+
+    .input {
+        @apply w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all;
+    }
+
+    .trust-banner {
+        @apply bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm;
+    }
+}

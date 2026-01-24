@@ -1,0 +1,39 @@
+{
+    "version": "1.0.0",
+    "updated_at": "2026-01-24T00:00:00Z",
+    "sdks": {
+        "python": {
+            "name": "regulayer",
+            "version": "1.0.0",
+            "status": "stable",
+            "install_command": "pip install regulayer",
+            "repository": "https://github.com/regulayer/regulayer-python",
+            "documentation": "/docs/python",
+            "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "compatible_recorder_version": ">=1.0.0",
+            "features": {
+                "attestation": true,
+                "async_ingestion": true,
+                "context_manager": true,
+                "auto_retry": false
+            }
+        },
+        "node": {
+            "name": "@regulayer/sdk",
+            "version": "1.0.0",
+            "status": "stable",
+            "install_command": "npm install @regulayer/sdk",
+            "repository": "https://github.com/regulayer/regulayer-node",
+            "documentation": "/docs/node",
+            "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "compatible_recorder_version": ">=1.0.0",
+            "features": {
+                "attestation": true,
+                "async_ingestion": true,
+                "typescript": true,
+                "auto_retry": false
+            }
+        }
+    },
+    "verification_note": "SDK checksums can be independently verified. SDKs do NOT perform cryptographic operations - all hashing happens server-side."
+}
