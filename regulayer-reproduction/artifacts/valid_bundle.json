@@ -1,0 +1,15 @@
+{
+  "proof_version": "1.0",
+  "record_timestamp": "2026-01-01T00:00:00Z",
+  "decision_id": "dec_valid_001",
+  "previous_record_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "canonical_payload_hash": "82a903f4dc379c5d6b06bb32214a8766a12c06043cda275d1d0a80de387784d4",
+  "canonical_payload": {
+    "data": "This is a trustless proof."
+  },
+  "record_hash": "f538fa81e775718d142d4bc1301c019c0e852ca475f1258776c2bc24ece4c245",
+  "signature": {
+    "key_id": "test_key_001",
+    "value": "Z9fASXEjrweJwPHj04ZkE4fFzDueybYzbfcXxsPsh9EFOw+0YOKcQqVxFvKlzLVW2Ue98q0z3qUbK5xNAmDtDA=="
+  }
+}

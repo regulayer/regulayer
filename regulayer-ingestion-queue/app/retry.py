@@ -64,6 +64,7 @@ def should_retry(
             reason=f"Network error: {type(exception).__name__}"
         )
     
+    
     # 5xx server error
     if status_code is not None and 500 <= status_code < 600:
         delay = calculate_backoff(retry_count)
@@ -73,6 +74,13 @@ def should_retry(
             reason=f"Server error: {status_code}"
         )
     
+    # 409 Conflict - Ordering Violation or Duplicate
+    if status_code == 409:
+        return RetryResult(
+            decision=RetryDecision.DEAD_LETTER,
+            reason="Ordering Violation or Duplicate (409)"
+        )
+
     # 4xx client error - do not retry
     if status_code is not None and 400 <= status_code < 500:
         return RetryResult(

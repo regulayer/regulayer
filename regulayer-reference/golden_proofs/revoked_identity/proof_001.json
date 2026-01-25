@@ -1,0 +1,38 @@
+{
+    "description": "Proof bundle signed with a revoked key. Signature verification should consider revocation.",
+    "expected_result": "CONDITIONAL",
+    "failure_reason": "Key was revoked after this signature was created. Validity depends on revocation timestamp.",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "test-revoked-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_prerevoke",
+            "record_hash": "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "recorded_at": "2026-01-10T10:00:00Z",
+            "system_id": "risk-assessment-v1"
+        },
+        "attestation": {
+            "signature": "cmV2b2tlZC1rZXktc2lnbmF0dXJl",
+            "algorithm": "Ed25519",
+            "key_id": "regulayer-prod-2025-REVOKED"
+        },
+        "chain_position": {
+            "sequence_number": 100,
+            "previous_hash": "sha256:fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+        },
+        "verification": {
+            "verifiable_offline": true
+        }
+    },
+    "key_status": {
+        "key_id": "regulayer-prod-2025-REVOKED",
+        "created_at": "2025-01-01T00:00:00Z",
+        "revoked_at": "2026-01-20T00:00:00Z",
+        "revocation_reason": "Scheduled rotation"
+    },
+    "notes": {
+        "legal": "Attestations made BEFORE revocation (2026-01-10) remain valid. The key was valid at signing time. Revocation prevents NEW signatures, not historical ones.",
+        "technical": "Verifiers should check: recorded_at < revoked_at. If true, signature is valid for that time period."
+    }
+}

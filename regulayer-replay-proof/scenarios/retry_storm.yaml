@@ -1,0 +1,16 @@
+scenario_id: retry_storm
+description: Burst of 50 identical requests to verify concurrent idempotency.
+strategy:
+  type: concurrent
+  attempts: 50
+  concurrency: 10
+payload:
+  decision_id: "fixed_uuid_3"
+  content: "identical"
+expected:
+  accepted: 1
+  rejected: 49
+  rejection_code: 409
+forbidden:
+  - chain_extension_gt_1
+  - race_condition_duplicates

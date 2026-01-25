@@ -1,0 +1,6 @@
+scenario_id: concurrent_projects
+description: Verify no cross-talk or reordering between 10 concurrent projects.
+project_count: 10
+events_per_project: 5
+submission_strategy: "stress_concurrent"
+expected_invariant: "all_projects_sequential"

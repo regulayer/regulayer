@@ -1,0 +1,35 @@
+{
+    "description": "Proof bundle with tampered hash. Hash verification should FAIL.",
+    "expected_result": "INVALID",
+    "failure_reason": "Hash mismatch - the record_hash does not match computed hash of decision content",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "test-tampered-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_tampered",
+            "record_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "recorded_at": "2026-01-15T14:30:00Z",
+            "system_id": "loan-approval-v2",
+            "model_version": "gpt-4-2024-01",
+            "outcome": "approved",
+            "tampered_field": "THIS FIELD WAS ADDED AFTER RECORDING"
+        },
+        "attestation": {
+            "signature": "dGVzdC1zaWduYXR1cmUtcGxhY2Vob2xkZXI=",
+            "algorithm": "Ed25519",
+            "key_id": "regulayer-prod-2026"
+        },
+        "chain_position": {
+            "sequence_number": 43,
+            "previous_hash": "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        },
+        "verification": {
+            "verifiable_offline": true
+        }
+    },
+    "notes": {
+        "legal": "This proof demonstrates detection of post-recording tampering. The hash mismatch proves the content was modified after the original attestation.",
+        "technical": "The record_hash was set to zeros but actual hash would be different due to tampered_field."
+    }
+}

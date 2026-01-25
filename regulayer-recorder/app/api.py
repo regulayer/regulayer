@@ -58,11 +58,12 @@ router = APIRouter(prefix="/v1")
         422: {"model": ErrorResponse, "description": "Semantic validation failed"}
     }
 )
-async def ingest_decision(
+    async def ingest_decision(
     body: Union[IngestRequest, DecisionEvent],
     x_regulayer_signature: Optional[str] = Header(None, alias="X-Regulayer-Signature"),
     x_regulayer_algorithm: Optional[str] = Header(None, alias="X-Regulayer-Algorithm"),
     x_regulayer_sdk_version: Optional[str] = Header(None, alias="X-Regulayer-SDK-Version"),
+    x_regulayer_project_id: Optional[str] = Header(None, alias="X-Regulayer-Project-Id"),
     session: AsyncSession = Depends(get_db_session)
 ) -> RecordConfirmation:
     """
@@ -79,6 +80,9 @@ async def ingest_decision(
     4. Record decision
     """
     try:
+        # Default to global if not provided (legacy/fallback)
+        project_id = x_regulayer_project_id or "global"
+
         # 1. Normalize input
         if isinstance(body, DecisionEvent):
             # Legacy SDK sending raw event
@@ -97,11 +101,16 @@ async def ingest_decision(
         
         # 3. Semantic validation
         validate_decision_event(event)
-        
+
         # 4. Record decision
-        confirmation = await record_decision(session, event, attestation=attestation)
+        confirmation = await record_decision(
+            session, 
+            event, 
+            attestation=attestation,
+            project_id=project_id
+        )
         
-        logger.info(f"Decision recorded: {confirmation.decision_id}, record_id={confirmation.record_id}")
+        logger.info(f"Decision recorded: {confirmation.decision_id}, record_id={confirmation.record_id}, project_id={project_id}")
         
         return confirmation
     
@@ -143,6 +152,18 @@ async def ingest_decision(
             }
         )
     
+    # 5. Handle Ordering Violations -> 409 Conflict (Client needs to resync/retry)
+    except OrderingViolationError as e:
+        logger.warning(f"Ordering violation: {e.message}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error": "OrderingViolationError",
+                "message": e.message,
+                "decision_id": e.decision_id
+            }
+        )
+
     except RecorderError as e:
         logger.error(f"Recorder error: {e.message}")
         raise HTTPException(

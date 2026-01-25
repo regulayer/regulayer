@@ -1,0 +1,10 @@
+scenario_id: billing_freeze
+description: Verify that verification and export work even if the organization is frozen for billing.
+snapshot_id: "snapshot_v1.json"
+context:
+  org_status: "frozen"
+  billing_status: "delinquent"
+  current_time: "2026-06-01T12:00:00Z"
+expected:
+  verify_result: "valid"
+invariant: "offline_sufficiency" # Billing status checks require central auth, but crypto verification is continuous

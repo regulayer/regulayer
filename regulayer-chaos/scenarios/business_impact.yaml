@@ -1,0 +1,26 @@
+scenario_id: billing_failure
+description: Simulate API key revocation/freezing during active use.
+inject:
+  component: billing-service
+  action: freeze_organization
+  org_id: target_org
+expected:
+  ingestion: rejected_429
+  existing_proofs: verifiable
+  export: allowed
+evidence:
+  - offline_verification_of_old_records
+  - export_access_log
+---
+scenario_id: full_outage
+description: Total system blackout to verify offline checking capabilities.
+inject:
+  component: all
+  action: stop_all_services
+expected:
+  ingestion: unavailable
+  verification: available_offline
+  system_trust: degraded_but_valid
+evidence:
+  - standalone_verifier_success
+  - public_status_page_reflection

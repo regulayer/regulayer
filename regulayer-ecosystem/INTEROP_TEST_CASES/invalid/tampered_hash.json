@@ -1,0 +1,31 @@
+{
+    "type": "invalid_hash",
+    "expected_result": "FAIL",
+    "expected_failure": "Hash mismatch",
+    "description": "Record hash does not match computed hash - indicates tampering",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "interop-invalid-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_tampered",
+            "record_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+            "recorded_at": "2026-01-15T14:30:00Z",
+            "system_id": "test-system",
+            "action": "approve",
+            "TAMPERED_FIELD": "This was added after hashing"
+        },
+        "attestation": {
+            "signature": "dGVzdC1zaWduYXR1cmU=",
+            "algorithm": "Ed25519",
+            "key_id": "test-key-001"
+        },
+        "chain_position": {
+            "sequence_number": 1,
+            "previous_hash": ""
+        },
+        "verification": {
+            "verifiable_offline": true
+        }
+    }
+}

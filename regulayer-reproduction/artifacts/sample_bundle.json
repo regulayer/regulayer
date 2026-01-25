@@ -1,0 +1,16 @@
+{
+    "proof_version": "1.0",
+    "record_id": "rec_sample_001",
+    "record_timestamp": "2026-06-01T12:00:00Z",
+    "decision_id": "dec_sample_123",
+    "previous_record_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "canonical_payload_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "record_hash": "Mock_Hash_For_Format_Illustration_Only",
+    "signature": {
+        "key_id": "key_sample",
+        "value": "Mock_Sig"
+    },
+    "canonical_payload": {
+        "data": "sample"
+    }
+}

@@ -41,6 +41,7 @@ class DecisionRecordDB(Base):
     canonical_payload = Column(JSON, nullable=False)
     canonical_payload_hash = Column(String(64), unique=True, nullable=False)
     chain_id = Column(String(50), nullable=False, default="global")
+    sequence_number = Column(Integer, nullable=True) # Per-project sequence
     server_timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
     # Phase 2.2: Attestation fields (WRITE-ONCE, enforced by application)
@@ -152,7 +153,9 @@ async def insert_record(
     signature_algorithm: Optional[str] = None,
     identity_id: Optional[UUID] = None,
     signed_at: Optional[datetime] = None,
-    attestation_payload: Optional[dict] = None
+    attestation_payload: Optional[dict] = None,
+    # Ordering
+    sequence_number: Optional[int] = None
 ) -> DecisionRecordDB:
     """
     Insert a new decision record (append-only).
@@ -175,7 +178,8 @@ async def insert_record(
         signature_algorithm=signature_algorithm,
         identity_id=identity_id,
         signed_at=signed_at,
-        attestation_payload=attestation_payload
+        attestation_payload=attestation_payload,
+        sequence_number=sequence_number
     )
     
     session.add(record)

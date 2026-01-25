@@ -1,0 +1,15 @@
+scenario_id: delayed_replay
+description: Replay an old event after 5 seconds to verify temporal safety.
+strategy:
+  type: sequential
+  attempts: 2
+  delay_ms: 5000
+payload:
+  decision_id: "fixed_uuid_2"
+  content: "identical"
+expected:
+  accepted: 1
+  rejected: 1
+  rejection_code: 409
+forbidden:
+  - double_spending_record

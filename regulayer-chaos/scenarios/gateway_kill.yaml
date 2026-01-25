@@ -1,0 +1,15 @@
+scenario_id: gateway_kill
+description: Kill ingestion gateway during active traffic to verify no partial writes occurs.
+inject:
+  component: ingestion-gateway
+  action: terminate
+  duration_seconds: 30
+expected:
+  ingestion: halted
+  recorder_state: unchanged
+  chain_integrity: intact
+  partial_records: forbidden
+evidence:
+  - recorder_chain_verification
+  - exported_proof_validation
+  - no_orphaned_metadata

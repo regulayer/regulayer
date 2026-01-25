@@ -1,0 +1,39 @@
+{
+    "description": "Proof bundle from degraded incident period. Reduced guarantees apply.",
+    "expected_result": "VALID_WITH_CAVEATS",
+    "incident_reference": "INC-2026-001",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "test-degraded-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_during_incident",
+            "record_hash": "sha256:aabbccdd1122334455667788aabbccdd1122334455667788aabbccdd11223344",
+            "recorded_at": "2026-01-18T03:45:00Z",
+            "system_id": "fraud-detection-v3"
+        },
+        "attestation": {
+            "signature": "ZGVncmFkZWQtc2lnbmF0dXJl",
+            "algorithm": "Ed25519",
+            "key_id": "regulayer-prod-2026"
+        },
+        "chain_position": {
+            "sequence_number": 500,
+            "previous_hash": "sha256:99887766554433221100ffeeddccbbaa99887766554433221100ffeeddccbbaa"
+        },
+        "verification": {
+            "verifiable_offline": true
+        },
+        "incident_overlay": {
+            "incident_id": "INC-2026-001",
+            "incident_start": "2026-01-18T02:00:00Z",
+            "incident_end": "2026-01-18T06:00:00Z",
+            "degradation_type": "timestamp_accuracy",
+            "note": "Timestamp may have drift of up to 30 seconds during this period"
+        }
+    },
+    "notes": {
+        "legal": "This proof is cryptographically valid but was recorded during a known incident that affected timestamp accuracy. The proof shows this explicitly.",
+        "technical": "Chain integrity and signature remain fully valid. Only timestamp precision is affected."
+    }
+}

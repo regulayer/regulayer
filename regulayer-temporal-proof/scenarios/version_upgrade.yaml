@@ -1,0 +1,11 @@
+scenario_id: version_upgrade
+description: Verify that a snapshot created by Recorder v1.0 verifies correctly in a v2.x environment.
+snapshot_id: "snapshot_v1.json"
+context:
+  recorder_version: "2.5.0"
+  verifier_version: "2.5.0"
+  current_time: "2026-06-01T12:00:00Z"
+expected:
+  result: "valid"
+  warning: "none"
+invariant: "result_stability"

@@ -1,0 +1,33 @@
+{
+    "description": "Valid proof bundle for testing. All verification checks should pass.",
+    "expected_result": "VALID",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "test-valid-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_abc123",
+            "recorded_at": "2026-01-15T14:30:00Z",
+            "system_id": "loan-approval-v2",
+            "model_version": "gpt-4-2024-01"
+        },
+        "attestation": {
+            "signature": "dGVzdC1zaWduYXR1cmUtcGxhY2Vob2xkZXI=",
+            "algorithm": "Ed25519",
+            "key_id": "regulayer-prod-2026"
+        },
+        "chain_position": {
+            "sequence_number": 42,
+            "previous_hash": "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            "chain_id": "org_123_main"
+        },
+        "verification": {
+            "verifiable_offline": true,
+            "verification_instructions": "Use regulayer-verify or any reference verifier"
+        }
+    },
+    "notes": {
+        "legal": "This proof demonstrates that the decision was recorded at the stated time.",
+        "technical": "Hash is computed over canonical JSON of decision without record_hash field."
+    }
+}

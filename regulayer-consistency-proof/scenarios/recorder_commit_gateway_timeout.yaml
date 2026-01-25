@@ -1,0 +1,19 @@
+scenario_id: recorder_commit_gateway_timeout
+description: Recorder successfully commits, but Gateway times out waiting for response (if sync).
+# Note: Regulayer is async 202, but this tests "sync-wait" mode if supported or just internal timeout.
+# For Async, this translates to: Gateway says 202, Recorder commits. Eventually visible.
+steps:
+  - action: start_all
+  - action: inject_latency
+    component: "recorder_response"
+    delay_ms: 30000 # Timeout gateway
+  - action: send_decision
+    decision_id: "cons_test_3"
+expected:
+  gateway_response: 202 # Or 504 if sync
+  recorder_state: "found" # Eventually
+  verifier_state: "found"
+  export_state: "found"
+# Consistency: If Rec says found, Verifier MUST say found.
+forbidden:
+  - "recorder_found_verifier_not_found"

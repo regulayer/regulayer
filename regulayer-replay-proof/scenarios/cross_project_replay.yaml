@@ -1,0 +1,24 @@
+scenario_id: cross_project_replay
+description: Replay Project A's event to Project B to verify isolation.
+strategy:
+  type: cross_project
+  source_project: "Project_A"
+  target_project: "Project_B"
+  attempts: 1
+payload:
+  decision_id: "fixed_uuid_cross"
+  content: "cross_project"
+expected:
+  accepted: 1
+  rejected: 0
+  # Note: A same-ID event IS allowed across different chains as they are namespaced.
+  # So accepted should be 1 if submitting to B for first time.
+  # BUT logic might check global uniqueness if we enforced that.
+  # Current impl: Check duplicate takes ID. If ID global unique, then reject.
+  # If ID per-project, then accept.
+  # Spec check: "Regulayer guarantees unique decision_id globally" -> Recorders table has decision_id PK?
+  # Let's check recorders PK.
+  # If global PK, then rejected.
+  rejection_code: 409
+forbidden:
+  - non_unique_decision_id

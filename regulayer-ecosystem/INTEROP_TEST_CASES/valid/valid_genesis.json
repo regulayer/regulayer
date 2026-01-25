@@ -1,0 +1,28 @@
+{
+    "type": "valid_bundle",
+    "expected_result": "PASS",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "interop-valid-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_interop_001",
+            "recorded_at": "2026-01-15T14:30:00Z",
+            "system_id": "test-system",
+            "action": "approve"
+        },
+        "attestation": {
+            "signature": "dGVzdC1zaWduYXR1cmUtcGxhY2Vob2xkZXI=",
+            "algorithm": "Ed25519",
+            "key_id": "test-key-001"
+        },
+        "chain_position": {
+            "sequence_number": 1,
+            "previous_hash": "",
+            "chain_id": "test-chain-001"
+        },
+        "verification": {
+            "verifiable_offline": true
+        }
+    }
+}

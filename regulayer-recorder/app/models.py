@@ -58,6 +58,9 @@ class DecisionEvent(BaseModel):
     # Runtime environment
     runtime_fingerprint: RuntimeFingerprint
     
+    # Ordering (Optional for legacy/unstrict, required for strict projects)
+    sequence_number: Optional[int] = None
+    
     @field_validator('input_hash', 'output_hash', 'prompt_hash')
     @classmethod
     def validate_hash(cls, v: Optional[str]) -> Optional[str]:
@@ -116,6 +119,7 @@ class DecisionRecord(BaseModel):
     canonical_payload: dict  # Deterministically serialized event
     canonical_payload_hash: str  # Optimization for fast verification
     chain_id: str = "global"  # Constant in Phase 1
+    sequence_number: Optional[int] = None  # Position in the chain (per-project)
     server_timestamp: datetime
     
     # Original event data (flattened for easy querying)

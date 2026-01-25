@@ -1,0 +1,13 @@
+scenario_id: queue_restart
+description: Verify FIFO persistence during queue restart.
+project_id: "ordering_proj_2"
+sequence_enforcement: false # FIFO mode (implicit ordering by arrival)
+send_sequence:
+  - decision_id: "Q1"
+  - decision_id: "Q2"
+  - decision_id: "Q3"
+inject:
+  op: restart_queue
+  at_event: "Q2"
+expected_chain_order: ["Q1", "Q2", "Q3"]
+submission_strategy: "sequential_burst"

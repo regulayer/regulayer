@@ -1,0 +1,9 @@
+scenario_id: offline_years_later
+description: Verify a snapshot years later with no internet access using standalone verifier.
+snapshot_id: "snapshot_v1.json" # Created 2025
+context:
+  network_status: "disconnected"
+  current_time: "2030-01-01T12:00:00Z"
+expected:
+  result: "valid"
+invariant: "offline_sufficiency"

@@ -1,0 +1,13 @@
+scenario_id: incident_after_creation
+description: Verify that an incident occurring AFTER the snapshot creation does not invalidate the snapshot.
+snapshot_id: "snapshot_v1.json"
+context:
+  incidents:
+    - id: "INC-123"
+      type: "network_compromise"
+      start_time: "2026-02-01T00:00:00Z" # After snapshot creation (assumed 2025)
+  current_time: "2026-06-01T12:00:00Z"
+expected:
+  result: "valid"
+  trust_status: "ok" # Incident happened later, so past history is safe (assuming clean cut)
+invariant: "incident_non_retroactivity"

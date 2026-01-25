@@ -1,0 +1,16 @@
+scenario_id: exact_duplicate
+description: Submit identical decision_id twice to verify idempotency.
+strategy:
+  type: sequential
+  attempts: 2
+  delay_ms: 0
+payload:
+  decision_id: "fixed_uuid_1"
+  content: "identical"
+expected:
+  accepted: 1
+  rejected: 1
+  rejection_code: 409
+forbidden:
+  - chain_extension_gt_1
+  - new_record_hash_mismatch

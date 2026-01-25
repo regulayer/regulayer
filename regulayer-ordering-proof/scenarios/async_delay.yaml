@@ -1,0 +1,18 @@
+scenario_id: async_delay
+description: Verify strict ordering when events arrive out of order due to network delay.
+project_id: "ordering_proj_1"
+sequence_enforcement: true
+send_sequence:
+  - decision_id: "A"
+    sequence_number: 1
+    send_delay_ms: 500  # Send LATE
+  - decision_id: "B"
+    sequence_number: 2
+    send_delay_ms: 0    # Send EARLY
+expected_chain_order: ["A", "B"]
+# Since we enforce strict ordering:
+# If B arrives first (seq 2), it should be REJECTED (409) or BUFFERED.
+# Regulayer Logic: REJECT 409 (OrderingViolation).
+# So "A" succeeds. Client retries B. Then B succeeds.
+# This proves A is always before B in chain history.
+submission_strategy: "concurrent_with_retry"

@@ -1,0 +1,11 @@
+scenario_id: mixed_project_load
+description: Verify project isolation under load.
+projects:
+  - id: "ordering_proj_5A"
+    sequence: ["A1", "A2", "A3"]
+  - id: "ordering_proj_5B"
+    sequence: ["B1", "B2", "B3"]
+submission_strategy: "interleaved_concurrent"
+expected_ordering:
+  ordering_proj_5A: ["A1", "A2", "A3"]
+  ordering_proj_5B: ["B1", "B2", "B3"]

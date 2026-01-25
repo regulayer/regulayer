@@ -52,3 +52,8 @@ class StorageError(RecorderError):
 class ServiceDegradedError(RecorderError):
     """Service is degraded and cannot accept new records."""
     pass
+
+
+class OrderingViolationError(RecorderError):
+    """Event received out of order or with a sequence gap."""
+    pass

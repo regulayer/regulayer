@@ -1,0 +1,17 @@
+scenario_id: queue_ack_recorder_fail
+description: Queue buffers message, but Recorder fails to process it repeatedly.
+steps:
+  - action: start_gateway
+  - action: start_queue
+  - action: fail_recorder_processing
+    error_type: "crash_on_process"
+  - action: send_decision
+    decision_id: "cons_test_2"
+expected:
+  gateway_response: 202
+  recorder_state: "not_found"
+  verifier_state: "not_found"
+  export_state: "not_found"
+# Queue might retry, but until success, it must not be visible as "Verified"
+forbidden:
+  - "verifier_found"

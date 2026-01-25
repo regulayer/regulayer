@@ -1,0 +1,15 @@
+scenario_id: mixed_attestation_replay
+description: Submit legacy event, then attested event with same ID.
+strategy:
+  type: mixed_mode
+  attempts: 2
+  order: [legacy, attested]
+payload:
+  decision_id: "fixed_uuid_mixed"
+expected:
+  accepted: 1
+  rejected: 1
+  rejection_code: 409
+forbidden:
+  - conversion_to_attested
+  - duplicate_id

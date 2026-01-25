@@ -1,0 +1,16 @@
+scenario_id: offline_vs_online
+description: Verify that downloaded proof bundle verifies offline exactly as online.
+steps:
+  - action: send_decision
+    decision_id: "cons_test_6"
+  - action: wait_for_commit
+  - action: verify_online
+  - action: export_proof
+  - action: verify_offline
+    tool: "regulayer-verifier" 
+    # Assumes offline tool available via CLI
+expected:
+  online_result: "valid"
+  offline_result: "valid"
+forbidden:
+  - "online_valid_offline_invalid"

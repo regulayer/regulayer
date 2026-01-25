@@ -1,0 +1,33 @@
+{
+    "description": "Legacy proof from pre-attestation period. Limited guarantees apply.",
+    "expected_result": "VALID_LEGACY",
+    "bundle": {
+        "schema_version": "0.9.0",
+        "bundle_id": "test-legacy-001",
+        "exported_at": "2026-01-25T00:00:00Z",
+        "decision": {
+            "decision_id": "dec_legacy_001",
+            "record_hash": "sha256:legacy12345678901234567890123456789012345678901234567890legacy12",
+            "recorded_at": "2025-06-15T10:00:00Z",
+            "system_id": "underwriting-v1"
+        },
+        "sri_integrity": {
+            "hash": "sha256-legacy12345678901234567890123456789012345678901234567890legacy12",
+            "note": "SRI-only integrity (pre-attestation)"
+        },
+        "chain_position": {
+            "sequence_number": 10,
+            "previous_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "verification": {
+            "verifiable_offline": true,
+            "legacy_mode": true
+        }
+    },
+    "trust_model": "regulayer-legacy-v0",
+    "notes": {
+        "legal": "Pre-attestation records have SRI integrity guarantees only. Non-repudiation is recorder-level (Regulayer's systems) rather than cryptographic (digital signature).",
+        "technical": "No cryptographic signature present. Hash chain integrity still applies. Migrate to regulayer-core-v1 for full attestation.",
+        "attestation_available": false
+    }
+}

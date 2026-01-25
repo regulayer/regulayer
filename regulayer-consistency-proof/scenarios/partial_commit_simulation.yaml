@@ -1,0 +1,15 @@
+scenario_id: partial_commit_simulation
+description: Simulate crash during DB write/commit.
+steps:
+  - action: inject_failure
+    type: "db_transaction_rollback"
+  - action: send_decision
+    decision_id: "cons_test_7"
+expected:
+  gateway_response: 500 # or 202 then infinite retry/error
+  recorder_state: "not_found"
+  verifier_state: "not_found"
+  export_state: "not_found"
+# KEY: Must NOT exist in Verifier if DB failed.
+forbidden:
+  - "phantom_read_uncommitted"

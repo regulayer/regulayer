@@ -1,0 +1,27 @@
+scenario_id: duplicate_replay
+description: Replay identical payload to verify idempotency and duplicate rejection.
+inject:
+  component: harness
+  action: send_duplicate_payload
+  count: 50
+expected:
+  ingestion: rejected_409
+  recorder_state: unchanged
+  chain_integrity: intact
+evidence:
+  - duplicate_error_logs
+  - chain_length_verification
+---
+scenario_id: out_of_order
+description: Send events with sequence gaps to verify strict ordering enforcement.
+inject:
+  component: harness
+  action: send_out_of_order
+  gap_size: 1
+expected:
+  ingestion: rejected_409
+  recorder_state: unchanged
+  chain_integrity: intact
+evidence:
+  - ordering_violation_logs
+  - chain_gap_check

@@ -1,0 +1,14 @@
+scenario_id: ui_vs_api
+description: Verify that UI read-only APIs match core Verification APIs.
+steps:
+  - action: send_decision
+    decision_id: "cons_test_5"
+  - action: wait_for_commit
+  - action: query_ui_api
+  - action: query_verifier_api
+expected:
+  ui_status: "committed"
+  verifier_status: "valid"
+forbidden:
+  - "ui_shows_phantom_record"
+  - "ui_hides_committed_record"

@@ -1,0 +1,16 @@
+scenario_id: recorder_restart
+description: Verify atomicity and chain continuity across recorder crash.
+project_id: "ordering_proj_3"
+sequence_enforcement: true
+send_sequence:
+  - decision_id: "R1"
+    sequence_number: 1
+  - decision_id: "R2"
+    sequence_number: 2
+  - decision_id: "R3"
+    sequence_number: 3
+inject:
+  op: crash_recorder
+  at_time_ms: 100 # During R2 processing
+expected_chain_order: ["R1", "R2", "R3"]
+submission_strategy: "sequential_with_retry"

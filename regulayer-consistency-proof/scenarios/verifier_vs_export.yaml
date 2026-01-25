@@ -1,0 +1,14 @@
+scenario_id: verifier_vs_export
+description: Verify that if Verifier returns VALID, Export must allow download.
+steps:
+  - action: send_decision
+    decision_id: "cons_test_4"
+  - action: wait_for_commit
+  - action: verify_decision
+  - action: export_proof
+expected:
+  verifier_result: "valid"
+  export_result: "success"
+forbidden:
+  - "verifier_valid_export_fail"
+  - "export_success_verifier_invalid"

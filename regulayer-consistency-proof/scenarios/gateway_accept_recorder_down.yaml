@@ -1,0 +1,17 @@
+scenario_id: gateway_accept_recorder_down
+description: Gateway accepts request (202) but recorder is strictly unavailable.
+steps:
+  - action: start_gateway
+  - action: stop_recorder
+  - action: send_decision
+    decision_id: "cons_test_1"
+    content: "valid"
+expected:
+  gateway_response: 202
+  recorder_state: "not_found"
+  verifier_state: "not_found"
+  export_state: "not_found"
+  ui_state: "not_found"
+forbidden:
+  - "partial_record_visible"
+  - "verifier_found"

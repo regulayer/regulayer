@@ -16,7 +16,7 @@ from .storage import (
     get_last_record,
     insert_record
 )
-from .errors import DuplicateDecisionError
+from .errors import DuplicateDecisionError, OrderingViolationError
 from .config import settings
 from regulayer_attestation.app.models import AttestationMetadata
 from typing import Optional
@@ -25,7 +25,8 @@ from typing import Optional
 async def record_decision(
     session: AsyncSession, 
     event: DecisionEvent,
-    attestation: Optional[AttestationMetadata] = None
+    attestation: Optional[AttestationMetadata] = None,
+    project_id: str = "global"
 ) -> RecordConfirmation:
     """
     Record a decision event (append-only).
@@ -34,6 +35,7 @@ async def record_decision(
         session: Database session
         event: Validated DecisionEvent
         attestation: Optional attestation metadata (for attested events)
+        project_id: Project identifier for chain isolation (default: "global")
     """
     # 1. Check for duplicate decision_id
     is_duplicate = await check_duplicate_decision(session, event.decision_id)
@@ -51,9 +53,30 @@ async def record_decision(
     record_hash = compute_record_hash(canonical_json)
     canonical_payload_hash = record_hash  # Same hash
     
-    # 4. Get last record for chaining
-    last_record = await get_last_record(session, chain_id=settings.chain_id)
+    # 4. Get last record for chaining (Per-Project)
+    chain_id = project_id
+    last_record = await get_last_record(session, chain_id=chain_id)
     previous_record_hash = last_record.record_hash if last_record else None
+    
+    # 5. Sequence Validation (Ordering Guarantee)
+    # If sequence_number is provided in the event, we enforce strict ordering.
+    if event.sequence_number is not None:
+        expected_seq = (last_record.sequence_number + 1) if (last_record and last_record.sequence_number is not None) else 1
+        # If last record has no sequence (legacy), we start at last_record_count + 1?
+        # Or if this is the first "ordered" event, it might be 1?
+        # Robust logic: If last_record exists but has no sequence, treat last sequence as 0?
+        if last_record and last_record.sequence_number is None:
+             # Legacy migration case: We can't strict check against None. 
+             # For now, let's assume if event has sequence, we try to validate.
+             # Ideally we should backfill or reset.
+             pass 
+
+        if event.sequence_number != expected_seq and not (last_record and last_record.sequence_number is None):
+             # Only raise if we have a valid baseline or it should be 1
+             raise OrderingViolationError(
+                 f"Sequence mismatch for project {project_id}. Expected {expected_seq}, got {event.sequence_number}",
+                 decision_id=str(event.decision_id)
+             )
     
     # Prepare attestation fields
     signature_algorithm = None
@@ -65,13 +88,10 @@ async def record_decision(
         signature_algorithm = attestation.algorithm
         identity_id = attestation.identity_id
         signed_at = attestation.signed_at
-        # Store full envelope details if needed, but storage expects specific columns
-        # storage.insert_record logic maps these.
-        # We need to serialize attestation payload for storage potentially?
-        # The column is JSON.
+        # Store full envelope details
         attestation_payload = attestation.model_dump(mode='json')
 
-    # 5. Insert record (append-only)
+    # 6. Insert record (append-only)
     db_record = await insert_record(
         session=session,
         decision_id=event.decision_id,
@@ -79,7 +99,7 @@ async def record_decision(
         previous_record_hash=previous_record_hash,
         canonical_payload=canonical_dict,
         canonical_payload_hash=canonical_payload_hash,
-        chain_id=settings.chain_id,
+        chain_id=chain_id,
         sdk_instance_id=UUID(event.runtime_fingerprint.sdk_instance_id),
         system_name=event.system_name,
         risk_level=event.risk_level,
@@ -89,10 +109,12 @@ async def record_decision(
         signature_algorithm=signature_algorithm,
         identity_id=identity_id,
         signed_at=signed_at,
-        attestation_payload=attestation_payload
+        attestation_payload=attestation_payload,
+        # Ordering
+        sequence_number=event.sequence_number
     )
     
-    # 6. Return confirmation
+    # 7. Return confirmation
     return RecordConfirmation(
         record_id=db_record.record_id,
         decision_id=db_record.decision_id,

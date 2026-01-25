@@ -1,0 +1,13 @@
+scenario_id: gateway_partition
+description: Verify buffering safety when gateway cannot reach queue/recorder.
+project_id: "ordering_proj_4"
+sequence_enforcement: false
+send_sequence:
+  - decision_id: "G1"
+  - decision_id: "G2"
+  - decision_id: "G3"
+inject:
+  op: partition_gateway
+  duration_ms: 2000 # During sends
+expected_chain_order: ["G1", "G2", "G3"]
+submission_strategy: "sequential_burst"

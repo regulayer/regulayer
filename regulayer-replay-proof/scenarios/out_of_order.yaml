@@ -1,0 +1,14 @@
+scenario_id: out_of_order
+description: Submit events N and N+2 (gap) to verify sequence enforcement.
+strategy:
+  type: sequence_gap
+  gap_size: 1
+payload:
+  decision_id: "random"
+  content: "sequence_test"
+expected:
+  accepted: 1
+  rejected: 1
+  rejection_code: 409
+forbidden:
+  - gap_in_chain

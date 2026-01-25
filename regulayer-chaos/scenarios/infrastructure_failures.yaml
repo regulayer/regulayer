@@ -1,0 +1,31 @@
+scenario_id: queue_partition
+description: Simulate network partition between Queue and Recorder.
+inject:
+  component: ingestion-queue
+  action: partition_network
+  target: recorder
+  duration_seconds: 45
+expected:
+  ingestion: queued
+  recorder_state: paused
+  chain_integrity: intact
+  ordering: strictly_preserved
+evidence:
+  - ordering_check_post_recovery
+  - no_skipped_sequences
+---
+scenario_id: recorder_crash
+description: Hard crash of recorder process during write operations.
+inject:
+  component: recorder
+  action: kill_process
+  signal: SIGKILL
+  timing: random
+expected:
+  ingestion: retrying
+  recorder_state: recovered
+  chain_integrity: intact
+  partial_records: forbidden
+evidence:
+  - atomicity_verification
+  - journal_recovery_check

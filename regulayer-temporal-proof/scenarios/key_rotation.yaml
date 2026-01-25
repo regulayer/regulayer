@@ -1,0 +1,13 @@
+scenario_id: key_rotation
+description: Verify a snapshot signed by a key that has since been rotated and archived.
+snapshot_id: "snapshot_v1.json"
+context:
+  current_active_key_id: "key_2026_v2"
+  trusted_key_history:
+    - id: "key_2025_v1"
+      status: "archived"
+      valid_until: "2026-01-01T00:00:00Z"
+  current_time: "2026-06-01T12:00:00Z"
+expected:
+  result: "valid"
+invariant: "key_independence"

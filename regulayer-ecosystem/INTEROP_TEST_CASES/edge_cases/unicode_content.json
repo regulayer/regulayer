@@ -1,0 +1,27 @@
+{
+    "type": "edge_case",
+    "expected_result": "PASS",
+    "description": "Record with unicode content requiring proper escaping",
+    "bundle": {
+        "schema_version": "1.0.0",
+        "bundle_id": "interop-edge-002",
+        "decision": {
+            "decision_id": "dec_unicode",
+            "recorded_at": "2026-01-15T14:30:00Z",
+            "content": "Unicode test: 日本語 中文 한국어 émojis 🎉",
+            "escape_test": "Quotes: \"test\" and backslash: \\ and newline"
+        },
+        "attestation": {
+            "signature": "dGVzdC1zaWduYXR1cmU=",
+            "algorithm": "Ed25519",
+            "key_id": "test-key-001"
+        },
+        "chain_position": {
+            "sequence_number": 1,
+            "previous_hash": ""
+        },
+        "verification": {
+            "verifiable_offline": true
+        }
+    }
+}
