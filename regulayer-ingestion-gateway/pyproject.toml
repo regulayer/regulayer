@@ -1,8 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "regulayer-ingestion-gateway"
 version = "1.0.0"
 description = "Public SaaS ingestion gateway for Regulayer"
-readme = "README.md"
+authors = [{name = "Regulayer Team", email = "dev@regulayer.ai"}]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
@@ -10,8 +14,9 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "uvicorn>=0.27.0",
     "httpx>=0.26.0",
+    "redis>=5.0.0"
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

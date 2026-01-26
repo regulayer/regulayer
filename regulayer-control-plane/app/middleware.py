@@ -10,7 +10,8 @@ from uuid import UUID
 from fastapi import Request, HTTPException, Depends
 from fastapi.security import APIKeyHeader
 
-from .models import TenantContext, ApiKeyScope
+from .models import TenantContext
+from .enums import ApiKeyScope
 from .storage import SessionLocal, get_db
 from .auth import AuthService
 

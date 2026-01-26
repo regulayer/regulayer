@@ -123,13 +123,9 @@ async def ingest_decision(request: Request):
 # Forbidden Endpoints
 # ============================================================
 
-@app.api_route("/{path:path}", methods=["GET", "PUT", "PATCH", "DELETE"])
-async def forbidden_methods(path: str):
-    """Block all methods except POST."""
-    raise HTTPException(
-        status_code=405,
-        detail="Method not allowed. Only POST to /v1/ingest/decision is permitted."
-    )
+from .proxy import router as proxy_router
+
+app.include_router(proxy_router)
 
 
 # ============================================================

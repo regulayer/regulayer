@@ -1,8 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "regulayer-control-plane"
 version = "1.0.0"
 description = "Multi-tenant SaaS control plane for Regulayer"
-readme = "README.md"
+authors = [{name = "Regulayer Team", email = "dev@regulayer.ai"}]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
@@ -10,8 +14,9 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "uvicorn>=0.27.0",
     "sqlalchemy>=2.0.0",
+    "email-validator>=2.0.0",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

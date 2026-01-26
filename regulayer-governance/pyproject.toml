@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regulayer-governance"
+version = "0.1.0"
+description = "Regulayer Governance Service"
+authors = [{name = "Regulayer Team", email = "dev@regulayer.ai"}]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.11.0",
+    "psycopg2-binary>=2.9.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.24.0",
+    "requests>=2.31.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

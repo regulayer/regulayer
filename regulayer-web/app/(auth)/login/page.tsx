@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Shield, ArrowRight, Mail, Lock } from 'lucide-react';
+import { login } from '@/lib/api';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -16,17 +17,13 @@ export default function LoginPage() {
         setError('');
 
         try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
+            const { data, error: apiError } = await login(email, password);
 
-            if (res.ok) {
+            if (data) {
+                localStorage.setItem('regulayer_token', data.token);
                 window.location.href = '/dashboard';
             } else {
-                const data = await res.json();
-                setError(data.message || 'Login failed');
+                setError(apiError || 'Login failed');
             }
         } catch {
             setError('Network error');

@@ -11,7 +11,8 @@ from functools import wraps
 
 from fastapi import HTTPException, Depends
 
-from .models import UserRole, TenantContext
+from .models import TenantContext
+from .enums import UserRole
 
 
 class Permission(str, Enum):

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "regulayer-attestation"
+version = "1.0.0"
+description = "Cryptographic Attestation Module for Regulayer"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

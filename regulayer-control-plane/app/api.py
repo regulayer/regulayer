@@ -11,10 +11,11 @@ from uuid import UUID, uuid4
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from .enums import ProjectEnvironment, UserRole
 
 from .models import (
     Organization, OrganizationCreate,
-    Project, ProjectCreate, ProjectEnvironment,
+    Project, ProjectCreate,
     ApiKey, ApiKeyCreate, ApiKeyWithSecret,
     User, UserCreate,
     TenantContext, KeyValidationResult
@@ -333,6 +334,77 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
     return user
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    orgName: str
+
+
+@app.post("/v1/auth/signup", response_model=LoginResponse, tags=["auth"])
+async def signup(
+    request: SignupRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new organization and owner user.
+    """
+    # 1. Check if user already exists
+    existing_user = db.query(UserDB).filter(UserDB.email == request.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+
+    try:
+        # 2. Create Organization
+        org = OrganizationDB(
+            id=uuid4(),
+            name=request.orgName,
+            status=OrgStatus.ACTIVE
+        )
+        db.add(org)
+        
+        # 3. Create User (Owner)
+        from .user_auth import hash_password
+        user = UserDB(
+            id=uuid4(),
+            organization_id=org.id,
+            email=request.email,
+            password_hash=hash_password(request.password),
+            role=UserRole.OWNER
+        )
+        db.add(user)
+        
+        # 4. Create separate default project? (Optional but good UX)
+        project = ProjectDB(
+            id=uuid4(),
+            organization_id=org.id,
+            name="Default Project",
+            environment=ProjectEnvironment.DEV
+        )
+        db.add(project)
+
+        db.commit()
+        db.refresh(user)
+        
+        # 5. Login
+        auth_service = UserAuthService(db)
+        # We can reuse login logic or just issue token since we have user
+        # But logging in properly ensures session creation
+        result = auth_service.login(request.email, request.password)
+        if not result:
+             raise HTTPException(status_code=500, detail="Signup successful but login failed")
+             
+        token, user_model = result
+        return LoginResponse(token=token, user=user_model)
+
+    except Exception as e:
+        db.rollback()
+        # Handle unique constraint for Org Name 
+        if "organizations_name_key" in str(e): # PSQL error string guess
+             raise HTTPException(status_code=400, detail="Organization name already taken")
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 
 # ============================================================

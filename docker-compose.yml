@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # DATA LAYER
+  # ============================================================================
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Init script will create the 3 databases
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================================================
+  # CORE TRUST LAYER (The Truth)
+  # ============================================================================
+  recorder:
+    build:
+      context: ./regulayer-recorder
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${RECORDER_DB_URL}
+      - SIGNING_KEY_PATH=${RECORDER_SIGNING_KEY_PATH}
+      - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
+    volumes:
+      - recorder_keys:/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================================
+  # PUBLIC INGESTION LAYER
+  # ============================================================================
+  gateway:
+    build:
+      context: ./regulayer-ingestion-gateway
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8080
+      - CONTROL_PLANE_URL=http://control-plane:8000
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      control-plane:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      retries: 5
+
+  # ============================================================================
+  # ASYNC PROCESSING LAYER
+  # ============================================================================
+  queue-worker:
+    build:
+      context: ./regulayer-ingestion-queue
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_URL=${REDIS_URL}
+      - RECORDER_URL=http://recorder:8000
+    depends_on:
+      redis:
+        condition: service_healthy
+      recorder:
+        condition: service_healthy
+
+  # ============================================================================
+  # CONTROL & GOVERNANCE LAYER
+  # ============================================================================
+  control-plane:
+    build:
+      context: ./regulayer-control-plane
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${CONTROL_DB_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      retries: 5
+
+  governance:
+    build:
+      context: ./regulayer-governance
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${GOVERNANCE_DB_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 10s
+      retries: 5
+
+  # ============================================================================
+  # FRONTEND
+  # ============================================================================
+  web:
+    build:
+      context: ./regulayer-web
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+    ports:
+      - "3000:3000"
+    depends_on:
+      control-plane:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  recorder_keys:

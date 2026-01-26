@@ -1,8 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "regulayer-ingestion-queue"
 version = "1.0.0"
 description = "Async ingestion queue for Regulayer"
-readme = "README.md"
+authors = [{name = "Regulayer Team", email = "dev@regulayer.ai"}]
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0.0",
@@ -11,6 +15,6 @@ dependencies = [
     "redis>=5.0.0",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

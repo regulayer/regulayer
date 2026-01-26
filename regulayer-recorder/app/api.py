@@ -58,7 +58,7 @@ router = APIRouter(prefix="/v1")
         422: {"model": ErrorResponse, "description": "Semantic validation failed"}
     }
 )
-    async def ingest_decision(
+async def ingest_decision(
     body: Union[IngestRequest, DecisionEvent],
     x_regulayer_signature: Optional[str] = Header(None, alias="X-Regulayer-Signature"),
     x_regulayer_algorithm: Optional[str] = Header(None, alias="X-Regulayer-Algorithm"),

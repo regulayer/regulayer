@@ -1,6 +1,5 @@
 FROM python:3.10-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -10,18 +9,21 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY pyproject.toml README.md ./
+COPY pyproject.toml .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -e .
+# Note: regulayer_attestation is now part of the source tree, so no external dep needed
+RUN pip install --no-cache-dir .
 
-# Copy application
+# Copy application and vendored lib
 COPY app/ ./app/
 COPY migrations/ ./migrations/
+COPY regulayer_attestation/ ./regulayer_attestation/
 
 # Create non-root user
 RUN useradd -m -u 1000 regulayer && \
-    chown -R regulayer:regulayer /app
+    mkdir -p /keys && \
+    chown -R regulayer:regulayer /app /keys
 
 USER regulayer
 
@@ -30,7 +32,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health').raise_for_status()"
+    CMD python -c "import urllib.request; import sys; r = urllib.request.urlopen('http://localhost:8000/health'); sys.exit(0) if r.getcode() == 200 else sys.exit(1)"
 
 # Run application
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

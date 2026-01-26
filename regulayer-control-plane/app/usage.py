@@ -60,7 +60,7 @@ class UsageMeteringService:
             event_type=event_type,
             count=count,
             recorded_at=datetime.now(timezone.utc),
-            metadata=metadata or {}
+            event_metadata=metadata or {}
         )
         
         self.db.add(event)

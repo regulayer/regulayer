@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-    Bell, Mail, Webhook, Toggle, Check,
+    Bell, Mail, Webhook, Check,
     AlertCircle, Key, Snowflake, Clock
 } from 'lucide-react';
 

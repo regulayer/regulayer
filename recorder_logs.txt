@@ -1,0 +1,87 @@
+﻿docker : INFO:     
+Started server 
+process [1]
+At line:1 char:1
++ docker logs 
+regulayer-recorder-1 
+2>&1 | Out-File 
+recorder_logs.txt -E 
+...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (INFO:        
+ Started server pr    
+ocess [1]:String)     
+[], RemoteExcept    
+ion
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+INFO:     Waiting for 
+application startup.
+No signing key found 
+at /keys/recorder_ed25
+519.key. Generating 
+NEW Identity.
+ERROR:    Traceback 
+(most recent call 
+last):
+  File "/usr/local/lib
+/python3.10/site-packa
+ges/starlette/routing.
+py", line 694, in 
+lifespan
+    async with self.li
+fespan_context(app) 
+as maybe_state:
+  File "/usr/local/lib
+/python3.10/contextlib
+.py", line 199, in 
+__aenter__
+    return await 
+anext(self.gen)
+  File "/usr/local/lib
+/python3.10/site-packa
+ges/fastapi/routing.py
+", line 153, in 
+merged_lifespan
+    async with 
+original_context(app) 
+as 
+maybe_original_state:
+  File "/usr/local/lib
+/python3.10/site-packa
+ges/starlette/routing.
+py", line 571, in 
+__aenter__
+    await 
+self._router.startup()
+  File "/usr/local/lib
+/python3.10/site-packa
+ges/starlette/routing.
+py", line 673, in 
+startup
+    handler()
+  File 
+"/app/app/main.py", 
+line 39, in 
+startup_event
+    key_manager.bootst
+rap()
+  File "/app/app/core/
+keys.py", line 38, in 
+bootstrap
+    with 
+open(self.key_path, 
+"wb") as f:
+PermissionError: 
+[Errno 13] Permission 
+denied: '/keys/recorde
+r_ed25519.key'
+
+ERROR:    Application 
+startup failed. 
+Exiting.

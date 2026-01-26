@@ -136,6 +136,23 @@ async def get_last_record(session: AsyncSession, chain_id: str = "global") -> Op
     return result.scalar_one_or_none()
 
 
+async def get_first_record(session: AsyncSession, chain_id: str = "global") -> Optional[DecisionRecordDB]:
+    """
+    Get the first record in the chain.
+    """
+    from sqlalchemy import select, asc
+    
+    stmt = (
+        select(DecisionRecordDB)
+        .where(DecisionRecordDB.chain_id == chain_id)
+        .order_by(asc(DecisionRecordDB.record_id))
+        .limit(1)
+    )
+    
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def insert_record(
     session: AsyncSession,
     decision_id: UUID,

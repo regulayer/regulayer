@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Shield, ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
+import { signup } from '@/lib/api';
 
 export default function SignupPage() {
     const [orgName, setOrgName] = useState('');
@@ -17,17 +18,21 @@ export default function SignupPage() {
         setError('');
 
         try {
-            const res = await fetch('/api/auth/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orgName, email, password }),
-            });
+            const { data, error: apiError } = await signup({ orgName, email, password });
 
-            if (res.ok) {
-                window.location.href = '/dashboard';
+            if (data) {
+                // Login automatically or redirect to login?
+                // The signup response includes token/user typically (LoginResponse)
+                // Let's store token if present
+                if (data.token) {
+                    localStorage.setItem('regulayer_token', data.token);
+                    window.location.href = '/dashboard';
+                } else {
+                    // Fallback if API changes
+                    window.location.href = '/login';
+                }
             } else {
-                const data = await res.json();
-                setError(data.message || 'Signup failed');
+                setError(apiError || 'Signup failed');
             }
         } catch {
             setError('Network error');

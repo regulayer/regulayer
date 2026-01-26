@@ -2,6 +2,7 @@
 Regulayer Governance - Configuration
 """
 
+import os
 from pydantic_settings import BaseSettings
 
 
@@ -18,6 +19,12 @@ class GovernanceSettings(BaseSettings):
     class Config:
         env_prefix = "GOVERNANCE_"
         env_file = ".env"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Map DATABASE_URL to governance_database_url if present
+        if os.getenv("DATABASE_URL"):
+             self.governance_database_url = os.getenv("DATABASE_URL")
 
 
 settings = GovernanceSettings()

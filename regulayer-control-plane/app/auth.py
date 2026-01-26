@@ -9,9 +9,10 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+from .enums import ApiKeyScope
 
 from .models import (
-    ApiKey, ApiKeyCreate, ApiKeyWithSecret, ApiKeyScope,
+    ApiKey, ApiKeyCreate, ApiKeyWithSecret,
     KeyValidationResult, TenantContext
 )
 from .storage import (

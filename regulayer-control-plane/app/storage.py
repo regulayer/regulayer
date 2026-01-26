@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
-from .models import OrgStatus, ProjectEnvironment, UserRole, ApiKeyScope
+from .enums import OrgStatus, ProjectEnvironment, UserRole, ApiKeyScope
 
 
 Base = declarative_base()
@@ -132,7 +132,7 @@ class UsageEventDB(Base):
     event_type = Column(String(50), nullable=False)
     count = Column(String(20), default="1")
     recorded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    metadata = Column(JSON, default={})
+    event_metadata = Column(JSON, default={})
     
     # Indexes
     __table_args__ = (
@@ -164,7 +164,9 @@ class UsageMeterDB(Base):
 # Database Setup
 # ============================================================
 
-DATABASE_URL = "sqlite:///./control_plane.db"  # Override in production
+from .config import settings
+
+DATABASE_URL = settings.database_url
 
 engine = create_engine(
     DATABASE_URL,

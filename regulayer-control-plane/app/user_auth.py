@@ -13,7 +13,8 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session as DBSession
 
-from .models import User, UserRole, TenantContext
+from .models import User, TenantContext
+from .enums import UserRole
 from .storage import UserDB, SessionDB, OrganizationDB
 
 
