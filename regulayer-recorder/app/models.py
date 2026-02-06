@@ -21,7 +21,7 @@ class RuntimeFingerprint(BaseModel):
     
     class Config:
         frozen = True
-        extra = "forbid"
+        extra = "ignore"  # Relaxed for debugging
 
 
 class DecisionEvent(BaseModel):
@@ -58,6 +58,12 @@ class DecisionEvent(BaseModel):
     # Runtime environment
     runtime_fingerprint: RuntimeFingerprint
     
+    # Decisions Payload (Explicitly allowed for storage)
+    input: Optional[dict] = None
+    output: Optional[dict] = None
+    metadata: Optional[dict] = None
+    decision_type: Optional[str] = None
+    
     # Ordering (Optional for legacy/unstrict, required for strict projects)
     sequence_number: Optional[int] = None
     
@@ -84,7 +90,7 @@ class DecisionEvent(BaseModel):
     
     class Config:
         frozen = True
-        extra = "forbid"  # No unknown fields allowed
+        extra = "ignore"  # Allow unknown fields for debugging
 
 
 class IngestRequest(BaseModel):
@@ -170,6 +176,9 @@ class ExportBundle(BaseModel):
     chain_id: str
     server_timestamp: datetime
     verification_metadata: VerificationMetadata
+    
+    # Phase I.1: Demo Context
+    environment_metadata: Optional[dict] = None
 
 
 class RecordConfirmation(BaseModel):

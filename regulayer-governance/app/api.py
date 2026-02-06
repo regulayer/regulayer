@@ -82,6 +82,91 @@ async def get_capabilities(role: str):
     }
 
 
+@router.get(
+    "/queue",
+    response_model=List[GovernanceMetadata],
+    summary="Get queue of decisions for review"
+)
+async def get_review_queue(
+    status: Optional[str] = "unreviewed",
+    limit: int = 50,
+    offset: int = 0,
+    session: AsyncSession = Depends(get_governance_session)
+) -> List[GovernanceMetadata]:
+    """
+    List decisions pending review.
+    
+    Default status: 'unreviewed'.
+    """
+    # Validate status enum if provided
+    filter_status = GovernanceReviewState.UNREVIEWED.value
+    if status:
+        try:
+            filter_status = GovernanceReviewState(status).value
+        except ValueError:
+            pass # Keep default or allow filtering by any string? Better to be strict.
+            # Actually, let's just use the string for now to match DB.
+            filter_status = status
+
+    stmt = (
+        select(GovernanceMetadataDB)
+        .where(GovernanceMetadataDB.review_state == filter_status)
+        .order_by(GovernanceMetadataDB.last_updated.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    result = await session.execute(stmt)
+    metadatas = result.scalars().all()
+    
+    # We need to fetch tags/annotations for these? 
+    # The response_model is GovernanceMetadata which includes them.
+    # This implies N+1 queries if we loop.
+    # For a list view, we might want a lighter model, but let's stick to full model for MVP simplicity.
+    # We will fetch full details for each.
+    
+    full_results = []
+    for m in metadatas:
+        # Fetch tags
+        stmt_tags = select(GovernanceTagDB).where(GovernanceTagDB.decision_id == m.decision_id)
+        res_tags = await session.execute(stmt_tags)
+        tags = res_tags.scalars().all()
+        
+        # Fetch annotations
+        stmt_notes = select(GovernanceAnnotationDB).where(
+            GovernanceAnnotationDB.decision_id == m.decision_id
+        ).order_by(GovernanceAnnotationDB.created_at.desc())
+        res_notes = await session.execute(stmt_notes)
+        notes = res_notes.scalars().all()
+        
+        full_results.append(GovernanceMetadata(
+            decision_id=m.decision_id,
+            review_state=GovernanceReviewState(m.review_state),
+            tags=[
+                GovernanceTag(
+                    id=t.id,
+                    decision_id=t.decision_id,
+                    name=t.name,
+                    category=t.category,
+                    source=t.source,
+                    created_at=t.created_at
+                ) for t in tags
+            ],
+            annotations=[
+                GovernanceAnnotation(
+                    id=a.id,
+                    decision_id=a.decision_id,
+                    author_role=a.author_role,
+                    note=a.note,
+                    created_at=a.created_at
+                ) for a in notes
+            ],
+            last_updated=m.last_updated
+        ))
+        
+    return full_results
+
+
 
 @router.get(
     "/{decision_id}",

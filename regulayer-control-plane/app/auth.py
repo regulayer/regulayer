@@ -46,8 +46,14 @@ class AuthService:
         if not project:
             raise ValueError(f"Project {project_id} not found")
         
-        # Generate key
-        full_key, key_prefix, key_hash = generate_api_key()
+        # Check if org is demo
+        org = self.db.query(OrganizationDB).filter(
+            OrganizationDB.id == project.organization_id
+        ).first()
+        is_demo = org.is_demo if org else False
+        
+        # Generate key with appropriate prefix
+        full_key, key_prefix, key_hash = generate_api_key(is_demo=is_demo)
         
         # Store in database
         db_key = ApiKeyDB(
@@ -55,7 +61,8 @@ class AuthService:
             name=request.name,
             key_prefix=key_prefix,
             key_hash=key_hash,
-            scopes=[s.value for s in request.scopes]
+            scopes=[s.value for s in request.scopes],
+            is_demo_key=is_demo
         )
         
         self.db.add(db_key)
@@ -68,6 +75,7 @@ class AuthService:
             name=db_key.name,
             key_prefix=db_key.key_prefix,
             scopes=[ApiKeyScope(s) for s in db_key.scopes],
+            is_demo_key=db_key.is_demo_key,
             created_at=db_key.created_at,
             key_secret=full_key
         )
@@ -119,6 +127,8 @@ class AuthService:
             valid=True,
             organization_id=org.id,
             project_id=project.id,
+            environment=project.environment.value,
+            is_demo_key=db_key.is_demo_key,
             scopes=[ApiKeyScope(s) for s in db_key.scopes]
         )
     
@@ -150,6 +160,7 @@ class AuthService:
                 name=k.name,
                 key_prefix=k.key_prefix,
                 scopes=[ApiKeyScope(s) for s in k.scopes],
+                is_demo_key=k.is_demo_key,
                 created_at=k.created_at,
                 revoked_at=k.revoked_at,
                 last_used_at=k.last_used_at

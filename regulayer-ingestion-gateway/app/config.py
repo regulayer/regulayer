@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Recorder (internal only)
     recorder_url: str = "http://localhost:8000"
     
+    # Governance (internal only)
+    governance_url: str = "http://localhost:8002"
+    
+    # Reports (internal only)
+    reports_url: str = "http://localhost:8003"
+    
     # Redis (for Queue)
     redis_url: str = "redis://localhost:6379"
     redis_stream_prefix: str = "ingestion"
@@ -34,15 +40,11 @@ class Settings(BaseSettings):
     forward_timeout_seconds: int = 30
     auth_timeout_seconds: int = 5
     
+    # Demo/Prod Mode
+    gateway_mode: str = "prod"  # "demo" or "prod"
+    
     class Config:
         env_prefix = "GATEWAY_"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if os.getenv("REDIS_URL"):
-            self.redis_url = os.getenv("REDIS_URL")
-        if os.getenv("CONTROL_PLANE_URL"):
-            self.control_plane_url = os.getenv("CONTROL_PLANE_URL")
 
 
 settings = Settings()

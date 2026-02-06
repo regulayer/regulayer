@@ -12,7 +12,7 @@ import secrets
 
 from sqlalchemy import (
     create_engine, Column, String, DateTime, ForeignKey,
-    Boolean, Enum as SQLEnum, JSON, Index
+    Boolean, Enum as SQLEnum, JSON, Index, Integer
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -30,6 +30,8 @@ class OrganizationDB(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
     status = Column(SQLEnum(OrgStatus), default=OrgStatus.ACTIVE, nullable=False)
+    is_demo = Column(Boolean, default=False, nullable=False)
+    environment = Column(String(20), default="prod", nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True)
     
@@ -66,9 +68,10 @@ class ApiKeyDB(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     project_id = Column(PGUUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    key_prefix = Column(String(8), nullable=False)  # First 8 chars for identification
+    key_prefix = Column(String(12), nullable=False)  # "rl_" + first 7 hex chars
     key_hash = Column(String(64), nullable=False)   # SHA-256 hash of full key
     scopes = Column(JSON, nullable=False)           # List of scope strings
+    is_demo_key = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     revoked_at = Column(DateTime(timezone=True), nullable=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
@@ -130,7 +133,7 @@ class UsageEventDB(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     project_id = Column(PGUUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
     event_type = Column(String(50), nullable=False)
-    count = Column(String(20), default="1")
+    count = Column(Integer, default=1)
     recorded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     event_metadata = Column(JSON, default={})
     
@@ -149,14 +152,42 @@ class UsageMeterDB(Base):
     project_id = Column(PGUUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
     period_start = Column(DateTime(timezone=True), nullable=False)
     period_end = Column(DateTime(timezone=True), nullable=False)
-    decisions_ingested = Column(String(20), default="0")
-    proofs_exported = Column(String(20), default="0")
-    reports_generated = Column(String(20), default="0")
-    api_calls = Column(String(20), default="0")
+    decisions_ingested = Column(Integer, default=0)
+    proofs_exported = Column(Integer, default=0)
+    reports_generated = Column(Integer, default=0)
+    api_calls = Column(Integer, default=0)
     
     # Indexes
     __table_args__ = (
         Index("ix_usage_meters_project_id", "project_id"),
+    )
+
+
+class AuditLogDB(Base):
+    """Audit log table."""
+    __tablename__ = "audit_logs"
+
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    actor_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True) # Null for system actions or API keys
+    actor_email = Column(String(255), nullable=True) # Snapshot for history
+    action = Column(String(100), nullable=False)
+    resource_type = Column(String(50), nullable=False)
+    resource_id = Column(PGUUID(as_uuid=True), nullable=True)
+    details = Column(JSON, default={})
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    organization = relationship("OrganizationDB")
+    actor = relationship("UserDB")
+
+    # Indexes
+    __table_args__ = (
+        Index("ix_audit_logs_organization_id", "organization_id"),
+        Index("ix_audit_logs_created_at", "created_at"),
+        Index("ix_audit_logs_actor_id", "actor_id"),
     )
 
 
@@ -194,19 +225,23 @@ def get_db():
 # API Key Utilities
 # ============================================================
 
-def generate_api_key() -> tuple[str, str, str]:
+def generate_api_key(is_demo: bool = False) -> tuple[str, str, str]:
     """
     Generate a new API key.
+    
+    Args:
+        is_demo: If True, generates a demo key (rl_demo_...), else live key (rl_live_...)
     
     Returns:
         (full_key, key_prefix, key_hash)
     """
     # Generate 32 random bytes, encode as hex (64 chars)
     key_bytes = secrets.token_bytes(32)
-    full_key = f"rl_{key_bytes.hex()}"
+    prefix = "rl_demo_" if is_demo else "rl_live_"
+    full_key = f"{prefix}{key_bytes.hex()}"
     
     # Extract prefix for identification
-    key_prefix = full_key[:10]  # "rl_" + first 7 hex chars
+    key_prefix = full_key[:12]  # "rl_demo_" or "rl_live_" + first chars
     
     # Hash for storage
     key_hash = hashlib.sha256(full_key.encode()).hexdigest()

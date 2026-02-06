@@ -45,27 +45,44 @@ async def forward_decision(
         "x-regulayer-attestation",
         "x-regulayer-timestamp",
         "x-regulayer-nonce",
+        "x-request-id",
+        "x-regulayer-project-id",
     }
     
     forward_headers = {}
+    request_id_from_header = None
+    
     for header_name, header_value in headers.items():
-        if header_name.lower() in PRESERVE_HEADERS:
+        lower_name = header_name.lower()
+        if lower_name in PRESERVE_HEADERS:
             forward_headers[header_name] = header_value
+            if lower_name == "x-request-id":
+                request_id_from_header = header_value
+            
+    # Inject Environment Header
+    if tenant_context.environment:
+        forward_headers["x-regulayer-environment"] = tenant_context.environment
 
     try:
         # Enqueue to Redis
         request_id = await enqueue_decision_to_redis(
             body,
             tenant_context,
-            forward_headers
+            forward_headers,
+            request_id=request_id_from_header
         )
         
         # Return 202 Accepted semantics
         return {
             "status": "accepted", 
+            "decision_id": request_id,
             "id": request_id, 
             "message": "Decision accepted for processing."
         }
             
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Exception type: {type(e)}")
+        print(f"DEBUG: Exception args: {e.args}")
         raise ForwardingError(f"Queue connection error: {e}")

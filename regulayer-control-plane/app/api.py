@@ -17,8 +17,8 @@ from .models import (
     Organization, OrganizationCreate,
     Project, ProjectCreate,
     ApiKey, ApiKeyCreate, ApiKeyWithSecret,
-    User, UserCreate,
-    TenantContext, KeyValidationResult
+    User, UserCreate, UserWithOrg, OrgStatusUpdate, # Added imports
+    TenantContext, KeyValidationResult, AuditLog
 )
 from .storage import (
     get_db, init_db,
@@ -26,6 +26,8 @@ from .storage import (
     OrgStatus
 )
 from .auth import AuthService
+from .audit import AuditService
+
 from .middleware import require_tenant_context, get_tenant_context
 from .config import settings
 
@@ -46,6 +48,10 @@ app.add_middleware(
 )
 
 
+def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
+    return AuditService(db)
+
+
 @app.on_event("startup")
 async def startup():
     init_db()
@@ -54,6 +60,30 @@ async def startup():
 # ============================================================
 # Organization Endpoints
 # ============================================================
+
+@app.patch("/v1/orgs/{org_id}/status", tags=["organizations"])
+async def patch_organization_status(
+    org_id: UUID,
+    request: OrgStatusUpdate,
+    db: Session = Depends(get_db)
+) -> dict:
+    """Update organization status (e.g. suspend/freeze)."""
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    # PHASE I.1: Demo orgs cannot be converted to production
+    if org.is_demo:
+        raise HTTPException(
+            status_code=409,
+            detail="Demo organizations cannot change status. Demo orgs are permanent."
+        )
+        
+    org.status = request.status
+    db.commit()
+    
+    return {"status": "updated", "id": str(org_id), "new_status": org.status}
+
 
 @app.post("/v1/orgs", response_model=Organization, tags=["organizations"])
 async def create_organization(
@@ -126,7 +156,8 @@ async def list_organizations(
 async def create_project(
     org_id: UUID,
     request: ProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service)
 ) -> Project:
     """Create a new project within an organization."""
     # Verify org exists
@@ -144,6 +175,15 @@ async def create_project(
     db.add(project)
     db.commit()
     db.refresh(project)
+    
+    # Audit log
+    audit.log(
+        organization_id=org_id,
+        action="project.create",
+        resource_type="project",
+        resource_id=project.id,
+        details={"name": request.name, "environment": request.environment}
+    )
     
     return Project(
         id=project.id,
@@ -285,7 +325,7 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     token: str
-    user: User
+    user: UserWithOrg
 
 
 class RegisterRequest(BaseModel):
@@ -307,7 +347,22 @@ async def login(
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token, user = result
-    return LoginResponse(token=token, user=user)
+    
+    # Fetch Org for UserWithOrg
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == user.organization_id).first()
+    
+    user_with_org = UserWithOrg(
+        **user.dict(),
+        org=Organization(
+            id=org.id,
+            name=org.name,
+            status=org.status,
+            created_at=org.created_at,
+            updated_at=org.updated_at
+        )
+    )
+    
+    return LoginResponse(token=token, user=user_with_org)
 
 
 @app.post("/v1/auth/logout", tags=["auth"])
@@ -321,11 +376,11 @@ async def logout(
     return {"status": "logged_out"}
 
 
-@app.get("/v1/auth/me", response_model=User, tags=["auth"])
+@app.get("/v1/auth/me", response_model=UserWithOrg, tags=["auth"])
 async def get_current_user(
     token: str,
     db: Session = Depends(get_db)
-) -> User:
+) -> UserWithOrg:
     """Get current user from session token."""
     auth_service = UserAuthService(db)
     user = auth_service.get_user_from_token(token)
@@ -333,7 +388,22 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
-    return user
+    # Fetch Org
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == user.organization_id).first()
+    if not org:
+        # Should not happen if foreign keys enforce it
+         raise HTTPException(status_code=500, detail="User organization not found")
+
+    return UserWithOrg(
+        **user.dict(),
+        org=Organization(
+            id=org.id,
+            name=org.name,
+            status=org.status,
+            created_at=org.created_at,
+            updated_at=org.updated_at
+        )
+    )
 
 
 class SignupRequest(BaseModel):
@@ -356,11 +426,13 @@ async def signup(
         raise HTTPException(status_code=400, detail="User with this email already exists")
 
     try:
-        # 2. Create Organization
+        # 2. Create Organization (REAL, never demo via this endpoint)
         org = OrganizationDB(
             id=uuid4(),
             name=request.orgName,
-            status=OrgStatus.ACTIVE
+            status=OrgStatus.ACTIVE,
+            is_demo=False,
+            environment="prod"
         )
         db.add(org)
         
@@ -396,7 +468,21 @@ async def signup(
              raise HTTPException(status_code=500, detail="Signup successful but login failed")
              
         token, user_model = result
-        return LoginResponse(token=token, user=user_model)
+        
+        # Populate UserWithOrg
+        # We have the org object already in scope ("org") but need to map it to Pydantic
+        user_with_org = UserWithOrg(
+            **user_model.dict(),
+            org=Organization(
+                id=org.id,
+                name=org.name,
+                status=org.status,
+                is_demo=org.is_demo,
+                environment=org.environment,
+                created_at=org.created_at
+            )
+        )
+        return LoginResponse(token=token, user=user_with_org)
 
     except Exception as e:
         db.rollback()
@@ -405,6 +491,88 @@ async def signup(
              raise HTTPException(status_code=400, detail="Organization name already taken")
         raise HTTPException(status_code=400, detail=str(e))
 
+
+# ============================================================
+# Demo Signup (Explicit Demo Org Creation)
+# ============================================================
+
+@app.post("/demo/signup", response_model=LoginResponse, tags=["demo"])
+async def demo_signup(
+    request: SignupRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Register a DEMO organization.
+    
+    Demo orgs:
+    - Cannot be upgraded to paid
+    - Cannot rotate recorder keys
+    - Always show demo banner
+    - Generate demo API keys (rl_demo_...)
+    """
+    # 1. Check if user already exists
+    existing_user = db.query(UserDB).filter(UserDB.email == request.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+
+    try:
+        # 2. Create DEMO Organization
+        org = OrganizationDB(
+            id=uuid4(),
+            name=f"[DEMO] {request.orgName}",
+            status=OrgStatus.ACTIVE,
+            is_demo=True,  # DEMO!
+            environment="demo"
+        )
+        db.add(org)
+        
+        # 3. Create User (Owner)
+        from .user_auth import hash_password
+        user = UserDB(
+            id=uuid4(),
+            organization_id=org.id,
+            email=request.email,
+            password_hash=hash_password(request.password),
+            role=UserRole.OWNER
+        )
+        db.add(user)
+        
+        # 4. Create default demo project
+        project = ProjectDB(
+            id=uuid4(),
+            organization_id=org.id,
+            name="Demo Project",
+            environment=ProjectEnvironment.DEV
+        )
+        db.add(project)
+
+        db.commit()
+        db.refresh(user)
+        
+        # 5. Login
+        auth_service = UserAuthService(db)
+        result = auth_service.login(request.email, request.password)
+        if not result:
+             raise HTTPException(status_code=500, detail="Signup successful but login failed")
+             
+        token, user_model = result
+        
+        user_with_org = UserWithOrg(
+            **user_model.dict(),
+            org=Organization(
+                id=org.id,
+                name=org.name,
+                status=org.status,
+                is_demo=org.is_demo,
+                environment=org.environment,
+                created_at=org.created_at
+            )
+        )
+        return LoginResponse(token=token, user=user_with_org)
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============================================================
@@ -573,10 +741,99 @@ async def get_org_usage(
 
 
 # ============================================================
-# Health Check
+# Billing Endpoints (Stub)
 # ============================================================
+
+class Plan(BaseModel):
+    id: str
+    name: str
+    price: str
+    features: List[str]
+    limit_decisions: int
+
+class BillingStatus(BaseModel):
+    plan: Plan
+    status: str
+    current_period_end: date
+    invoices: List[dict]
+
+class SubscriptionUpdate(BaseModel):
+    plan_id: str
+
+STUB_PLANS = {
+    "free": Plan(id="free", name="Free Tier", price="$0", features=["10k Decisions/mo", "Community Support"], limit_decisions=10000),
+    "pro": Plan(id="pro", name="Pro", price="$99/mo", features=["100k Decisions/mo", "Email Support", "Advanced Reports"], limit_decisions=100000),
+    "enterprise": Plan(id="enterprise", name="Enterprise", price="Custom", features=["Unlimited", "SLA", "Audit Logs"], limit_decisions=1000000),
+}
+
+@app.get("/v1/plans", tags=["billing"])
+async def list_plans() -> List[Plan]:
+    """List available subscription plans."""
+    return list(STUB_PLANS.values())
+
+@app.get("/v1/orgs/{org_id}/billing", response_model=BillingStatus, tags=["billing"])
+async def get_billing_status(
+    org_id: UUID,
+    db: Session = Depends(get_db)
+) -> BillingStatus:
+    """Get billing status for organization."""
+    # In a real app, query Stripe/Billing DB
+    # Here we mock based on Org Status or simple logic
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Org not found")
+        
+    # Default to Free if not specified (we don't have plan column yet, assume Free)
+    # If org is suspended, status is 'frozen'
+    status = "active"
+    if org.status == OrgStatus.SUSPENDED:
+        status = "frozen"
+        
+    return BillingStatus(
+        plan=STUB_PLANS["free"],
+        status=status,
+        current_period_end=date.today().replace(day=28),
+        invoices=[
+            {"id": "inv_stub_001", "date": "2025-01-01", "amount": "$0.00", "status": "paid"}
+        ]
+    )
+
+@app.post("/v1/orgs/{org_id}/billing/subscription", tags=["billing"])
+async def update_subscription(
+    org_id: UUID,
+    update: SubscriptionUpdate,
+    db: Session = Depends(get_db)
+) -> BillingStatus:
+    """Upgrade/Downgrade plan (Stub)."""
+    if update.plan_id not in STUB_PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan ID")
+        
+    # In real app: Call Stripe to update subscription
+    # Here: Just return success with new plan mocked
+    return BillingStatus(
+        plan=STUB_PLANS[update.plan_id],
+        status="active",
+        current_period_end=date.today().replace(day=28),
+        invoices=[]
+    )
+
 
 @app.get("/health", tags=["system"])
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "control-plane"}
+
+
+# ============================================================
+# Audit Endpoints
+# ============================================================
+
+@app.get("/v1/orgs/{org_id}/audit-logs", response_model=List[AuditLog], tags=["audit"])
+async def get_audit_logs(
+    org_id: UUID,
+    limit: int = 50,
+    offset: int = 0,
+    audit: AuditService = Depends(get_audit_service)
+) -> List[AuditLog]:
+    """Get audit logs for an organization."""
+    return audit.get_logs(org_id, limit, offset)

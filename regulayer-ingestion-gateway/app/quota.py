@@ -16,111 +16,94 @@ from .errors import QuotaExceededError
 
 @dataclass
 class UsageCounter:
-    """Daily usage counter for a project."""
-    date: date
-    count: int = 0
-    limit: int = field(default_factory=lambda: settings.default_daily_quota)
-    
-    @property
-    def remaining(self) -> int:
-        return max(0, self.limit - self.count)
-    
-    @property
-    def exceeded(self) -> bool:
-        return self.count >= self.limit
+    """Daily usage snapshot."""
+    date: str
+    count: int
+    limit: int
+    remaining: int
+    exceeded: bool
 
 
 class QuotaEnforcer:
     """
-    Enforce per-project usage quotas.
-    
-    Tracks daily decision counts and blocks when exceeded.
+    Enforce per-project usage quotas via Redis.
     """
     
     def __init__(self, daily_limit: int = None):
         self.daily_limit = daily_limit or settings.default_daily_quota
-        self._counters: Dict[str, UsageCounter] = {}
-        self._lock = Lock()
+        import redis.asyncio as redis
+        self.redis = redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
     
-    def _get_counter(self, project_id: str) -> UsageCounter:
-        """Get or create counter for project."""
-        today = date.today()
-        key = f"{project_id}:{today.isoformat()}"
-        
-        with self._lock:
-            if key not in self._counters:
-                self._counters[key] = UsageCounter(
-                    date=today,
-                    limit=self.daily_limit
-                )
-            return self._counters[key]
+    def _get_key(self, project_id: str) -> str:
+        """Get Redis key for project daily quota."""
+        today = date.today().isoformat()
+        return f"{settings.redis_stream_prefix}:quota:{project_id}:{today}"
     
-    def check(self, project_id: str) -> None:
+    async def check(self, project_id: str) -> None:
         """
         Check if quota allows request.
         
         Raises QuotaExceededError if limit exceeded.
         """
-        counter = self._get_counter(project_id)
+        key = self._get_key(project_id)
+        current = await self.redis.get(key)
         
-        if counter.exceeded:
+        if current and int(current) >= self.daily_limit:
             raise QuotaExceededError(
-                f"Daily quota exceeded. Limit: {counter.limit}. "
-                f"Resets at midnight UTC."
+                f"Daily quota exceeded. Limit: {self.daily_limit}. Resets at midnight UTC."
             )
     
-    def consume(self, project_id: str) -> int:
+    async def consume(self, project_id: str) -> int:
         """
         Consume one from quota. Returns remaining.
         
         Raises QuotaExceededError if limit exceeded.
         """
-        counter = self._get_counter(project_id)
+        key = self._get_key(project_id)
         
-        if counter.exceeded:
-            raise QuotaExceededError(
-                f"Daily quota exceeded. Limit: {counter.limit}."
+        # Check first to avoid incrementing if already full
+        # Race condition possible but acceptable for soft quotas
+        # Strict enforcement would use Lua script
+        current = await self.redis.get(key)
+        if current and int(current) >= self.daily_limit:
+             raise QuotaExceededError(
+                f"Daily quota exceeded. Limit: {self.daily_limit}."
             )
+            
+        # Increment
+        new_val = await self.redis.incr(key)
         
-        with self._lock:
-            counter.count += 1
-        
-        return counter.remaining
+        # Set expiry on first write (24h + 1h buffer)
+        if new_val == 1:
+            await self.redis.expire(key, 90000)
+            
+        # Double check after increment (strictness)
+        if new_val > self.daily_limit:
+             # Looked okay before, but now exceeded.
+             # We let this one slide? Or block?
+             # Standard pattern: Allow if it WAS allowable, or strictly block?
+             # Let's strictly block and return error, client receives 429.
+             # Note: This "burns" a quota unit for a failed request, which is fine for DoS protection.
+             raise QuotaExceededError(
+                f"Daily quota exceeded. Limit: {self.daily_limit}."
+            )
+            
+        return max(0, self.daily_limit - new_val)
     
-    def get_usage(self, project_id: str) -> dict:
+    async def get_usage(self, project_id: str) -> dict:
         """Get current usage for a project."""
-        counter = self._get_counter(project_id)
+        key = self._get_key(project_id)
+        val = await self.redis.get(key)
+        count = int(val) if val else 0
         
         return {
             "project_id": project_id,
-            "date": counter.date.isoformat(),
-            "used": counter.count,
-            "limit": counter.limit,
-            "remaining": counter.remaining,
-            "exceeded": counter.exceeded
+            "date": date.today().isoformat(),
+            "used": count,
+            "limit": self.daily_limit,
+            "remaining": max(0, self.daily_limit - count),
+            "exceeded": count >= self.daily_limit
         }
-    
-    def cleanup_old_counters(self) -> int:
-        """Remove counters from previous days."""
-        today = date.today()
-        removed = 0
-        
-        with self._lock:
-            keys_to_remove = [
-                key for key, counter in self._counters.items()
-                if counter.date < today
-            ]
-            
-            for key in keys_to_remove:
-                del self._counters[key]
-                removed += 1
-        
-        return removed
-    
-    def set_limit(self, project_id: str, limit: int) -> None:
-        """Set custom limit for a project."""
-        counter = self._get_counter(project_id)
-        counter.limit = limit
 
 
 # ============================================================
@@ -140,11 +123,11 @@ def get_quota_enforcer() -> QuotaEnforcer:
     return _quota_enforcer
 
 
-def check_quota(project_id: str) -> None:
+async def check_quota(project_id: str) -> None:
     """Check quota for a project."""
-    get_quota_enforcer().check(project_id)
+    await get_quota_enforcer().check(project_id)
 
 
-def consume_quota(project_id: str) -> int:
+async def consume_quota(project_id: str) -> int:
     """Consume quota and return remaining."""
-    return get_quota_enforcer().consume(project_id)
+    return await get_quota_enforcer().consume(project_id)

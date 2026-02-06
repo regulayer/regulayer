@@ -26,7 +26,8 @@ async def record_decision(
     session: AsyncSession, 
     event: DecisionEvent,
     attestation: Optional[AttestationMetadata] = None,
-    project_id: str = "global"
+    project_id: str = "global",
+    environment: str = "production"
 ) -> RecordConfirmation:
     """
     Record a decision event (append-only).
@@ -36,6 +37,7 @@ async def record_decision(
         event: Validated DecisionEvent
         attestation: Optional attestation metadata (for attested events)
         project_id: Project identifier for chain isolation (default: "global")
+        environment: Origin environment (e.g. "production", "staging")
     """
     # 1. Check for duplicate decision_id
     is_duplicate = await check_duplicate_decision(session, event.decision_id)
@@ -90,6 +92,15 @@ async def record_decision(
         signed_at = attestation.signed_at
         # Store full envelope details
         attestation_payload = attestation.model_dump(mode='json')
+        
+    # Inject Watermark if not production
+    if environment and environment.lower() != "production":
+        if attestation_payload is None:
+            attestation_payload = {}
+        attestation_payload["_watermark"] = {
+            "environment": environment,
+            "notice": "NON-PRODUCTION PROOF"
+        }
 
     # 6. Insert record (append-only)
     db_record = await insert_record(

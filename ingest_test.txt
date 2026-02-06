@@ -1,0 +1,7 @@
+﻿Sending decision: 5abf8281-a554-4426-b2fc-4764f97cc086
+  Start: 2026-02-03T22:42:54Z
+  End: 2026-02-03T22:43:54Z
+
+Status: 201
+Response: {"record_id":2,"decision_id":"5abf8281-a554-4426-b2fc-4764f97cc086","record_hash":"c16a4504753fb0d301ccc1c5106e405bad33e0cb007d3288ed1f7a3cfd6677d7","server_timestamp":"2026-02-03T22:47:55.022950Z"}
+Request failed: 'charmap' codec can't encode character '\u2705' in position 2: character maps to <undefined>

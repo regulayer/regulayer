@@ -13,7 +13,7 @@ Contract:
 """
 
 from fastapi import APIRouter, Header, HTTPException, Depends, status
-from typing import Optional, Union
+from typing import Optional, Union, List
 from uuid import UUID
 from datetime import datetime, timezone
 import base64
@@ -38,13 +38,16 @@ from .errors import (
     SchemaValidationError,
     DuplicateDecisionError,
     SemanticValidationError,
-    TimestampAnomalyError
+    TimestampAnomalyError,
+    SignatureVerificationError,
+    OrderingViolationError
 )
+from .config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/v1")
+router = APIRouter()
 
 
 @router.post(
@@ -59,11 +62,12 @@ router = APIRouter(prefix="/v1")
     }
 )
 async def ingest_decision(
-    body: Union[IngestRequest, DecisionEvent],
+    body: DecisionEvent,
     x_regulayer_signature: Optional[str] = Header(None, alias="X-Regulayer-Signature"),
     x_regulayer_algorithm: Optional[str] = Header(None, alias="X-Regulayer-Algorithm"),
     x_regulayer_sdk_version: Optional[str] = Header(None, alias="X-Regulayer-SDK-Version"),
     x_regulayer_project_id: Optional[str] = Header(None, alias="X-Regulayer-Project-Id"),
+    x_regulayer_environment: Optional[str] = Header("prod", alias="X-Regulayer-Environment"),
     session: AsyncSession = Depends(get_db_session)
 ) -> RecordConfirmation:
     """
@@ -75,13 +79,31 @@ async def ingest_decision(
     
     Flow:
     1. Normalize input to IngestRequest
-    2. AttestationGuard.validate_ingestion (Enforce crypto/revocation)
-    3. Validate semantics
+    2. AttestationGuard.validate_ingestion (Enforce crypto & revocation)
+    3. Semantic validation
     4. Record decision
     """
     try:
         # Default to global if not provided (legacy/fallback)
         project_id = x_regulayer_project_id or "global"
+
+        # =========================================================
+        # PHASE I.1: Cross-Environment Rejection (Edge-Hardening A)
+        # =========================================================
+        request_env = x_regulayer_environment or "prod"
+        # Normalize "production" to "prod" just in case legacy clients send it
+        if request_env == "production":
+            request_env = "prod"
+            
+        if request_env != settings.recorder_environment:
+             raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "ENVIRONMENT_MISMATCH",
+                    "message": f"Recorder ({settings.recorder_environment}) cannot accept ingestion from environment '{request_env}'."
+                }
+            )
+        # =========================================================
 
         # 1. Normalize input
         if isinstance(body, DecisionEvent):
@@ -107,18 +129,19 @@ async def ingest_decision(
             session, 
             event, 
             attestation=attestation,
-            project_id=project_id
+            project_id=project_id,
+            environment=x_regulayer_environment
         )
         
         logger.info(f"Decision recorded: {confirmation.decision_id}, record_id={confirmation.record_id}, project_id={project_id}")
         
         return confirmation
     
-    except (SchemaValidationError, LegacyIngestionDisabledError, InvalidAttestationError) as e:
-        logger.warning(f"Validation failed: {str(e)}")
+    except (SchemaValidationError, LegacyIngestionDisabledError, InvalidAttestationError, SignatureVerificationError) as e:
+        logger.error(f"SCHEMA VALIDATION FAILED: {str(e)}")
         # Map Attestation errors to 401/400 appropriately
         status_code = status.HTTP_400_BAD_REQUEST
-        if isinstance(e, (LegacyIngestionDisabledError, InvalidAttestationError)):
+        if isinstance(e, (LegacyIngestionDisabledError, InvalidAttestationError, SignatureVerificationError)):
              status_code = status.HTTP_401_UNAUTHORIZED
 
         raise HTTPException(
@@ -131,7 +154,7 @@ async def ingest_decision(
         )
     
     except DuplicateDecisionError as e:
-        logger.warning(f"Duplicate decision: {e.message}")
+        logger.error(f"DUPLICATE DECISION: {e.message}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -142,7 +165,7 @@ async def ingest_decision(
         )
     
     except (SemanticValidationError, TimestampAnomalyError) as e:
-        logger.warning(f"Semantic validation failed: {e.message}")
+        logger.error(f"SEMANTIC VALIDATION FAILED: {e.message}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
@@ -154,7 +177,7 @@ async def ingest_decision(
     
     # 5. Handle Ordering Violations -> 409 Conflict (Client needs to resync/retry)
     except OrderingViolationError as e:
-        logger.warning(f"Ordering violation: {e.message}")
+        logger.error(f"ORDERING VIOLATION: {e.message}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -165,7 +188,7 @@ async def ingest_decision(
         )
 
     except RecorderError as e:
-        logger.error(f"Recorder error: {e.message}")
+        logger.error(f"RECORDER ERROR: {e.message}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -176,6 +199,9 @@ async def ingest_decision(
         )
     
     except Exception as e:
+        import traceback
+        trace = traceback.format_exc()
+        print(f"CRITICAL CRASH:\n{trace}", flush=True) 
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -184,6 +210,61 @@ async def ingest_decision(
                 "message": "An unexpected error occurred"
             }
         )
+
+
+@router.get(
+    "/decisions",
+    response_model=List[DecisionRecord],
+    status_code=status.HTTP_200_OK
+)
+async def list_decisions(
+    limit: int = 50,
+    offset: int = 0,
+    x_regulayer_project_id: Optional[str] = Header(None, alias="X-Regulayer-Project-Id"),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    List decisions.
+    
+    If project_id is provided, filters by chain_id=project_id.
+    """
+    try:
+        from .storage import get_latest_records
+        
+        # If no project ID (e.g. global view), use "global" or require it?
+        # SaaS model requires project_id usually.
+        # But for now, we default to "global" if not present to match recording logic.
+        chain_id = x_regulayer_project_id or "global"
+        
+        records = await get_latest_records(session, chain_id, limit, offset)
+        
+        return [
+            DecisionRecord(
+                record_id=r.record_id,
+                record_hash=r.record_hash,
+                previous_record_hash=r.previous_record_hash,
+                canonical_payload=r.canonical_payload,
+                canonical_payload_hash=r.canonical_payload_hash,
+                chain_id=r.chain_id,
+                server_timestamp=r.server_timestamp,
+                decision_id=r.decision_id,
+                sdk_instance_id=r.sdk_instance_id,
+                system_name=r.system_name,
+                risk_level=r.risk_level,
+                event_state=r.event_state,
+                sdk_version=r.sdk_version,
+                attestation=AttestationSummary(
+                    identity_id=r.identity_id,
+                    algorithm=r.signature_algorithm,
+                    signed_at=r.signed_at,
+                    identity_status_at_signing="active"
+                ) if r.signature_algorithm else None
+            )
+            for r in records
+        ]
+    except Exception as e:
+        logger.error(f"Failed to list decisions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch decisions")
 
 
 @router.get(
@@ -309,6 +390,16 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
                 signature=sig
             )
 
+        # Extract environment metadata (Phase I.1)
+        env_metadata = None
+        if record.attestation_payload:
+            watermark = record.attestation_payload.get('_watermark')
+            if watermark:
+                env_metadata = {
+                    "environment": watermark.get("environment", "unknown"),
+                    "non_production": True
+                }
+
         return ExportBundle(
             proof_bundle_version="1.0.0",
             record_id=record.record_id,
@@ -323,7 +414,8 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
                 verifier_version="2.3.0",
                 recorder_version="1.0.0",
                 verification_result="VALID"
-            )
+            ),
+            environment_metadata=env_metadata
         )
     except ValueError:
         raise HTTPException(status_code=400, detail={"error": "BadRequest", "message": "Invalid UUID"})

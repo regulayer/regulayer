@@ -7,8 +7,8 @@ from .errors import GatewayError
 
 router = APIRouter()
 
-async def forward_request(request: Request, target_url: str):
-    client = httpx.AsyncClient(base_url=settings.control_plane_url)
+async def forward_request(request: Request, target_base_url: str):
+    client = httpx.AsyncClient(base_url=target_base_url)
     
     url = f"{request.url.path}"
     if request.url.query:
@@ -35,40 +35,53 @@ async def forward_request(request: Request, target_url: str):
         
         r = await client.send(req, stream=True)
         
+        # Filter response headers
+        response_excluded_headers = {'content-length', 'content-encoding', 'transfer-encoding'}
+        response_headers = {
+            key: value
+            for key, value in r.headers.items()
+            if key.lower() not in response_excluded_headers
+        }
+        
         return StreamingResponse(
-            r.aiter_raw(),
+            r.aiter_bytes(),
             status_code=r.status_code,
-            headers=dict(r.headers),
+            headers=response_headers,
             background=None
         )
         
     except httpx.RequestError as exc:
-        raise HTTPException(status_code=503, detail=f"Control Plane unavailable: {str(exc)}")
+        raise HTTPException(status_code=503, detail=f"Service unavailable: {str(exc)}")
     finally:
         await client.aclose()
 
 
 # Catch-all for control plane routes
-# We explicitly list the prefixes we want to proxy to avoid accidental exposure
-PROXY_PREFIXES = ["/v1/auth", "/v1/orgs", "/v1/projects", "/v1/keys", "/v1/users", "/v1/roles", "/v1/usage", "/v1/me"]
+PROXY_PREFIXES = ["/v1/auth", "/v1/orgs", "/v1/projects", "/v1/keys", "/v1/users", "/v1/roles", "/v1/usage", "/v1/me", "/v1/plans"]
+RECORDER_PREFIXES = ["/v1/decisions", "/v1/verify"]
+GOVERNANCE_PREFIXES = ["/v1/governance"]
 
 @router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
 async def proxy_handler(request: Request, path: str):
-    # Check if path starts with allowed prefix
-    path_with_slash = f"/{path}"
-    if not any(path_with_slash.startswith(prefix) for prefix in PROXY_PREFIXES):
-         # Fallback to local 404/405 if not a proxy route
-         # But since we are catching everything here, we should probably check if it matches other local routes first?
-         # Actually this router will be mounted/included. Be careful about order.
-         # For now, let's just forward if it matches prefix.
-         pass
-
-    # If we are here, we match the path var, but we need to verify prefix match again for safety
-    # path comes from FastAPI without leading slash usually? let's check.
     full_path = request.url.path
+    print(f"DEBUG PROXY: path={path}, full_path={full_path}")
+    print(f"DEBUG PROXY: Checking against prefixes")
     
+    # Route to Control Plane
     if any(full_path.startswith(prefix) for prefix in PROXY_PREFIXES):
         return await forward_request(request, settings.control_plane_url)
+
+    # Route to Recorder
+    if any(full_path.startswith(prefix) for prefix in RECORDER_PREFIXES):
+        return await forward_request(request, settings.recorder_url)
+        
+    # Route to Governance
+    if any(full_path.startswith(prefix) for prefix in GOVERNANCE_PREFIXES):
+        return await forward_request(request, settings.governance_url)
+    
+    # Route to Reports
+    if full_path.startswith("/v1/reports"):
+        return await forward_request(request, settings.reports_url)
     
     # If not proxied, return 404 (Gateway doesn't have this)
     raise HTTPException(status_code=404, detail="Not Found")

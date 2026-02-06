@@ -6,7 +6,7 @@ Secure, rate-limited, tenant-aware ingestion gateway.
 This is the SaaS entry point. The recorder is NEVER exposed directly.
 """
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -45,7 +45,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Restrict in production
     allow_credentials=True,
-    allow_methods=["POST"],  # Only POST allowed
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow GET for read APIs
     allow_headers=["*"],
 )
 
@@ -67,8 +67,8 @@ async def gateway_error_handler(request: Request, exc: GatewayError):
 # Ingestion Endpoint
 # ============================================================
 
-@app.post("/v1/ingest/decision")
-async def ingest_decision(request: Request):
+@app.post("/v1/ingest/decision", status_code=status.HTTP_202_ACCEPTED)
+async def ingest_decision(request: Request, response: Response):
     """
     Public decision ingestion endpoint.
     
@@ -98,18 +98,21 @@ async def ingest_decision(request: Request):
         check_rate_limit(str(tenant_context.key_id))
         
         # 4. Check quotas (per project)
-        remaining = consume_quota(str(tenant_context.project_id))
+        remaining = await consume_quota(str(tenant_context.project_id))
         
         # 5. Read body (byte-for-byte)
         body = await request.body()
         
         # 6. Forward to recorder
         headers = get_request_headers(request)
-        response = await forward_decision(body, tenant_context, headers)
+        forward_response = await forward_decision(body, tenant_context, headers)
         
         # 7. Return response with quota info
+        # Strict 202 Accepted
+        response.status_code = status.HTTP_202_ACCEPTED
+        
         return {
-            **response,
+            **forward_response,
             "_gateway": {
                 "quota_remaining": remaining
             }
@@ -153,4 +156,4 @@ async def quota_status(request: Request):
     
     tenant_context = await validate_request_headers(api_key, project_id)
     
-    return get_quota_enforcer().get_usage(str(tenant_context.project_id))
+    return await get_quota_enforcer().get_usage(str(tenant_context.project_id))

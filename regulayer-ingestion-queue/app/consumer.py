@@ -45,23 +45,30 @@ class QueueConsumer:
         Returns (status_code, exception).
         """
         try:
+            print(f"DEBUG: Forwarding event {event.request_id} to Recorder...", flush=True)
+            url = f"{settings.recorder_url}/v1/decisions"
+            print(f"DEBUG: Recorder URL: {url}", flush=True)
+            
             async with httpx.AsyncClient(timeout=settings.forward_timeout_seconds) as client:
                 response = await client.post(
-                    f"{settings.recorder_url}/v1/decisions",
+                    url,
                     content=event.payload,  # Exact bytes
                     headers={
                         "Content-Type": event.headers.get("content-type", "application/json"),
                         "X-Regulayer-Org-Id": str(event.org_id),
                         "X-Regulayer-Project-Id": str(event.project_id),
+                        "X-Request-ID": str(event.request_id),
                         **{
                             k: v for k, v in event.headers.items()
                             if k.lower().startswith("x-regulayer-")
                         }
                     }
                 )
+                print(f"DEBUG: Recorder Response: {response.status_code}", flush=True)
                 return response.status_code, None
                 
         except Exception as e:
+            print(f"DEBUG: Forward Exception: {e}", flush=True)
             return None, e
     
     async def process_event(
@@ -109,6 +116,7 @@ class QueueConsumer:
                     event.retry_count,
                     status_code
                 )
+                print(f"DLQ_INGEST_FAILED: Decision {event.request_id} failed permanently. Reason: {result.reason}", flush=True)
                 await queue.acknowledge(str(event.project_id), message_id)
                 return False
                 
@@ -117,18 +125,43 @@ class QueueConsumer:
     
     async def consume_project(self, project_id: str) -> None:
         """Consume events for a specific project."""
-        queue = get_queue()
-        
-        while self.running:
-            result = await queue.dequeue(project_id)
+        try:
+            queue = get_queue()
+            print(f"DEBUG: Starting consumer loop for project {project_id}", flush=True)
             
-            if result is None:
-                # No messages, wait a bit
-                await asyncio.sleep(0.1)
-                continue
+            # Debug Group State
+            try:
+                pending = await queue.get_pending_count(project_id)
+                print(f"DEBUG: Pending count for {project_id}: {pending}", flush=True)
+            except Exception as e:
+                print(f"DEBUG: Failed to get pending count: {e}", flush=True)
+
+            print(f"DEBUG: Entering while loop for {project_id}", flush=True)
+            print(f"DEBUG: Queue type: {type(queue)}", flush=True)
+            print(f"DEBUG: Queue class: {queue.__class__.__name__}", flush=True)
             
-            message_id, event = result
-            await self.process_event(message_id, event)
+            while self.running:
+                try:
+                    # print(f"DEBUG: Calling dequeue for {project_id}", flush=True)
+                    result = await queue.dequeue(project_id)
+                    
+                    if result is None:
+                        # No messages, wait a bit
+                        await asyncio.sleep(0.1)
+                        continue
+                    
+                    print(f"DEBUG: Found message for {project_id}", flush=True)
+                    message_id, event = result
+                    await self.process_event(message_id, event)
+                except Exception as e:
+                    import traceback
+                    print(f"ERROR: Consumer loop crashed for {project_id}: {e}", flush=True)
+                    traceback.print_exc()
+                    await asyncio.sleep(1) # Backoff on crash
+        except Exception as e:
+            import traceback
+            print(f"CRITICAL ERROR in consume_project for {project_id}: {e}", flush=True)
+            traceback.print_exc()
     
     async def run(self, project_ids: list[str]) -> None:
         """

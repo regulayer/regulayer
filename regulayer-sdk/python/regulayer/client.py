@@ -96,7 +96,8 @@ class RegulayerClient:
         input_data: dict,
         output_data: dict,
         metadata: Optional[dict] = None,
-        risk_level: str = "standard"
+        risk_level: str = "standard",
+        decision_id: Optional[str] = None
     ) -> dict:
         """
         Record a decision.
@@ -108,28 +109,48 @@ class RegulayerClient:
             output_data: Output/result of the decision
             metadata: Optional additional metadata
             risk_level: Risk level (standard, elevated, high)
+            decision_id: Canonical ID (UUID4) for idempotency
         
         Returns:
             Response with decision_id and status
-        
-        Example:
-            client.record_decision(
-                system="loan_approval",
-                decision_type="credit_check",
-                input_data={"income": 50000},
-                output_data={"approved": True}
-            )
         """
+        import uuid
+        from datetime import datetime, timezone
+        
+        # Canonical Identity Logic
+        if not decision_id:
+            decision_id = str(uuid.uuid4())
+            
+        timestamp_now = datetime.now(timezone.utc)
         payload = {
-            "system": system,
+            "decision_id": decision_id,
+            "system_name": system,
             "decision_type": decision_type,
+            "risk_level": risk_level,
+            "event_version": "2.0",
+            "event_state": "completed",
+            "model_name": "unknown", 
+            "model_version": "unknown",
+            "start_timestamp": timestamp_now.isoformat(),
+            "end_timestamp": timestamp_now.isoformat(),
+            "execution_duration_ms": 0.0,
+            "runtime_fingerprint": {
+                "python_version": "3.x",
+                "os": "unknown",
+                "sdk_version": "2.0.0",
+                "sdk_instance_id": str(uuid.uuid4())
+            },
             "input": input_data,
             "output": output_data,
             "metadata": metadata or {},
-            "risk_level": risk_level,
         }
         
-        response = self._http.post(self.config.endpoint, json=payload)
+        # Merge headers for this request
+        headers = self._http.headers.copy()
+        headers["X-Request-ID"] = decision_id
+        headers["X-Regulayer-Timestamp"] = datetime.now(timezone.utc).isoformat()
+        
+        response = self._http.post(self.config.endpoint, json=payload, headers=headers)
         
         if response.status_code == 401:
             from .errors import AuthenticationError
@@ -139,6 +160,7 @@ class RegulayerClient:
             from .errors import RateLimitError
             raise RateLimitError("Rate limit exceeded")
         
+        # 202 Accepted (async) or 201 Created (sync) are both success
         response.raise_for_status()
         return response.json()
     

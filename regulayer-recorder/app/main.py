@@ -7,7 +7,7 @@ from app.core.keys import KeyManager
 
 from app.config import settings
 from app.models import HealthStatus
-from app.storage import get_last_record, get_total_records, AsyncSessionLocal
+from app.storage import get_last_record, get_total_records, AsyncSessionLocal, init_db
 
 # Fail-Fast Environment Check
 REQUIRED_ENV_VARS = ["DATABASE_URL", "SIGNING_KEY_PATH"]
@@ -33,14 +33,34 @@ app.add_middleware(
 # Global Key Manager
 key_manager = KeyManager(os.getenv("SIGNING_KEY_PATH"))
 
+# Basic Error Handler for Validation logging
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    import logging
+    msg = f"PYDANTIC VALIDATION ERROR: {exc.errors()}\nBody: {exc.body}"
+    print(msg, flush=True) # Force stdout
+    logging.error(msg)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(exc.body)},
+    )
+
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    print("DEBUG LOGGING ENABLED", flush=True)
+    
     # Bootstrap Cryptographic Identity
     key_manager.bootstrap()
     
-    # Create tables (for dev simplicity, usually use alembic)
-    # Base.metadata.create_all(bind=engine) 
-    print("Recorder Service Started. Identity Loaded.")
+    # Initialize Database Tables
+    await init_db()
+    
+    print("Recorder Service Started. Identity Loaded & DB Initialized.")
 
 app.include_router(router, prefix="/v1")
 

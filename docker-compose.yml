@@ -43,6 +43,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "8300:8000"
 
   # ============================================================================
   # PUBLIC INGESTION LAYER
@@ -52,9 +54,13 @@ services:
       context: ./regulayer-ingestion-gateway
       dockerfile: Dockerfile
     environment:
-      - PORT=8080
-      - CONTROL_PLANE_URL=http://control-plane:8000
-      - REDIS_URL=${REDIS_URL}
+      - GATEWAY_PORT=8080
+      - GATEWAY_CONTROL_PLANE_URL=http://control-plane:8000
+      - GATEWAY_RECORDER_URL=http://recorder:8000
+      - GATEWAY_GOVERNANCE_URL=http://governance:8002
+      - GATEWAY_REPORTS_URL=http://reports:8003
+      - GATEWAY_REDIS_URL=redis://redis:6379
+      - GATEWAY_DEFAULT_DAILY_QUOTA=10000
     ports:
       - "8080:8080"
     depends_on:
@@ -77,6 +83,7 @@ services:
     environment:
       - REDIS_URL=${REDIS_URL}
       - RECORDER_URL=http://recorder:8000
+      - QUEUE_QUEUE_BACKEND=redis
     depends_on:
       redis:
         condition: service_healthy
@@ -92,8 +99,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=${CONTROL_DB_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - REGULAYER_CONTROL_JWT_SECRET=${JWT_SECRET}
+      - REGULAYER_CONTROL_STRIPE_API_KEY=${STRIPE_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,6 +108,8 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
       retries: 5
+    ports:
+      - "8100:8000"
 
   governance:
     build:
@@ -113,6 +122,21 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      interval: 10s
+      retries: 5
+
+  reports:
+    build:
+      context: ./regulayer-reports
+      dockerfile: Dockerfile
+    environment:
+      - RECORDER_URL=http://recorder:8000
+      - GOVERNANCE_URL=http://governance:8002
+    depends_on:
+      recorder:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
       interval: 10s
       retries: 5
 

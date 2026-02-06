@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     
     # Redis
     redis_url: str = "redis://localhost:6379"
-    redis_stream_prefix: str = "regulayer:ingest"
+    redis_stream_prefix: str = "ingestion"
     
     # Consumer
     consumer_group: str = "regulayer-recorder"
@@ -44,5 +44,12 @@ class Settings(BaseSettings):
     class Config:
         env_prefix = "QUEUE_"
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        import os
+        if os.getenv("REDIS_URL"):
+            self.redis_url = os.getenv("REDIS_URL")
+        if os.getenv("RECORDER_URL"):
+            self.recorder_url = os.getenv("RECORDER_URL")
 
 settings = Settings()

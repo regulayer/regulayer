@@ -66,6 +66,9 @@ class trace:
         )
     
     def __enter__(self) -> Decision:
+        if not self.decision.decision_id:
+            import uuid
+            self.decision.decision_id = str(uuid.uuid4())
         return self.decision
     
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -82,7 +85,8 @@ class trace:
                 input_data=self.decision.input_data,
                 output_data=self.decision.output_data,
                 metadata=self.decision.metadata,
-                risk_level=self.decision.risk_level
+                risk_level=self.decision.risk_level,
+                decision_id=self.decision.decision_id
             )
             self.decision.decision_id = result.get("decision_id")
         except RuntimeError:

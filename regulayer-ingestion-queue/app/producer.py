@@ -112,6 +112,7 @@ class RedisQueue:
     
     async def _get_redis(self):
         """Lazy Redis connection."""
+        # print("DEBUG: _get_redis called", flush=True)
         if self._redis is None:
             import redis.asyncio as redis
             self._redis = redis.from_url(settings.redis_url)
@@ -135,6 +136,7 @@ class RedisQueue:
     
     async def dequeue(self, project_id: str) -> Optional[tuple[str, QueuedEvent]]:
         """Read from Redis Stream consumer group."""
+        print(f"DEBUG: STARTING Dequeue for {project_id}", flush=True)
         redis = await self._get_redis()
         stream = self.get_stream_name(project_id)
         
@@ -150,16 +152,19 @@ class RedisQueue:
             pass  # Group may already exist
         
         # Read messages
-        messages = await redis.xreadgroup(
-            settings.consumer_group,
-            settings.consumer_name,
-            {stream: ">"},
+        # DEBUG: Use xread to bypass group logic
+        print(f"DEBUG: Dequeueing from stream: {stream}", flush=True)
+        messages = await redis.xread(
+            {stream: "0"},
             count=1,
             block=settings.batch_timeout_ms
         )
         
         if not messages:
+            print(f"DEBUG: xread returned empty for {stream}", flush=True)
             return None
+            
+        print(f"DEBUG: xread result: {messages}", flush=True)
         
         for stream_name, stream_messages in messages:
             for message_id, data in stream_messages:
@@ -201,9 +206,12 @@ def get_queue():
     global _queue
     
     if _queue is None:
+        print(f"DEBUG: INITIALIZING QUEUE. Configured Backend: {settings.queue_backend}", flush=True)
         if settings.queue_backend == QueueBackend.REDIS:
+            print("DEBUG: Using RedisQueue", flush=True)
             _queue = RedisQueue()
         else:
+            print(f"DEBUG: Using InMemoryQueue (Fallback? {settings.queue_backend})", flush=True)
             _queue = InMemoryQueue()
     
     return _queue

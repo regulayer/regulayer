@@ -39,6 +39,11 @@ class ForbiddenError(GatewayError):
     """Valid credentials but insufficient permissions."""
     status_code = 403
     error_code = "FORBIDDEN"
+    
+    def __init__(self, message: str, error_code: str = None):
+        super().__init__(message)
+        if error_code:
+            self.error_code = error_code
 
 
 class RateLimitError(GatewayError):

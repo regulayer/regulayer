@@ -18,19 +18,22 @@ _redis: Any = None
 async def get_redis():
     global _redis
     if _redis is None:
+        print(f"DEBUG: Redis URL: {settings.redis_url}")
         _redis = redis.from_url(settings.redis_url)
     return _redis
 
 async def enqueue_decision_to_redis(
     body: bytes,
     tenant_context: TenantContext,
-    headers: Dict[str, str]
+    headers: Dict[str, str],
+    request_id: str | None = None
 ) -> str:
     """
     Enqueue decision payload to Redis Stream.
     Returns the Request ID (UUID).
     """
-    request_id = str(uuid.uuid4())
+    if not request_id:
+        request_id = str(uuid.uuid4())
     project_id = str(tenant_context.project_id)
     stream_name = f"{settings.redis_stream_prefix}:{project_id}"
     

@@ -269,3 +269,35 @@ async def get_records_in_range(
     
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_latest_records(
+    session: AsyncSession,
+    chain_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> List[DecisionRecordDB]:
+    """
+    Get latest records for a chain (descending order).
+    
+    Args:
+        session: Database session
+        chain_id: Chain identifier (project_id)
+        limit: Max records
+        offset: Offset
+        
+    Returns:
+        List of DecisionRecordDB
+    """
+    from sqlalchemy import select, desc
+    
+    stmt = (
+        select(DecisionRecordDB)
+        .where(DecisionRecordDB.chain_id == chain_id)
+        .order_by(desc(DecisionRecordDB.server_timestamp))
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

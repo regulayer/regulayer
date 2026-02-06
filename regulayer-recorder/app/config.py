@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Chain configuration
     chain_id: str = "global"  # Constant in Phase 1, future-proofs sharding
     
+    # Environment mode (Phase I.1)
+    recorder_environment: str = "prod"  # "demo" or "prod"
+    
     # Server configuration
     host: str = "0.0.0.0"
     port: int = 8000

@@ -17,4 +17,4 @@ RUN pip install alembic psycopg2-binary uvicorn
 
 COPY . .
 
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]

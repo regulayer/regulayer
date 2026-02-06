@@ -31,6 +31,8 @@ class Organization(BaseModel):
     id: UUID
     name: str
     status: OrgStatus = OrgStatus.ACTIVE
+    is_demo: bool = False
+    environment: str = "prod"  # "dev", "staging", "prod"
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -72,6 +74,7 @@ class ApiKey(BaseModel):
     name: str
     key_prefix: str = Field(description="First 8 chars of key for identification")
     scopes: List[ApiKeyScope]
+    is_demo_key: bool = False
     created_at: datetime
     revoked_at: Optional[datetime] = None
     last_used_at: Optional[datetime] = None
@@ -106,9 +109,18 @@ class User(BaseModel):
     last_login_at: Optional[datetime] = None
 
 
+class UserWithOrg(User):
+    """User with organization details."""
+    org: Organization
+
+
 # ============================================================
 # Tenant Context (Runtime)
 # ============================================================
+
+class OrgStatusUpdate(BaseModel):
+    """Request to update organization status."""
+    status: OrgStatus
 
 class TenantContext(BaseModel):
     """
@@ -136,5 +148,26 @@ class KeyValidationResult(BaseModel):
     valid: bool
     organization_id: Optional[UUID] = None
     project_id: Optional[UUID] = None
+    environment: Optional[str] = None
+    is_demo_key: bool = False
     scopes: List[ApiKeyScope] = Field(default_factory=list)
     error: Optional[str] = None
+
+# ============================================================
+# Audit Logs
+# ============================================================
+
+class AuditLog(BaseModel):
+    """Audit log entry for organization activity."""
+    id: UUID
+    organization_id: UUID
+    actor_id: Optional[UUID] = None
+    actor_email: Optional[str] = None
+    action: str
+    resource_type: str
+    resource_id: Optional[UUID] = None
+    details: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+

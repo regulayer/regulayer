@@ -22,6 +22,7 @@ class TenantContext:
     org_id: UUID
     project_id: UUID
     key_id: UUID
+    environment: str
     scopes: list[str]
     
     def has_scope(self, scope: str) -> bool:
@@ -77,6 +78,24 @@ async def validate_api_key(api_key: str, project_id: str) -> TenantContext:
     if "ingest" not in scopes:
         raise ForbiddenError("API key does not have 'ingest' scope")
     
+    # =========================================================
+    # DEMO/PROD MODE ENFORCEMENT (Phase I.1)
+    # =========================================================
+    is_demo_key = data.get("is_demo_key", False)
+    
+    if settings.gateway_mode == "prod" and is_demo_key:
+        raise ForbiddenError(
+            "Demo credentials cannot be used in production ingestion.",
+            error_code="DEMO_KEY_FORBIDDEN"
+        )
+    
+    if settings.gateway_mode == "demo" and not is_demo_key:
+        raise ForbiddenError(
+            "Production credentials cannot be used in demo mode.",
+            error_code="PROD_KEY_FORBIDDEN"
+        )
+    # =========================================================
+    
     # Verify project matches
     validated_project_id = data.get("project_id")
     if project_id and str(validated_project_id) != project_id:
@@ -86,6 +105,7 @@ async def validate_api_key(api_key: str, project_id: str) -> TenantContext:
         org_id=UUID(str(data["organization_id"])),
         project_id=UUID(str(data["project_id"])),
         key_id=UUID(str(data.get("key_id", "00000000-0000-0000-0000-000000000000"))),
+        environment=data.get("environment", "production"),
         scopes=scopes
     )
 
