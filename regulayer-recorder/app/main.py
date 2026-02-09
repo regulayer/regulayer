@@ -60,6 +60,60 @@ async def startup_event():
     # Initialize Database Tables
     await init_db()
     
+    # ---------------------------------------------------------
+    # PHASE I.4.4: Boot Integrity Check (Production Only)
+    # ---------------------------------------------------------
+    env_name = getattr(settings, 'recorder_environment', 'dev')
+    if env_name == 'prod':
+        try:
+            from app.verifier import verify_full_integrity
+            print("PRODUCTION MODE: Running Boot Integrity Check...", flush=True)
+            
+            # Create session for check
+            async with AsyncSessionLocal() as session:
+                integrity = await verify_full_integrity(session)
+                
+            if integrity["status"] != "VALID":
+                err_msg = f"BOOT INTEGRITY FAILED: {integrity['first_error']}"
+                logging.critical(err_msg)
+                print(f"CRITICAL: {err_msg}", flush=True)
+                
+                # EMIT INCIDENT (Critical)
+                try:
+                    import httpx
+                    inc_url = f"{settings.incidents_url}/internal/incidents"
+                    # We need to await this since startup_event is async
+                    async with httpx.AsyncClient(timeout=2.0) as client:
+                        await client.post(
+                            inc_url,
+                            json={
+                                "incident_type": "INTEGRITY_CHECK_FAILED",
+                                "severity": "critical",
+                                "source": "recorder",
+                                "message": f"Recorder Boot Integrity Failed. Service Aborted. Error: {integrity['first_error']}",
+                                "metadata": {"error": integrity['first_error']}
+                            },
+                            headers={"X-Internal-Auth": settings.incidents_internal_secret}
+                        )
+                except Exception as e_inc:
+                    print(f"FAILED TO EMIT INCIDENT: {e_inc}", flush=True)
+
+                sys.exit(1) # Fail fast
+            
+            print(f"Integrity Check PASSED. {integrity['records_checked']} records verified.", flush=True)
+            
+        except ImportError:
+            logging.error("Could not import verification logic")
+            sys.exit(1)
+        except Exception as e:
+            err_msg = f"BOOT INTEGRITY CHECK CRASHED: {str(e)}"
+            logging.critical(err_msg, exc_info=True)
+            print(f"CRITICAL: {err_msg}", flush=True)
+            sys.exit(1)
+    else:
+        print(f"Environment '{env_name}': Skipping strict boot integrity check.", flush=True)
+    # ---------------------------------------------------------
+
     print("Recorder Service Started. Identity Loaded & DB Initialized.")
 
 app.include_router(router, prefix="/v1")
@@ -94,19 +148,26 @@ def get_recorder_keys():
     Expose the current public key. 
     In the future, this would return a list of historical keys for rotation support.
     """
+    import hashlib
+    
+    current_key_hex = key_manager.get_public_key_hex()
+    # Simple fingerprint: SHA256 of the hex key (or bytes? usage varies, hex is safer for display consistency)
+    fingerprint = hashlib.sha256(bytes.fromhex(current_key_hex)).hexdigest()
+    
     return {
-        "current_key": key_manager.get_public_key_hex(),
+        "current_key": current_key_hex,
+        "algorithm": "Ed25519",
+        "fingerprint": fingerprint,
         "active_since": "genesis", 
         "keys": [
             {
-                "public_key": key_manager.get_public_key_hex(),
+                "public_key": current_key_hex,
+                "algorithm": "Ed25519",
+                "fingerprint": fingerprint,
+                "created_at": "2024-01-01T00:00:00Z", # Placeholder for genesis
                 "status": "active"
             }
         ]
     }
 
-# Admin-only integrity check (Stub for now)
-@app.post("/v1/recorder/verify-integrity")
-def verify_integrity():
-    # TODO: Implement full chain re-scan
-    return {"status": "success", "message": "Integrity verify job queued (stub)"}
+

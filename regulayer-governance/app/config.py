@@ -16,6 +16,9 @@ class GovernanceSettings(BaseSettings):
     # Debug mode
     debug: bool = False
     
+    # Internal Auth Secret (for Recorder/Gateway calls)
+    internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
+    
     class Config:
         env_prefix = "GOVERNANCE_"
         env_file = ".env"

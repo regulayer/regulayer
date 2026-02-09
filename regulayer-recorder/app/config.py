@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     
     # Security
     hmac_secret_key: str
+    governance_internal_secret: str = "regulayer_internal_secret_value_change_in_prod" # Fallback for dev
     
     # Service configuration
     log_level: str = "INFO"
@@ -39,7 +40,13 @@ class Settings(BaseSettings):
     
     # Server configuration
     host: str = "0.0.0.0"
+    # Server configuration
+    host: str = "0.0.0.0"
     port: int = 8000
+
+    # Incidents
+    incidents_url: str = "http://incidents:8000"
+    incidents_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
     
     model_config = SettingsConfigDict(
         env_file=".env",

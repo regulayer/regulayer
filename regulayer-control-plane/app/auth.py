@@ -116,8 +116,12 @@ class AuthService:
             OrganizationDB.id == project.organization_id
         ).first()
         
-        if not org or org.status.value != "active":
-            return KeyValidationResult(valid=False, error="Organization suspended")
+        if not org:
+            return KeyValidationResult(valid=False, error="Organization not found")
+
+        # We DO NOT block suspended/frozen orgs here.
+        # Rationale: They must still be able to export evidence and view decisions.
+        # Gateway enforces "Active Only" for ingestion.
         
         # Update last used
         db_key.last_used_at = datetime.now(timezone.utc)
@@ -128,6 +132,7 @@ class AuthService:
             organization_id=org.id,
             project_id=project.id,
             environment=project.environment.value,
+            org_status=org.status,  # Pass status to Gateway
             is_demo_key=db_key.is_demo_key,
             scopes=[ApiKeyScope(s) for s in db_key.scopes]
         )

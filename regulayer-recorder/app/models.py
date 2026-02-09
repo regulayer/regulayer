@@ -178,7 +178,11 @@ class ExportBundle(BaseModel):
     verification_metadata: VerificationMetadata
     
     # Phase I.1: Demo Context
+    # Phase I.1: Demo Context
     environment_metadata: Optional[dict] = None
+    
+    # Phase I.3.1: Governance Overlay (Non-Cryptographic)
+    governance: Optional[dict] = None
 
 
 class RecordConfirmation(BaseModel):
@@ -187,9 +191,6 @@ class RecordConfirmation(BaseModel):
     record_id: int
     decision_id: UUID
     record_hash: str
-    server_timestamp: datetime
-
-
     server_timestamp: datetime
 
 

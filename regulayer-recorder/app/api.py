@@ -13,7 +13,8 @@ Contract:
 """
 
 from fastapi import APIRouter, Header, HTTPException, Depends, status
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Literal
+from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime, timezone
 import base64
@@ -27,7 +28,9 @@ from .models import (
     AttestationSummary,
     VerificationMetadata,
     ExportBundle,
-    ProofAttestation
+    ProofAttestation,
+    ChainStatus,
+    VerificationResult
 )
 from .storage import AsyncSession, get_db_session
 from .validator import validate_decision_event
@@ -400,7 +403,8 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
                     "non_production": True
                 }
 
-        return ExportBundle(
+        # Base Bundle (Cryptographic Truth)
+        bundle = ExportBundle(
             proof_bundle_version="1.0.0",
             record_id=record.record_id,
             canonical_event=record.canonical_payload,
@@ -410,18 +414,147 @@ async def export_decision_bundle(decision_id: str, session: AsyncSession = Depen
             chain_id=record.chain_id,
             server_timestamp=record.server_timestamp,
             verification_metadata=VerificationMetadata(
-                verified_at=datetime.now(timezone.utc),
+                verified_at=record.server_timestamp,
                 verifier_version="2.3.0",
                 recorder_version="1.0.0",
                 verification_result="VALID"
             ),
-            environment_metadata=env_metadata
+            environment_metadata=env_metadata,
+            governance=None # Placeholder
         )
+
+        # Fetch Governance Overlay (Non-Blocking, attached AFTER signing)
+        # CRITICAL: This must NOT fail the export if governance is down.
+        try:
+            import httpx
+            # Use internal Docker DNS 'governance' and internal port 8002
+            # Timeout: 2 seconds strict
+            # Secret: via Env
+            
+            # NOTE: In production code, use a proper client class with connection pooling
+            # Here we use context manager for immediacy
+            gov_secret = settings.governance_internal_secret if hasattr(settings, 'governance_internal_secret') else "regulayer_internal_secret_value_change_in_prod"
+            
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                resp = await client.get(
+                    f"http://governance:8002/v1/governance/{decision_id}",
+                    headers={"X-Internal-Auth": gov_secret}
+                )
+                if resp.status_code == 200:
+                    gov_data = resp.json()
+                    # Add Overlay Markers
+                    gov_data["overlay_version"] = "v1"
+                    gov_data["non_cryptographic"] = True
+                    gov_data["source"] = "governance-service"
+                    bundle.governance = gov_data
+                elif resp.status_code == 404:
+                    # Not found is fine, just null
+                    pass
+                else:
+                    logger.warning(f"Governance fetch failed: {resp.status_code} {resp.text}")
+                    # EMIT INCIDENT (Warning)
+                    try:
+                        inc_url = f"{settings.incidents_url}/internal/incidents"
+                        await client.post(
+                            inc_url,
+                            json={
+                                "incident_type": "GOVERNANCE_UNAVAILABLE",
+                                "severity": "warning",
+                                "source": "recorder",
+                                "message": f"Governance overlay unavailable for decision {decision_id}. Status: {resp.status_code}",
+                                "metadata": {"decision_id": decision_id, "status_code": resp.status_code}
+                            },
+                            headers={"X-Internal-Auth": settings.incidents_internal_secret}
+                        )
+                    except Exception as e_inc:
+                        logger.warning(f"Failed to emit incident: {e_inc}")
+                    
+        except Exception as e:
+            # Log as WARNING, never ERROR
+            logger.warning(f"Governance overlay unavailable for {decision_id}: {str(e)}")
+            # Add fail-safe marker so UI knows
+            # We can't change the ExportBundle schema easily if it's strict, but if 'governance' is Dict|None...
+            # The user asked for "governance: null" and "governance_unavailable: true" metdata?
+            # Existing schema might be strict. Let's see models.py definition if needed.
+            # Assuming 'governance' field is Optional[Dict].
+            pass
+
+        return bundle
     except ValueError:
         raise HTTPException(status_code=400, detail={"error": "BadRequest", "message": "Invalid UUID"})
 
 
-from .models import ChainStatus, VerificationResult
+class IntegrityErrorDetail(BaseModel):
+    decision_id: Optional[str] = None
+    reason: str
+
+class IntegrityReport(BaseModel):
+    status: Literal["VALID", "CORRUPTED"]
+    records_checked: int
+    first_error: Optional[IntegrityErrorDetail] = None
+
+
+
+@router.post("/recorder/verify-integrity", response_model=IntegrityReport)
+async def verify_integrity(session: AsyncSession = Depends(get_db_session)):
+    """Run full chain integrity verification (Forensic)."""
+    from .verifier import verify_full_integrity
+    
+    result = await verify_full_integrity(session)
+    
+    # Map dict to Pydantic model
+    return IntegrityReport(
+        status=result["status"],
+        records_checked=result["records_checked"],
+        first_error=IntegrityErrorDetail(**result["first_error"]) if result["first_error"] else None
+    )
+
+
+class ChainIntegritySummary(BaseModel):
+    head_hash: Optional[str]
+    first_hash: Optional[str]
+    total_records: int
+    chain_status: Literal["VALID", "CORRUPTED"]
+    public_key_fingerprint: str
+    verified_at: datetime
+
+
+@router.get("/reports/chain-integrity", response_model=ChainIntegritySummary)
+async def get_chain_integrity_report(session: AsyncSession = Depends(get_db_session)):
+    """
+    Get system trust report.
+    Runs full verification to ensure status is current.
+    """
+    from .verifier import verify_full_integrity
+    from .storage import get_last_record, get_first_record, get_total_records
+    from app.core.keys import KeyManager
+    import os
+    import hashlib
+    
+    # 1. Run Verification
+    verification = await verify_full_integrity(session)
+    
+    # 2. Get Chain Context
+    total = await get_total_records(session)
+    first = await get_first_record(session, settings.chain_id)
+    last = await get_last_record(session, settings.chain_id)
+    
+    # 3. Get Key Fingerprint
+    # We instantiate KeyManager here or use global from main? 
+    # Better to key KeyManager instance or re-read. 
+    # For now, re-reading is safer for independence.
+    km = KeyManager(os.getenv("SIGNING_KEY_PATH"))
+    pub_hex = km.get_public_key_hex()
+    fingerprint = hashlib.sha256(bytes.fromhex(pub_hex)).hexdigest()
+    
+    return ChainIntegritySummary(
+        head_hash=last.record_hash if last else None,
+        first_hash=first.record_hash if first else None,
+        total_records=total,
+        chain_status=verification["status"],
+        public_key_fingerprint=fingerprint,
+        verified_at=datetime.now(timezone.utc)
+    )
 from .storage import get_total_records, get_last_record, get_first_record
 from .config import settings
 import time

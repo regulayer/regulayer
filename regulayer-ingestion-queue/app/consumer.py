@@ -117,6 +117,10 @@ class QueueConsumer:
                     status_code
                 )
                 print(f"DLQ_INGEST_FAILED: Decision {event.request_id} failed permanently. Reason: {result.reason}", flush=True)
+                
+                # EMIT INCIDENT (Phase I.5)
+                await self._emit_dlq_incident(event, result.reason)
+                
                 await queue.acknowledge(str(event.project_id), message_id)
                 return False
                 
@@ -183,6 +187,39 @@ class QueueConsumer:
         finally:
             self.running = False
     
+    async def _emit_dlq_incident(self, event: QueuedEvent, reason: str) -> None:
+        """
+        Emit incident to Incidents Service.
+        Non-blocking, fire-and-forget (log on fail).
+        """
+        try:
+            url = f"{settings.incidents_url}/internal/incidents"
+            payload = {
+                "incident_type": "DLQ_INGEST_FAILED",
+                "severity": "critical",
+                "source": "queue",
+                "org_id": str(event.org_id) if event.org_id else None,
+                "message": f"Decision {event.request_id} permanently failed ingestion. Reason: {reason}",
+                "metadata": {
+                    "decision_id": str(event.request_id),
+                    "project_id": str(event.project_id),
+                    "retry_count": event.retry_count,
+                    "reason": reason
+                }
+            }
+            
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                await client.post(
+                    url,
+                    json=payload,
+                    headers={"X-Internal-Auth": settings.incidents_internal_secret}
+                )
+                print(f"DEBUG: Emitted DLQ incident for {event.request_id}", flush=True)
+                
+        except Exception as e:
+            # SAFETY: Incident emission failure MUST NOT crash the consumer
+            print(f"WARNING: Failed to emit DLQ incident: {e}", flush=True)
+
     def stop(self) -> None:
         """Stop the consumer."""
         self.running = False

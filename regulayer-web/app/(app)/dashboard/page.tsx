@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { getMe, getProjects, getDecisions, getUsage, Decision, getApiKeys } from '@/lib/api';
 
+import { TrustStatusCard } from '@/components/TrustStatusCard';
+
 // ============================================================
 // Types
 // ============================================================
@@ -78,46 +80,6 @@ with trace(system="onboarding_demo") as t:
 // Trust Status Card
 // ============================================================
 
-function TrustStatusCard({ healthy }: { healthy: boolean }) {
-    const [showTooltip, setShowTooltip] = useState(false);
-
-    return (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900">Trust Status</h3>
-                <div
-                    className="relative"
-                    onMouseEnter={() => setShowTooltip(true)}
-                    onMouseLeave={() => setShowTooltip(false)}
-                >
-                    <span className="text-slate-400 cursor-help">ⓘ</span>
-                    {showTooltip && (
-                        <div className="absolute right-0 top-6 w-48 bg-slate-900 text-white text-xs p-2 rounded shadow-lg z-10">
-                            Integrity is verified continuously.
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                    <CheckCircle className={`w-5 h-5 ${healthy ? 'text-green-500' : 'text-amber-500'}`} />
-                    <span className="text-slate-700">
-                        {healthy ? 'Recorder Healthy' : 'Recorder Status Unknown'}
-                    </span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Lock className="w-5 h-5 text-green-500" />
-                    <span className="text-slate-700">Cryptographic Integrity: OK</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Clock className="w-4 h-4" />
-                    <span>Last check: {new Date().toLocaleTimeString()}</span>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 // ============================================================
 // Usage Summary Card
@@ -374,7 +336,7 @@ export default function Dashboard() {
 
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <TrustStatusCard healthy={true} />
+                    <TrustStatusCard />
                     <UsageSummaryCard orgState={orgState} />
                 </div>
 

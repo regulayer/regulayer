@@ -1,0 +1,47 @@
+﻿docker-compose : time="2026
+-02-09T23:15:22+05:30" 
+level=warning msg="The 
+\"INCIDENTS_DB_URL\" 
+variable is not set. 
+Defaulting to a blank 
+string."
+At line:1 char:1
++ docker-compose logs 
+incidents > 
+incidents_compose.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (tim  
+  e="2026-02-0... blank    
+ string.":String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+time="2026-02-09T23:15:22+0
+5:30" level=warning msg="C:
+\\Users\\sancheet\\Document
+s\\regulayer\\docker-compos
+e.yml: the attribute 
+`version` is obsolete, it 
+will be ignored, please 
+remove it to avoid 
+potential confusion"
+error during connect: Get "
+http://%2F%2F.%2Fpipe%2Fdoc
+kerDesktopLinuxEngine/v1.51
+/containers/json?all=1&filt
+ers=%7B%22label%22%3A%7B%22
+com.docker.compose.config-h
+ash%22%3Atrue%2C%22com.dock
+er.compose.oneoff%3DFalse%2
+2%3Atrue%2C%22com.docker.co
+mpose.project%3Dregulayer%2
+2%3Atrue%2C%22com.docker.co
+mpose.service%3Dincidents%2
+2%3Atrue%7D%7D": open //./p
+ipe/dockerDesktopLinuxEngin
+e: The system cannot find 
+the file specified.

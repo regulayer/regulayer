@@ -12,6 +12,9 @@ class OrgStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     PENDING = "pending"
+    TRIAL = "trial"
+    TRIAL_ENDED = "trial_ended"
+    FROZEN = "frozen"
 
 
 class ProjectEnvironment(str, Enum):

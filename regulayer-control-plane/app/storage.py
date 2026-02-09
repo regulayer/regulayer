@@ -32,6 +32,8 @@ class OrganizationDB(Base):
     status = Column(SQLEnum(OrgStatus), default=OrgStatus.ACTIVE, nullable=False)
     is_demo = Column(Boolean, default=False, nullable=False)
     environment = Column(String(20), default="prod", nullable=False)
+    stripe_customer_id = Column(String(255), nullable=True)
+    subscription_status = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True)
     

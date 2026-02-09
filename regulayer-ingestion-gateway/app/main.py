@@ -68,6 +68,7 @@ async def gateway_error_handler(request: Request, exc: GatewayError):
 # ============================================================
 
 @app.post("/v1/ingest/decision", status_code=status.HTTP_202_ACCEPTED)
+@app.post("/v1/decisions", status_code=status.HTTP_202_ACCEPTED)
 async def ingest_decision(request: Request, response: Response):
     """
     Public decision ingestion endpoint.
@@ -94,7 +95,17 @@ async def ingest_decision(request: Request, response: Response):
         tenant_context = await validate_request_headers(api_key, project_id)
         set_tenant_context(tenant_context)
         
-        # 3. Check rate limits (per API key)
+        # 3. Check Billing Status (Enforcement I.6.2)
+        # Only ACTIVE or TRIAL orgs can ingest.
+        # Frozen orgs can still READ (handled by exemptions) but NOT ingest.
+        allowed_statuses = {"active", "trial"}
+        if tenant_context.org_status not in allowed_statuses:
+            raise ForbiddenError(
+                f"Organization status is '{tenant_context.org_status}'. Billing required for ingestion.",
+                error_code="BILLING_REQUIRED"
+            )
+        
+        # 4. Check rate limits (per API key)
         check_rate_limit(str(tenant_context.key_id))
         
         # 4. Check quotas (per project)

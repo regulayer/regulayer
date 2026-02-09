@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .enums import ProjectEnvironment, UserRole
@@ -46,6 +46,60 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================================
+# Billing Webhooks (Stripe)
+# ============================================================
+
+@app.post("/v1/billing/webhook")
+async def billing_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Handle Stripe webhooks for subscription status updates.
+    """
+    try:
+        payload = await request.json()
+        event_type = payload.get("type")
+        data = payload.get("data", {}).get("object", {})
+        
+        # Extract Customer ID
+        customer_id = data.get("customer")
+        
+        if not event_type or not customer_id:
+            # Some events might not have customer, ignore safely
+            return {"status": "ignored", "reason": "missing_data"}
+
+        # Find Organization by Stripe Customer ID
+        org = db.query(OrganizationDB).filter(
+            OrganizationDB.stripe_customer_id == customer_id
+        ).first()
+
+        if not org:
+            print(f"Billing Webhook: Org not found for customer {customer_id}")
+            return {"status": "ignored", "reason": "org_not_found"}
+
+        print(f"Billing Event: {event_type} for Org {org.id}")
+
+        if event_type == "checkout.session.completed":
+            org.status = OrgStatus.ACTIVE
+            org.subscription_status = "active"
+            db.commit()
+
+        elif event_type == "invoice.payment_failed":
+            org.status = OrgStatus.FROZEN
+            org.subscription_status = "past_due"
+            db.commit()
+
+        elif event_type == "customer.subscription.deleted":
+            org.status = OrgStatus.FROZEN
+            org.subscription_status = "canceled"
+            db.commit()
+            
+        return {"status": "success"}
+
+    except Exception as e:
+        print(f"Webhook Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 def get_audit_service(db: Session = Depends(get_db)) -> AuditService:

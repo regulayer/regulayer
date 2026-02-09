@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Reports (internal only)
     reports_url: str = "http://localhost:8003"
     
+    # Incidents (internal only)
+    incidents_url: str = "http://incidents:8000"
+    
     # Redis (for Queue)
     redis_url: str = "redis://localhost:6379"
     redis_stream_prefix: str = "ingestion"
@@ -42,6 +45,9 @@ class Settings(BaseSettings):
     
     # Demo/Prod Mode
     gateway_mode: str = "prod"  # "demo" or "prod"
+    
+    # Internal Auth
+    governance_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
     
     class Config:
         env_prefix = "GATEWAY_"

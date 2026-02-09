@@ -33,6 +33,8 @@ class Organization(BaseModel):
     status: OrgStatus = OrgStatus.ACTIVE
     is_demo: bool = False
     environment: str = "prod"  # "dev", "staging", "prod"
+    stripe_customer_id: Optional[str] = None
+    subscription_status: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -132,6 +134,8 @@ class TenantContext(BaseModel):
     project_id: UUID
     api_key_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
+    role: Optional[UserRole] = None
+    org_status: Optional[OrgStatus] = None
     scopes: List[ApiKeyScope] = Field(default_factory=list)
     
     def has_scope(self, scope: ApiKeyScope) -> bool:
@@ -149,6 +153,7 @@ class KeyValidationResult(BaseModel):
     organization_id: Optional[UUID] = None
     project_id: Optional[UUID] = None
     environment: Optional[str] = None
+    org_status: Optional[OrgStatus] = None
     is_demo_key: bool = False
     scopes: List[ApiKeyScope] = Field(default_factory=list)
     error: Optional[str] = None

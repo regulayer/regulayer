@@ -38,6 +38,7 @@ services:
       - DATABASE_URL=${RECORDER_DB_URL}
       - SIGNING_KEY_PATH=${RECORDER_SIGNING_KEY_PATH}
       - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
+      - RECORDER_ENVIRONMENT=dev
     volumes:
       - recorder_keys:/keys
     depends_on:
@@ -115,8 +116,11 @@ services:
     build:
       context: ./regulayer-governance
       dockerfile: Dockerfile
+    expose:
+      - "8002"
     environment:
       - DATABASE_URL=${GOVERNANCE_DB_URL}
+      - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET:-regulayer_internal_secret_value_change_in_prod}
     depends_on:
       postgres:
         condition: service_healthy
@@ -137,6 +141,21 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      interval: 10s
+      retries: 5
+
+  incidents:
+    build:
+      context: ./regulayer-incidents
+      dockerfile: Dockerfile
+    environment:
+      - INCIDENTS_DB_URL=${INCIDENTS_DB_URL}
+      - INCIDENTS_INTERNAL_SECRET=${INCIDENTS_INTERNAL_SECRET:-regulayer_internal_secret_value_change_in_prod}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
       retries: 5
 

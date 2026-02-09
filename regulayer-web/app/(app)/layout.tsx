@@ -13,7 +13,9 @@ import {
     Scale,
     Settings,
     LogOut,
-    ChevronDown
+    ChevronDown,
+    ShieldAlert,
+    LifeBuoy
 } from 'lucide-react';
 import { DemoBanner } from '@/components/DemoBanner';
 import { getMe } from '@/lib/api';
@@ -25,6 +27,8 @@ const navigation = [
     { name: 'Usage', href: '/usage', icon: BarChart3 },
     { name: 'Reports', href: '/reports', icon: FileText },
     { name: 'Governance', href: '/governance', icon: Scale },
+    { name: 'Alerts', href: '/alerts', icon: ShieldAlert },
+    { name: 'Support', href: 'mailto:support@regulayer.tech', icon: LifeBuoy },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

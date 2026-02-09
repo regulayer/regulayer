@@ -112,9 +112,9 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Trust Guarantees */}
+            {/* Trust Architecture */}
             <section className="py-20 px-8 max-w-6xl mx-auto">
-                <h2 className="text-3xl font-bold text-white text-center mb-16">Trust Guarantees</h2>
+                <h2 className="text-3xl font-bold text-white text-center mb-16">Trust Architecture</h2>
                 <div className="grid md:grid-cols-2 gap-8">
                     <div className="flex gap-4">
                         <div className="w-12 h-12 bg-green-900/50 text-green-400 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -122,7 +122,7 @@ export default function LandingPage() {
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-1">Tamper-Evident Hash Chains</h3>
-                            <p className="text-slate-400">Any modification breaks the chain. Detectable instantly.</p>
+                            <p className="text-slate-400">Any modification breaks the chain. Detectable mathematically.</p>
                         </div>
                     </div>
                     <div className="flex gap-4">
@@ -140,7 +140,7 @@ export default function LandingPage() {
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-1">Ed25519 Signatures</h3>
-                            <p className="text-slate-400">Cryptographically signed attestations. Court-ready evidence.</p>
+                            <p className="text-slate-400">Cryptographically signed attestations. Verifiable proof.</p>
                         </div>
                     </div>
                     <div className="flex gap-4">

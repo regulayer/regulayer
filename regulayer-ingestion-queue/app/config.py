@@ -39,7 +39,12 @@ class Settings(BaseSettings):
     
     # Batch
     batch_size: int = 10
+    batch_size: int = 10
     batch_timeout_ms: int = 100
+    
+    # Incidents
+    incidents_url: str = "http://incidents:8000"
+    incidents_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
     
     class Config:
         env_prefix = "QUEUE_"

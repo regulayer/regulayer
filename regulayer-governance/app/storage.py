@@ -77,22 +77,39 @@ class GovernanceAnnotationDB(Base):
     )
 
 
+class GovernanceReviewHistoryDB(Base):
+    """
+    APPEND-ONLY: Stores review state transitions.
+    Current state is derived from the latest entry by timestamp for a decision_id.
+    NEVER UPDATE OR DELETE ROWS HERE.
+    """
+    __tablename__ = "governance_review_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    decision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
+    review_state: Mapped[str] = mapped_column(String, nullable=False) # e.g., "pending", "approved", "rejected"
+    actor_role: Mapped[str] = mapped_column(String, nullable=False) # "owner", "admin"
+    actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        # Composite index for fast state resolution: SELECT * ... ORDER BY timestamp DESC LIMIT 1
+        Index('idx_gov_review_history_decision_ts', 'decision_id', text('timestamp DESC')),
+    )
+
 class GovernanceAccessLogDB(Base):
     """
-    Immutable log of all governance actions.
-    
-    APPEND-ONLY: Used for audit trails and evidence bundles.
-    Every governance action emits a log entry.
+    APPEND-ONLY: Audit log for all governance actions.
     """
-    __tablename__ = "governance_access_logs"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    decision_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
-    actor_role = Column(String(50), nullable=False)
-    action = Column(String(100), nullable=False)
-    details = Column(Text, nullable=True)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-    
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    decision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=True) # made nullable for system events if any
+    actor_role: Mapped[str] = mapped_column(String, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+    details: Mapped[dict] = mapped_column(JSON, default={})
+
     __table_args__ = (
         Index('idx_governance_access_logs_decision', 'decision_id'),
         Index('idx_governance_access_logs_timestamp', 'timestamp'),

@@ -156,3 +156,100 @@ async def verify_decision_by_id(session: AsyncSession, decision_id: str) -> Veri
     
     result.verified_records = 1
     return result
+
+async def verify_full_integrity(session: AsyncSession) -> dict:
+    """
+    Run full forensic integrity check (Hash + Link + Signature).
+    Returns dict compatible with IntegrityReport.
+    """
+    from sqlalchemy import select, asc
+    from .storage import DecisionRecordDB
+    from .recorder import compute_canonical_hash
+    from .attestation_guard import guard
+    from regulayer_attestation.app.models import AttestationEnvelope
+    
+    # Strictly ordered
+    stmt = select(DecisionRecordDB).order_by(asc(DecisionRecordDB.record_id))
+    result = await session.execute(stmt)
+    records = result.scalars().all()
+    
+    records_checked = 0
+    expected_prev_hash = None
+    
+    for record in records:
+        records_checked += 1
+        
+        # 1. Hash Mismatch
+        computed_hash = compute_canonical_hash(record.canonical_payload)
+        if computed_hash != record.record_hash:
+            return {
+                "status": "CORRUPTED",
+                "records_checked": records_checked,
+                "first_error": {
+                    "decision_id": str(record.decision_id),
+                    "reason": f"Hash mismatch: stored={record.record_hash}, computed={computed_hash}"
+                }
+            }
+            
+        # 2. Linkage
+        if record.record_id == 1:
+            if record.previous_record_hash is not None:
+                return {
+                    "status": "CORRUPTED",
+                    "records_checked": records_checked,
+                    "first_error": {
+                        "decision_id": str(record.decision_id),
+                        "reason": "Genesis record has previous_hash"
+                    }
+                }
+        else:
+            if record.previous_record_hash != expected_prev_hash:
+                return {
+                    "status": "CORRUPTED",
+                    "records_checked": records_checked,
+                    "first_error": {
+                        "decision_id": str(record.decision_id),
+                        "reason": f"Broken link: prev={record.previous_record_hash}, expected={expected_prev_hash}"
+                    }
+                }
+                
+        # 3. Signature
+        if record.signature_algorithm:
+            if not record.attestation_payload:
+                return {
+                    "status": "CORRUPTED",
+                    "records_checked": records_checked,
+                    "first_error": {
+                        "decision_id": str(record.decision_id),
+                        "reason": f"Missing attestation payload at {record.record_id}"
+                    }
+                }
+            try:
+                envelope = AttestationEnvelope(**record.attestation_payload)
+                verify_result = guard.verifier.verify(envelope) # Uses internal registry
+                if not verify_result.is_valid:
+                     return {
+                        "status": "CORRUPTED",
+                        "records_checked": records_checked,
+                        "first_error": {
+                            "decision_id": str(record.decision_id),
+                            "reason": f"Signature verification failed: {'; '.join(verify_result.errors)}"
+                        }
+                    }
+            except Exception as e:
+                 return {
+                    "status": "CORRUPTED",
+                    "records_checked": records_checked,
+                    "first_error": {
+                        "decision_id": str(record.decision_id),
+                        "reason": f"Signature verification exception: {str(e)}"
+                    }
+                }
+        
+        expected_prev_hash = record.record_hash
+        
+    return {
+        "status": "VALID",
+        "records_checked": records_checked,
+        "first_error": None
+    }

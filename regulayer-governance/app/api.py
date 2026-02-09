@@ -12,7 +12,7 @@ CRITICAL CONSTRAINTS:
 
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import List, Optional
@@ -29,9 +29,9 @@ from .models import (
 )
 from .storage import (
     get_governance_session,
-    GovernanceMetadataDB,
     GovernanceTagDB,
-    GovernanceAnnotationDB
+    GovernanceAnnotationDB,
+    GovernanceReviewHistoryDB
 )
 from .access_control import (
     GovernanceRole,
@@ -45,6 +45,7 @@ from .access_control import (
     get_role_capabilities
 )
 from .audit_logger import log_governance_action, GovernanceAction
+from .config import settings
 
 router = APIRouter(prefix="/v1/governance", tags=["governance"])
 
@@ -63,6 +64,22 @@ def get_actor_role(x_actor_role: Optional[str] = Header(None, alias="X-Actor-Rol
     except ValueError:
         return GovernanceRole.ANALYST
 
+def verify_internal_auth(x_internal_auth: Optional[str] = Header(None, alias="X-Internal-Auth")):
+    """
+    Verify request comes from trusted internal source (Gateway/Recorder).
+    """
+    if not x_internal_auth or x_internal_auth != settings.governance_internal_secret:
+        raise HTTPException(status_code=403, detail="Forbidden: Internal Auth Required")
+
+def verify_org_not_frozen(x_org_status: Optional[str] = Header(None, alias="X-Org-Status")):
+    """
+    Block writes if Organization is Frozen.
+    """
+    if x_org_status and x_org_status.lower() == "frozen":
+        raise HTTPException(
+            status_code=403, 
+            detail="Forbidden: Organization is Frozen. Governance actions are disabled."
+        )
 
 @router.get("/roles/{role}/capabilities")
 async def get_capabilities(role: str):
@@ -82,6 +99,24 @@ async def get_capabilities(role: str):
     }
 
 
+async def get_current_review_state(session: AsyncSession, decision_id: UUID) -> GovernanceReviewState:
+    """
+    Compute current review state from history.
+    """
+    stmt = (
+        select(GovernanceReviewHistoryDB)
+        .where(GovernanceReviewHistoryDB.decision_id == decision_id)
+        .order_by(desc(GovernanceReviewHistoryDB.timestamp))
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    history = result.scalars().first()
+    
+    if history:
+        return GovernanceReviewState(history.review_state)
+    return GovernanceReviewState.UNREVIEWED
+
+
 @router.get(
     "/queue",
     response_model=List[GovernanceMetadata],
@@ -96,52 +131,73 @@ async def get_review_queue(
     """
     List decisions pending review.
     
-    Default status: 'unreviewed'.
+    NOTE: With event sourcing, efficient querying for 'latest state' is complex.
+    For this phase, we might need a simplified approach or a specific view.
+    
+    For now, we just list latest history items that match status.
+    This is an approximation: it might show old states if we don't dedupe.
+    
+    Correct approach: DISTINCT ON (decision_id) ... in Postgres.
     """
-    # Validate status enum if provided
+    # Using Postgres DISTINCT ON to get latest per decision_id
+    from sqlalchemy import text
+    
+    # This is rough raw SQL because DISTINCT ON is dialect specific and simpler here
+    # We want latest history entry for each decision
+    # Then filter by status
+    
+    # Allow filtering
     filter_status = GovernanceReviewState.UNREVIEWED.value
     if status:
         try:
             filter_status = GovernanceReviewState(status).value
         except ValueError:
-            pass # Keep default or allow filtering by any string? Better to be strict.
-            # Actually, let's just use the string for now to match DB.
             filter_status = status
 
+    # Complex query to get decisions where LATEST state is X
+    # SELECT DISTINCT ON (decision_id) * FROM governance_review_history ORDER BY decision_id, timestamp DESC
     stmt = (
-        select(GovernanceMetadataDB)
-        .where(GovernanceMetadataDB.review_state == filter_status)
-        .order_by(GovernanceMetadataDB.last_updated.desc())
-        .limit(limit)
-        .offset(offset)
+        select(GovernanceReviewHistoryDB)
+        .distinct(GovernanceReviewHistoryDB.decision_id)
+        .order_by(GovernanceReviewHistoryDB.decision_id, desc(GovernanceReviewHistoryDB.timestamp))
     )
     
-    result = await session.execute(stmt)
-    metadatas = result.scalars().all()
+    # We fetch all distinct latest (inefficient for huge DB, fine for now)
+    # Then filter in memory or wrap in subquery. 
+    # Subquery is better.
     
-    # We need to fetch tags/annotations for these? 
-    # The response_model is GovernanceMetadata which includes them.
-    # This implies N+1 queries if we loop.
-    # For a list view, we might want a lighter model, but let's stick to full model for MVP simplicity.
-    # We will fetch full details for each.
+    subq = (
+        select(GovernanceReviewHistoryDB)
+        .distinct(GovernanceReviewHistoryDB.decision_id)
+        .order_by(GovernanceReviewHistoryDB.decision_id, desc(GovernanceReviewHistoryDB.timestamp))
+    ).subquery()
+    
+    stmt = select(subq).where(subq.c.review_state == filter_status).limit(limit).offset(offset)
+    
+    result = await session.execute(stmt)
+    histories = result.all() # These are Row objects from subquery
     
     full_results = []
-    for m in metadatas:
-        # Fetch tags
-        stmt_tags = select(GovernanceTagDB).where(GovernanceTagDB.decision_id == m.decision_id)
+    for h in histories:
+        # h is a Row, need attribute access via column names
+        d_id = h.decision_id
+        
+        # Get details
+        # Tags
+        stmt_tags = select(GovernanceTagDB).where(GovernanceTagDB.decision_id == d_id)
         res_tags = await session.execute(stmt_tags)
         tags = res_tags.scalars().all()
         
-        # Fetch annotations
+        # Annotations
         stmt_notes = select(GovernanceAnnotationDB).where(
-            GovernanceAnnotationDB.decision_id == m.decision_id
-        ).order_by(GovernanceAnnotationDB.created_at.desc())
+            GovernanceAnnotationDB.decision_id == d_id
+        ).order_by(desc(GovernanceAnnotationDB.created_at))
         res_notes = await session.execute(stmt_notes)
         notes = res_notes.scalars().all()
         
         full_results.append(GovernanceMetadata(
-            decision_id=m.decision_id,
-            review_state=GovernanceReviewState(m.review_state),
+            decision_id=d_id,
+            review_state=GovernanceReviewState(h.review_state),
             tags=[
                 GovernanceTag(
                     id=t.id,
@@ -161,11 +217,10 @@ async def get_review_queue(
                     created_at=a.created_at
                 ) for a in notes
             ],
-            last_updated=m.last_updated
+            last_updated=h.timestamp
         ))
         
     return full_results
-
 
 
 @router.get(
@@ -179,40 +234,41 @@ async def get_governance(
 ) -> GovernanceMetadata:
     """
     Retrieve full governance metadata for a decision.
-    
-    NOTE: Governance metadata does NOT affect cryptographic validity.
     """
-    # Get or create metadata record
-    stmt = select(GovernanceMetadataDB).where(GovernanceMetadataDB.decision_id == decision_id)
-    result = await session.execute(stmt)
-    metadata = result.scalars().first()
+    # 1. Compute Review State (Deterministic)
+    current_state = await get_current_review_state(session, decision_id)
     
-    if not metadata:
-        # Auto-create unreviewed record
-        metadata = GovernanceMetadataDB(
-            decision_id=decision_id,
-            review_state=GovernanceReviewState.UNREVIEWED.value,
-            last_updated=datetime.now(timezone.utc)
-        )
-        session.add(metadata)
-        await session.commit()
-        await session.refresh(metadata)
-    
-    # Get tags
+    # 2. Get tags
     stmt = select(GovernanceTagDB).where(GovernanceTagDB.decision_id == decision_id)
     result = await session.execute(stmt)
     tags_db = result.scalars().all()
     
-    # Get annotations
+    # 3. Get annotations
     stmt = select(GovernanceAnnotationDB).where(
         GovernanceAnnotationDB.decision_id == decision_id
-    ).order_by(GovernanceAnnotationDB.created_at.desc())
+    ).order_by(desc(GovernanceAnnotationDB.created_at))
     result = await session.execute(stmt)
     annotations_db = result.scalars().all()
     
+    # 4. Get last updated timestamp from latest history or annotation
+    last_updated = datetime.now(timezone.utc) # Default?
+    # Ideally max(latest_history, latest_annotation, latest_tag)
+    # Simplify: just use now or latest_history timestamp if available
+    
+    stmt = (
+        select(GovernanceReviewHistoryDB.timestamp)
+        .where(GovernanceReviewHistoryDB.decision_id == decision_id)
+        .order_by(desc(GovernanceReviewHistoryDB.timestamp))
+        .limit(1)
+    )
+    res_ts = await session.execute(stmt)
+    ts = res_ts.scalar_one_or_none()
+    if ts:
+        last_updated = ts
+
     return GovernanceMetadata(
-        decision_id=metadata.decision_id,
-        review_state=GovernanceReviewState(metadata.review_state),
+        decision_id=decision_id,
+        review_state=current_state,
         tags=[
             GovernanceTag(
                 id=t.id,
@@ -232,7 +288,7 @@ async def get_governance(
                 created_at=a.created_at
             ) for a in annotations_db
         ],
-        last_updated=metadata.last_updated
+        last_updated=last_updated
     )
 
 
@@ -240,7 +296,8 @@ async def get_governance(
     "/{decision_id}/annotations",
     response_model=GovernanceAnnotation,
     status_code=status.HTTP_201_CREATED,
-    summary="Add annotation (append-only)"
+    summary="Add annotation (append-only)",
+    dependencies=[Depends(verify_internal_auth), Depends(verify_org_not_frozen)]
 )
 async def add_annotation(
     decision_id: UUID,
@@ -249,23 +306,7 @@ async def add_annotation(
 ) -> GovernanceAnnotation:
     """
     Append an annotation to a decision.
-    
-    IMMUTABILITY RULE:
-    Annotations are APPEND-ONLY and NEVER editable, even by admins.
     """
-    # Ensure metadata record exists
-    stmt = select(GovernanceMetadataDB).where(GovernanceMetadataDB.decision_id == decision_id)
-    result = await session.execute(stmt)
-    metadata = result.scalars().first()
-    
-    if not metadata:
-        metadata = GovernanceMetadataDB(
-            decision_id=decision_id,
-            review_state=GovernanceReviewState.UNREVIEWED.value,
-            last_updated=datetime.now(timezone.utc)
-        )
-        session.add(metadata)
-    
     # Create annotation
     annotation = GovernanceAnnotationDB(
         decision_id=decision_id,
@@ -275,8 +316,20 @@ async def add_annotation(
     )
     session.add(annotation)
     
-    # Update last_updated
-    metadata.last_updated = datetime.now(timezone.utc)
+    # Audit Log
+    # Need actor_id from somewhere? For now generate random or from header if we had it
+    # We will assume a system/user ID is passed or use a placeholder for this phase
+    import uuid
+    dummy_actor_id = uuid.uuid4() 
+
+    await log_governance_action(
+        session,
+        decision_id=decision_id,
+        action=GovernanceAction.ANNOTATION_ADDED,
+        actor_id=dummy_actor_id, # TODO: Phase 2 Auth
+        actor_role=body.author_role,
+        details={"note_preview": body.note[:50]}
+    )
     
     await session.commit()
     await session.refresh(annotation)
@@ -294,7 +347,8 @@ async def add_annotation(
     "/{decision_id}/tags",
     response_model=GovernanceTag,
     status_code=status.HTTP_201_CREATED,
-    summary="Add tag (no deletion in Phase 4.1)"
+    summary="Add tag (no deletion in Phase 4.1)",
+    dependencies=[Depends(verify_internal_auth), Depends(verify_org_not_frozen)]
 )
 async def add_tag(
     decision_id: UUID,
@@ -303,22 +357,7 @@ async def add_tag(
 ) -> GovernanceTag:
     """
     Add a tag to a decision.
-    
-    Tags are ADD-ONLY in Phase 4.1. Deletion will be added later.
     """
-    # Ensure metadata record exists
-    stmt = select(GovernanceMetadataDB).where(GovernanceMetadataDB.decision_id == decision_id)
-    result = await session.execute(stmt)
-    metadata = result.scalars().first()
-    
-    if not metadata:
-        metadata = GovernanceMetadataDB(
-            decision_id=decision_id,
-            review_state=GovernanceReviewState.UNREVIEWED.value,
-            last_updated=datetime.now(timezone.utc)
-        )
-        session.add(metadata)
-    
     # Create tag
     tag = GovernanceTagDB(
         decision_id=decision_id,
@@ -329,8 +368,17 @@ async def add_tag(
     )
     session.add(tag)
     
-    # Update last_updated
-    metadata.last_updated = datetime.now(timezone.utc)
+    import uuid
+    dummy_actor_id = uuid.uuid4()
+
+    await log_governance_action(
+        session,
+        decision_id=decision_id,
+        action=GovernanceAction.TAG_ADDED,
+        actor_id=dummy_actor_id,
+        actor_role="system", # Tags often auto / analyst
+        details={"tag": body.name, "category": body.category}
+    )
     
     await session.commit()
     await session.refresh(tag)
@@ -345,44 +393,31 @@ async def add_tag(
     )
 
 
-@router.patch(
-    "/{decision_id}/review-state",
+@router.post(
+    "/{decision_id}/reviews", # Changed from PATCH review-state to POST reviews (append)
     response_model=GovernanceMetadata,
-    summary="Update review state (tracking only)"
+    summary="Submit review decision (append-only)",
+    dependencies=[Depends(verify_internal_auth), Depends(verify_org_not_frozen)]
 )
 async def update_review_state(
     decision_id: UUID,
     body: ReviewStateUpdate,
+    x_actor_role: str = Header(..., alias="X-Actor-Role"), # Required for review
     session: AsyncSession = Depends(get_governance_session)
 ) -> GovernanceMetadata:
     """
-    Transition the review state.
+    Submit a review decision.
     
-    VALID TRANSITIONS:
-    - unreviewed → in_review
-    - in_review → reviewed | escalated
-    - reviewed → escalated | in_review
-    - escalated → in_review
-    
-    Invalid transitions return 409 Conflict.
-    This is TRACKING only, not approval.
+    Appends to history. Latest wins.
     """
-    stmt = select(GovernanceMetadataDB).where(GovernanceMetadataDB.decision_id == decision_id)
-    result = await session.execute(stmt)
-    metadata = result.scalars().first()
-    
-    if not metadata:
-        # Create with unreviewed state first
-        metadata = GovernanceMetadataDB(
-            decision_id=decision_id,
-            review_state=GovernanceReviewState.UNREVIEWED.value,
-            last_updated=datetime.now(timezone.utc)
-        )
-        session.add(metadata)
-        await session.commit()
-        await session.refresh(metadata)
-    
-    current_state = GovernanceReviewState(metadata.review_state)
+    # Role Enforcement
+    role = GovernanceRole(x_actor_role.lower())
+    if role not in [GovernanceRole.ADMIN, GovernanceRole.OWNER, GovernanceRole.COMPLIANCE]:
+         # Strict check: Members/Analysts/Auditors cannot review
+         # Only Admin, Owner, Compliance
+         raise HTTPException(status_code=403, detail="Forbidden: Insufficient permissions to review.")
+
+    current_state = await get_current_review_state(session, decision_id)
     new_state = body.new_state
     
     # Validate transition
@@ -397,9 +432,27 @@ async def update_review_state(
             }
         )
     
-    # Apply transition
-    metadata.review_state = new_state.value
-    metadata.last_updated = datetime.now(timezone.utc)
+    # Append History
+    import uuid
+    dummy_actor_id = uuid.uuid4()
+    
+    history_entry = GovernanceReviewHistoryDB(
+        decision_id=decision_id,
+        review_state=new_state.value,
+        actor_role=role.value,
+        actor_id=dummy_actor_id,
+        timestamp=datetime.now(timezone.utc)
+    )
+    session.add(history_entry)
+    
+    await log_governance_action(
+        session,
+        decision_id=decision_id,
+        action=GovernanceAction.REVIEW_COMPLETED, # Or specific state
+        actor_id=dummy_actor_id,
+        actor_role=role.value,
+        details={"old_state": current_state.value, "new_state": new_state.value}
+    )
     
     await session.commit()
     
@@ -424,11 +477,6 @@ async def export_evidence(
 ) -> GovernanceEvidenceBundle:
     """
     Export a complete governance evidence bundle.
-    
-    This is READ-ONLY and SAFE to share with auditors.
-    
-    WARNING: This does NOT include cryptographic data.
-    It documents ORGANIZATIONAL PROCESS, not cryptographic facts.
     """
     return await evidence_generator.generate_evidence(decision_id, session)
 
@@ -444,11 +492,5 @@ async def get_timeline(
 ) -> GovernanceTimeline:
     """
     Get a human-readable governance timeline.
-    
-    Shows all governance events in chronological order:
-    - Annotations
-    - Policy matches
-    - State changes
-    - Approvals
     """
     return await evidence_generator.generate_timeline(decision_id, session)

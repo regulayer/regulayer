@@ -1,126 +1,143 @@
-import Link from 'next/link';
-import { Shield, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react';
 
-// Mock data - in production this would fetch from /v1/status
-const statusData = {
-    status: 'OPERATIONAL',
-    lastUpdated: '2026-01-24T18:30:00Z',
-    activeIncidents: 0,
-    components: [
-        { name: 'Ingestion Gateway', status: 'operational' },
-        { name: 'Decision Recorder', status: 'operational' },
-        { name: 'Verification Service', status: 'operational' },
-        { name: 'Control Plane', status: 'operational' },
-        { name: 'Billing Service', status: 'operational' },
-        { name: 'Queue System', status: 'operational' },
-    ]
-};
+'use client';
 
-const getStatusIcon = (status: string) => {
-    switch (status) {
-        case 'operational':
-            return <CheckCircle className="w-5 h-5 text-green-500" />;
-        case 'degraded':
-            return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-        case 'partial_outage':
-            return <AlertTriangle className="w-5 h-5 text-orange-500" />;
-        case 'major_outage':
-            return <XCircle className="w-5 h-5 text-red-500" />;
-        default:
-            return <Clock className="w-5 h-5 text-slate-400" />;
-    }
-};
+import React, { useEffect, useState } from 'react';
+import { ShieldCheck, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 
-const getStatusColor = (status: string) => {
-    switch (status) {
-        case 'OPERATIONAL':
-            return 'bg-green-500';
-        case 'DEGRADED':
-            return 'bg-amber-500';
-        case 'PARTIAL_OUTAGE':
-            return 'bg-orange-500';
-        case 'MAJOR_OUTAGE':
-            return 'bg-red-500';
-        default:
-            return 'bg-slate-400';
-    }
-};
+type SystemStatus = 'operational' | 'degraded' | 'critical';
+
+interface StatusResponse {
+    status: SystemStatus;
+    last_updated: string;
+}
 
 export default function StatusPage() {
-    return (
-        <div className="min-h-screen bg-slate-50">
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 py-6 px-8">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2">
-                        <Shield className="w-8 h-8 text-primary-600" />
-                        <span className="text-xl font-bold text-slate-900">Regulayer Status</span>
-                    </Link>
-                    <a
-                        href="/docs"
-                        className="text-slate-500 hover:text-slate-700 text-sm"
-                    >
-                        Return to Regulayer
-                    </a>
-                </div>
-            </header>
+    const [status, setStatus] = useState<SystemStatus | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
+    const [loading, setLoading] = useState(true);
 
-            <main className="max-w-4xl mx-auto px-8 py-12">
-                {/* Overall Status */}
-                <div className={`rounded-2xl p-8 mb-8 ${statusData.status === 'OPERATIONAL' ? 'bg-green-50 border border-green-200' :
-                        statusData.status === 'DEGRADED' ? 'bg-amber-50 border border-amber-200' :
-                            'bg-red-50 border border-red-200'
-                    }`}>
-                    <div className="flex items-center gap-4">
-                        <div className={`w-4 h-4 rounded-full ${getStatusColor(statusData.status)}`} />
+    const fetchStatus = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/v1/public/status`);
+            if (res.ok) {
+                const data: StatusResponse = await res.json();
+                setStatus(data.status);
+                setLastUpdated(data.last_updated);
+            } else {
+                setStatus('degraded'); // Assume issues if status page fails
+            }
+        } catch (e) {
+            setStatus('degraded');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 30000); // Poll every 30s
+        return () => clearInterval(interval);
+    }, []);
+
+    const getStatusConfig = (s: SystemStatus) => {
+        switch (s) {
+            case 'operational':
+                return {
+                    icon: ShieldCheck,
+                    color: 'text-green-600',
+                    bg: 'bg-green-50',
+                    border: 'border-green-200',
+                    label: 'All Systems Operational',
+                    desc: 'Regulayer core services are running normally.'
+                };
+            case 'degraded':
+                return {
+                    icon: AlertTriangle,
+                    color: 'text-yellow-600',
+                    bg: 'bg-yellow-50',
+                    border: 'border-yellow-200',
+                    label: 'Partial Degradation',
+                    desc: 'Some non-critical services are experiencing issues.'
+                };
+            case 'critical':
+                return {
+                    icon: XCircle,
+                    color: 'text-red-600',
+                    bg: 'bg-red-50',
+                    border: 'border-red-200',
+                    label: 'Critical System Outage',
+                    desc: 'Core services (Ingestion/Recorder) are currently unavailable.'
+                };
+            default:
+                return {
+                    icon: RefreshCw,
+                    color: 'text-gray-600',
+                    bg: 'bg-gray-50',
+                    border: 'border-gray-200',
+                    label: 'Checking Status...',
+                    desc: 'Contacting Regulayer Operations...'
+                };
+        }
+    };
+
+    const config = getStatusConfig(status || 'operational');
+    const Icon = config.icon;
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+            <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+
+                {/* Header */}
+                <div className="bg-slate-900 px-8 py-6 text-center">
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Regulayer System Status</h1>
+                </div>
+
+                {/* Status Card */}
+                <div className="p-8">
+                    <div className={`p-6 rounded-xl border-2 ${config.bg} ${config.border} flex items-start gap-4 transition-all duration-500`}>
+                        <div className={`p-3 rounded-full bg-white shadow-sm ${config.color}`}>
+                            <Icon className="w-8 h-8" />
+                        </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900">
-                                {statusData.status === 'OPERATIONAL' ? 'All Systems Operational' :
-                                    statusData.status === 'DEGRADED' ? 'Degraded Performance' :
-                                        'System Issues Detected'}
-                            </h1>
+                            <h2 className={`text-xl font-bold ${config.color} mb-1`}>
+                                {loading && !status ? "Checking..." : config.label}
+                            </h2>
                             <p className="text-slate-600">
-                                Last updated: {new Date(statusData.lastUpdated).toLocaleString()}
+                                {config.desc}
                             </p>
                         </div>
                     </div>
-                </div>
 
-                {/* Components */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-8">
-                    <div className="px-6 py-4 border-b border-slate-200">
-                        <h2 className="text-lg font-semibold text-slate-900">System Components</h2>
+                    {/* Service Grid (Static for now, could be dynamic) */}
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ServiceItem name="Ingestion API" status={status === 'critical' ? 'down' : 'up'} />
+                        <ServiceItem name="Cryptographic Recorder" status={status === 'critical' ? 'down' : 'up'} />
+                        <ServiceItem name="Governance Control Plane" status={status === 'critical' ? 'down' : 'up'} />
+                        <ServiceItem name="Verification Network" status="up" />
                     </div>
-                    <div className="divide-y divide-slate-100">
-                        {statusData.components.map((component) => (
-                            <div key={component.name} className="px-6 py-4 flex items-center justify-between">
-                                <span className="text-slate-900">{component.name}</span>
-                                <div className="flex items-center gap-2">
-                                    {getStatusIcon(component.status)}
-                                    <span className="text-sm text-slate-500 capitalize">{component.status}</span>
-                                </div>
-                            </div>
-                        ))}
+
+                    <div className="mt-8 pt-6 border-t border-slate-100 text-center text-sm text-slate-500">
+                        Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Just now'}
                     </div>
                 </div>
+            </div>
 
-                {/* Trust Notice */}
-                <div className="bg-slate-100 rounded-xl p-6">
-                    <h3 className="font-semibold text-slate-900 mb-2">Operational Status ≠ Cryptographic Validity</h3>
-                    <p className="text-sm text-slate-600">
-                        This page shows operational health of Regulayer services.
-                        Service outages do not affect the validity of previously recorded decisions.
-                        Proof verification works offline without Regulayer infrastructure.
-                    </p>
-                </div>
-            </main>
-
-            {/* Footer */}
-            <footer className="border-t border-slate-200 py-8 px-8">
-                <div className="max-w-4xl mx-auto text-center text-slate-500 text-sm">
-                    <p>© 2026 Regulayer. Status updates every 60 seconds.</p>
-                </div>
-            </footer>
+            <div className="mt-8 text-center text-slate-400 text-sm">
+                <a href="/" className="hover:text-slate-600 transition-colors">← Back to Home</a>
+            </div>
         </div>
     );
+}
+
+function ServiceItem({ name, status }: { name: string, status: 'up' | 'down' | 'degraded' }) {
+    const isUp = status === 'up';
+    return (
+        <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50">
+            <span className="font-medium text-slate-700">{name}</span>
+            <span className={`px-2 py-1 rounded-full text-xs font-bold ${isUp ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {isUp ? 'OPERATIONAL' : 'OUTAGE'}
+            </span>
+        </div>
+    )
 }

@@ -23,6 +23,7 @@ class TenantContext:
     project_id: UUID
     key_id: UUID
     environment: str
+    org_status: str
     scopes: list[str]
     
     def has_scope(self, scope: str) -> bool:
@@ -106,6 +107,7 @@ async def validate_api_key(api_key: str, project_id: str) -> TenantContext:
         project_id=UUID(str(data["project_id"])),
         key_id=UUID(str(data.get("key_id", "00000000-0000-0000-0000-000000000000"))),
         environment=data.get("environment", "production"),
+        org_status=data.get("org_status", "active"),
         scopes=scopes
     )
 
