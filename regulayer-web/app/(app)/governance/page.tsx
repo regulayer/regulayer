@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-    Shield,
     CheckCircle,
     Clock,
-    AlertCircle,
     Search,
     Filter,
     ChevronRight

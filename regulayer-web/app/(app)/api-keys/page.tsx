@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Key, Plus, Eye, EyeOff, Copy, Trash2, AlertTriangle } from 'lucide-react';
+import { Key, Plus, Copy, Trash2, AlertTriangle } from 'lucide-react';
 
 export default function ApiKeysPage() {
     const [keys] = useState([

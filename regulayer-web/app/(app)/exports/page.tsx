@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    Download, FileText, Shield, ExternalLink,
-    ChevronDown, ChevronRight, Copy, CheckCircle, Lock
+    Download, FileText, Shield,
+    ChevronDown, ChevronRight, Copy, CheckCircle, Lock, AlertTriangle
 } from 'lucide-react';
+import { getMe } from '@/lib/api';
 
 // ============================================================
 // Types
@@ -109,6 +110,22 @@ function ExportRow({ exp }: { exp: Export }) {
 // ============================================================
 
 export default function ExportsPage() {
+    const [isDemo, setIsDemo] = useState(false);
+
+    useEffect(() => {
+        async function checkOrg() {
+            try {
+                const res = await getMe();
+                if (res.data?.org?.is_demo) {
+                    setIsDemo(true);
+                }
+            } catch {
+                // Ignore
+            }
+        }
+        checkOrg();
+    }, []);
+
     const [exports] = useState<Export[]>([
         {
             id: 'exp_001',
@@ -147,6 +164,19 @@ export default function ExportsPage() {
     return (
         <div className="min-h-screen bg-slate-50">
             <div className="max-w-7xl mx-auto px-8 py-8">
+                {/* Demo Watermark Banner */}
+                {isDemo && (
+                    <div className="bg-amber-100 border-2 border-amber-400 rounded-lg p-4 mb-6 flex items-center gap-3">
+                        <AlertTriangle className="w-6 h-6 text-amber-600" />
+                        <div>
+                            <p className="font-bold text-amber-800">DEMO ACCOUNT — NOT FOR PRODUCTION USE</p>
+                            <p className="text-sm text-amber-700">
+                                Exports from demo accounts are watermarked and should not be used for legal or regulatory purposes.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-slate-900">Exports</h1>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Shield, Check, Zap, Building2 } from 'lucide-react';
+import { Shield, Check } from 'lucide-react';
 
 const plans = [
     {
@@ -96,8 +96,8 @@ export default function PricingPage() {
                         <div
                             key={plan.name}
                             className={`bg-white rounded-2xl border-2 p-8 ${plan.highlighted
-                                    ? 'border-primary-500 shadow-lg relative'
-                                    : 'border-slate-200'
+                                ? 'border-primary-500 shadow-lg relative'
+                                : 'border-slate-200'
                                 }`}
                         >
                             {plan.highlighted && (
@@ -127,8 +127,8 @@ export default function PricingPage() {
                             <Link
                                 href={plan.href}
                                 className={`block w-full text-center py-3 rounded-lg font-medium transition ${plan.highlighted
-                                        ? 'bg-primary-600 text-white hover:bg-primary-700'
-                                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                                    : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
                                     }`}
                             >
                                 {plan.cta}

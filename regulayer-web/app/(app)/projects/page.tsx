@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
     FolderOpen, Plus, Copy, CheckCircle,
-    Key, ExternalLink, ChevronRight
+    Key
 } from 'lucide-react';
 
 // ============================================================

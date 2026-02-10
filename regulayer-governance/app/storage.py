@@ -9,10 +9,12 @@ CRITICAL CONSTRAINTS:
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Index
+import uuid
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Index, func, JSON, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+
 
 from .config import settings
 
@@ -85,30 +87,32 @@ class GovernanceReviewHistoryDB(Base):
     """
     __tablename__ = "governance_review_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    decision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    review_state: Mapped[str] = mapped_column(String, nullable=False) # e.g., "pending", "approved", "rejected"
-    actor_role: Mapped[str] = mapped_column(String, nullable=False) # "owner", "admin"
-    actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    decision_id = Column(PGUUID(as_uuid=True), index=True, nullable=False)
+    review_state = Column(String, nullable=False) # e.g., "pending", "approved", "rejected"
+    actor_role = Column(String, nullable=False) # "owner", "admin"
+    actor_id = Column(PGUUID(as_uuid=True), index=True, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
         # Composite index for fast state resolution: SELECT * ... ORDER BY timestamp DESC LIMIT 1
         Index('idx_gov_review_history_decision_ts', 'decision_id', text('timestamp DESC')),
     )
 
+
 class GovernanceAccessLogDB(Base):
     """
     APPEND-ONLY: Audit log for all governance actions.
     """
+    __tablename__ = "governance_access_logs"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    decision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    action: Mapped[str] = mapped_column(String, nullable=False)
-    actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=True) # made nullable for system events if any
-    actor_role: Mapped[str] = mapped_column(String, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
-    details: Mapped[dict] = mapped_column(JSON, default={})
+    id = Column(Integer, primary_key=True, index=True)
+    decision_id = Column(PGUUID(as_uuid=True), index=True, nullable=False)
+    action = Column(String, nullable=False)
+    actor_id = Column(PGUUID(as_uuid=True), index=True) # nullable=True
+    actor_role = Column(String, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+    details = Column(JSON, default={})
 
     __table_args__ = (
         Index('idx_governance_access_logs_decision', 'decision_id'),

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
     Cloud, Server, Layers, Shield,
     CheckCircle, AlertCircle, Info, Lock,
-    ExternalLink, Building2
+    Building2
 } from 'lucide-react';
 
 // ============================================================
@@ -157,7 +157,6 @@ function LocationsTable({ mode }: { mode: ModeConfig }) {
 
 export default function DeploymentSettingsPage() {
     const [currentMode, setCurrentMode] = useState<DeploymentMode>('saas_shared');
-    const [showChangeModal, setShowChangeModal] = useState(false);
 
     const activeMode = MODES.find((m) => m.id === currentMode)!;
 

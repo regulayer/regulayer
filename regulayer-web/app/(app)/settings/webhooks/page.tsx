@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     Webhook, Plus, Copy, CheckCircle,
-    AlertCircle, Trash2, TestTube, ExternalLink
+    AlertCircle, Trash2, TestTube
 } from 'lucide-react';
 
 // ============================================================
@@ -148,7 +148,7 @@ export default function WebhooksPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
 
-    const [webhooks, setWebhooks] = useState<WebhookConfig[]>([
+    const [webhooks] = useState<WebhookConfig[]>([
         {
             id: 'wh_001',
             name: 'Slack Notifications',
@@ -248,9 +248,9 @@ export default function WebhooksPage() {
                                     </div>
 
                                     <div className="flex flex-wrap gap-2 mb-3">
-                                        {webhook.events.map((e) => (
-                                            <span key={e} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                                                {e}
+                                        {webhook.events.map((ev) => (
+                                            <span key={ev} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                                {ev}
                                             </span>
                                         ))}
                                     </div>

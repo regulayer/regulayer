@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
-    FileText,
     Download,
     Shield,
     Link as LinkIcon,
-    CheckCircle,
     AlertCircle
 } from 'lucide-react';
 
@@ -25,7 +23,7 @@ const reportOptions: ReportOption[] = [
     {
         id: 'system',
         title: 'System Trust Report',
-        description: 'Static document describing Regulayer\'s trust architecture. Suitable for regulator briefings.',
+        description: 'Static document describing Regulayer&apos;s trust architecture. Suitable for regulator briefings.',
         endpoint: '/v1/reports/system',
         icon: <Shield className="w-6 h-6" />
     },
@@ -64,8 +62,12 @@ function ReportCard({ report }: { report: ReportOption }) {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('An unknown error occurred');
+            }
         } finally {
             setDownloading(false);
         }
@@ -133,7 +135,7 @@ export default function ReportsPage() {
                     <p className="text-slate-500 text-sm mb-4">
                         To generate a trust report for a specific decision, navigate to the decision in the
                         <Link href="/governance" className="text-primary-600 hover:underline mx-1">Governance</Link>
-                        section and use the "Download Evidence Bundle" option.
+                        section and use the &quot;Download Evidence Bundle&quot; option.
                     </p>
                 </div>
             </div>

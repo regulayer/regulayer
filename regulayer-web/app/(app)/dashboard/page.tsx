@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-    Shield, CheckCircle, Clock, AlertCircle,
-    Activity, Lock, ExternalLink, ChevronRight, Copy
+    CheckCircle, Clock, AlertCircle,
+    Activity, ChevronRight, Copy
 } from 'lucide-react';
 import { getMe, getProjects, getDecisions, getUsage, Decision, getApiKeys } from '@/lib/api';
 
@@ -249,7 +249,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [orgState, setOrgState] = useState<OrgState | null>(null);
     const [decisions, setDecisions] = useState<Decision[]>([]);
-    const [statusBanner, setStatusBanner] = useState<'gateway_down' | 'frozen' | 'billing' | null>(null);
+    const [statusBanner] = useState<'gateway_down' | 'frozen' | 'billing' | null>(null);
     const [demoApiKey, setDemoApiKey] = useState<string>('');
 
     useEffect(() => {
@@ -295,7 +295,7 @@ export default function Dashboard() {
                 const usageRes = await getUsage(orgId);
                 if (usageRes.data) {
                     setOrgState({
-                        status: (meRes.data.org.status === 'suspended' ? 'frozen' : meRes.data.org.status) || 'active',
+                        status: (meRes.data.org.status === 'suspended' ? 'frozen' : meRes.data.org.status) as 'active' | 'frozen' | 'trial_ended',
                         plan: 'pro', // TODO: Get from org/billing
                         usageToday: usageRes.data.used || 0,
                         usageLimit: usageRes.data.limit || 10000,

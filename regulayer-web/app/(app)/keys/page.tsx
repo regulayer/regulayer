@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import {
-    Key, Plus, Copy, CheckCircle, AlertTriangle,
-    Shield, Eye, Download, Clock
+    Plus, AlertTriangle
 } from 'lucide-react';
 
 // ============================================================

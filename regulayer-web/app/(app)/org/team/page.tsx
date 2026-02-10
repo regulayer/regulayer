@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    Users, Plus, Mail, Shield, Eye, Edit3,
+    Plus,
     CheckCircle, Clock, AlertCircle, MoreVertical,
-    UserMinus, ChevronDown
+    UserMinus
 } from 'lucide-react';
+import { getMe, listTeamMembers, inviteTeamMember, changeUserRole, TeamMember as ApiTeamMember } from '@/lib/api';
 
 // ============================================================
 // Types
 // ============================================================
 
 type Role = 'owner' | 'admin' | 'member' | 'auditor';
-type InviteStatus = 'active' | 'pending' | 'expired';
+type InviteStatus = 'active' | 'pending' | 'deactivated';
 
 interface TeamMember {
     id: string;
@@ -29,7 +30,7 @@ interface TeamMember {
 
 const roleConfig: Record<Role, { bg: string; text: string; label: string; description: string }> = {
     owner: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Owner', description: 'Full org control + billing' },
-    admin: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Admin', description: 'Governance + approvals' },
+    admin: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Admin', description: 'Manage keys, projects, governance' },
     member: { bg: 'bg-green-100', text: 'text-green-700', label: 'Member', description: 'Annotate & tag only' },
     auditor: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Auditor', description: 'View & export only' },
 };
@@ -37,23 +38,26 @@ const roleConfig: Record<Role, { bg: string; text: string; label: string; descri
 function RoleBadge({ role }: { role: Role }) {
     const config = roleConfig[role];
     return (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${config.bg} ${config.text}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
             {config.label}
         </span>
     );
 }
 
 function StatusBadge({ status }: { status: InviteStatus }) {
-    const configs: Record<InviteStatus, { bg: string; text: string; icon: React.ReactNode }> = {
-        active: { bg: 'bg-green-100', text: 'text-green-700', icon: <CheckCircle className="w-3 h-3" /> },
-        pending: { bg: 'bg-amber-100', text: 'text-amber-700', icon: <Clock className="w-3 h-3" /> },
-        expired: { bg: 'bg-red-100', text: 'text-red-700', icon: <AlertCircle className="w-3 h-3" /> },
-    };
-    const c = configs[status];
+    if (status === 'active') return (
+        <span className="flex items-center gap-1.5 text-xs text-green-600">
+            <CheckCircle className="w-3.5 h-3.5" /> Active
+        </span>
+    );
+    if (status === 'pending') return (
+        <span className="flex items-center gap-1.5 text-xs text-amber-600">
+            <Clock className="w-3.5 h-3.5" /> Pending
+        </span>
+    );
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${c.bg} ${c.text}`}>
-            {c.icon}
-            {status}
+        <span className="flex items-center gap-1.5 text-xs text-slate-400">
+            <AlertCircle className="w-3.5 h-3.5" /> Deactivated
         </span>
     );
 }
@@ -327,25 +331,77 @@ export default function TeamPage() {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [changeRoleMember, setChangeRoleMember] = useState<TeamMember | null>(null);
     const [removeMember, setRemoveMember] = useState<TeamMember | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
-    const currentUserRole: Role = 'owner';
+    const [currentUserRole, setCurrentUserRole] = useState<Role>('member');
 
-    const [members, setMembers] = useState<TeamMember[]>([
-        { id: '1', name: 'You', email: 'owner@company.com', role: 'owner', status: 'active', joinedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: '2', name: 'Alice Chen', email: 'alice@company.com', role: 'admin', status: 'active', joinedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: '3', name: 'Bob Smith', email: 'bob@company.com', role: 'member', status: 'active', joinedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-        { id: '4', name: 'Pending User', email: 'pending@company.com', role: 'member', status: 'pending', joinedAt: null },
-        { id: '5', name: 'External Auditor', email: 'auditor@kpmg.com', role: 'auditor', status: 'active', joinedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
-    ]);
+    const [members, setMembers] = useState<TeamMember[]>([]);
 
-    const handleInvite = (email: string, role: Role) => {
-        console.log('Inviting:', email, role);
+    useEffect(() => {
+        loadTeam();
+    }, []);
+
+    const loadTeam = async () => {
+        try {
+            const meRes = await getMe();
+            if (meRes.data) {
+                setCurrentUserRole((meRes.data.user?.role as Role) || 'member');
+                if (meRes.data.org?.id) {
+                    const oid = meRes.data.org.id;
+                    setOrgId(oid);
+                    const teamRes = await listTeamMembers(oid);
+                    if (teamRes.data) {
+                        setMembers(teamRes.data.map((u: ApiTeamMember) => ({
+                            id: u.id,
+                            name: u.email.split('@')[0],
+                            email: u.email,
+                            role: u.role as Role,
+                            status: 'active' as InviteStatus,
+                            joinedAt: u.created_at,
+                        })));
+                    }
+                }
+            }
+        } catch {
+            // Fallback to empty
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleInvite = async (email: string, role: Role) => {
+        if (!orgId) return;
+        try {
+            const res = await inviteTeamMember(orgId, {
+                email,
+                password: 'TempPass123!',
+                role: role as 'admin' | 'member' | 'auditor',
+            });
+            if (res.data) {
+                setMembers([...members, {
+                    id: res.data.id,
+                    name: email.split('@')[0],
+                    email: res.data.email,
+                    role: res.data.role as Role,
+                    status: 'active',
+                    joinedAt: res.data.created_at,
+                }]);
+            }
+        } catch {
+            // Error handled silently
+        }
         setShowInviteModal(false);
     };
 
-    const handleChangeRole = (newRole: Role) => {
+    const handleChangeRole = async (newRole: Role) => {
         if (changeRoleMember) {
-            setMembers(members.map(m => m.id === changeRoleMember.id ? { ...m, role: newRole } : m));
+            try {
+                await changeUserRole(changeRoleMember.id, newRole);
+                setMembers(members.map(m => m.id === changeRoleMember.id ? { ...m, role: newRole } : m));
+            } catch {
+                // Error handled silently
+            }
             setChangeRoleMember(null);
         }
     };
@@ -356,6 +412,7 @@ export default function TeamPage() {
             setRemoveMember(null);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -401,7 +458,11 @@ export default function TeamPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {members.map((member) => (
+                            {loading ? (
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">Loading team...</td></tr>
+                            ) : members.length === 0 ? (
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">No team members yet. Invite your first member.</td></tr>
+                            ) : members.map((member) => (
                                 <MemberRow
                                     key={member.id}
                                     member={member}

@@ -10,7 +10,7 @@ export default function ContinuityPage() {
                 We believe that your evidence belongs to you, forever. Our architecture ensures that your proofs remain verifiable even if Regulayer ceases to exist.
             </p>
 
-            <h2>1. The "Kill Switch" Mechanism</h2>
+            <h2>1. The &quot;Kill Switch&quot; Mechanism</h2>
             <p>
                 Regulayer creates self-contained, cryptographically verifiable proof bundles. These bundles depend on standard algorithms (SHA-256, Ed25519, Merkle Trees), not on our servers.
             </p>

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import {
-    Bell, Mail, Webhook, Check,
-    AlertCircle, Key, Snowflake, Clock
+    Bell, Mail,
+    AlertCircle
 } from 'lucide-react';
 
 // ============================================================

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
     Shield, Key, Terminal, Play, CheckCircle,
     Copy, ChevronRight, ChevronDown, Lock,
-    AlertCircle, Download, ExternalLink
+    AlertCircle, Download
 } from 'lucide-react';
 
 // ============================================================
@@ -138,7 +138,7 @@ function Step2ApiKey({ apiKey, onNext }: { apiKey: string; onNext: () => void })
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-amber-800 text-sm">
-                    <strong>Store this securely.</strong> You won't see it again.
+                    <strong>Store this securely.</strong> You won&apos;t see it again.
                 </p>
             </div>
 
@@ -196,7 +196,7 @@ function Step3Install({ onNext }: { onNext: () => void }) {
                 onClick={onNext}
                 className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700"
             >
-                I've Installed It
+                I&apos;ve Installed It
             </button>
         </div>
     );
@@ -345,7 +345,7 @@ export default function GetStartedWizard() {
         decisionRecorded: false,
         decisionId: null,
     });
-    const [error, setError] = useState<string | null>(null);
+    const [error] = useState<string | null>(null);
 
     // Simulate project creation and API key generation
     const handleStep1Complete = async () => {

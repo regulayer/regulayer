@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     FileText, UserPlus, Key, Shield, RefreshCw,
     Snowflake, AlertCircle, Clock
 } from 'lucide-react';
+import { getMe, getAuditLogs, AuditLogEntry } from '@/lib/api';
 
 // ============================================================
 // Types
@@ -56,7 +57,7 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
 
     return (
         <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-            {labels[type]}
+            {labels[type] || type}
         </span>
     );
 }
@@ -65,63 +66,46 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
 // Main Audit Log Page
 // ============================================================
 
+const mapAction = (action: string): AuditEventType => {
+    if (action.includes('invite') || action.includes('create_user')) return 'invite';
+    if (action.includes('role')) return 'role_change';
+    if (action.includes('revoke') || action.includes('key')) return 'key_revoke';
+    if (action.includes('freeze') || action.includes('frozen')) return 'org_freeze';
+    if (action.includes('unfreeze')) return 'org_unfreeze';
+    if (action.includes('remove')) return 'member_removed';
+    return 'invite';
+};
+
 export default function AuditLogPage() {
-    const [events] = useState<AuditEvent[]>([
-        {
-            id: '1',
-            type: 'invite',
-            actor: 'owner@company.com',
-            target: 'auditor@kpmg.com',
-            details: 'Invited as Auditor',
-            timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '2',
-            type: 'role_change',
-            actor: 'owner@company.com',
-            target: 'alice@company.com',
-            details: 'Changed role from Member to Admin',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '3',
-            type: 'key_revoke',
-            actor: 'alice@company.com',
-            target: 'Old Development Key',
-            details: 'Revoked API key',
-            timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '4',
-            type: 'invite',
-            actor: 'owner@company.com',
-            target: 'bob@company.com',
-            details: 'Invited as Member',
-            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '5',
-            type: 'org_freeze',
-            actor: 'system',
-            details: 'Organization frozen due to billing',
-            timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '6',
-            type: 'org_unfreeze',
-            actor: 'owner@company.com',
-            details: 'Organization unfrozen after payment',
-            timestamp: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: '7',
-            type: 'member_removed',
-            actor: 'owner@company.com',
-            target: 'former@company.com',
-            details: 'Removed from organization',
-            timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-    ]);
+    const [events, setEvents] = useState<AuditEvent[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadAuditLogs();
+    }, []);
+
+    const loadAuditLogs = async () => {
+        try {
+            const meRes = await getMe();
+            if (meRes.data?.org?.id) {
+                const res = await getAuditLogs(meRes.data.org.id);
+                if (res.data) {
+                    setEvents(res.data.map((entry: AuditLogEntry) => ({
+                        id: entry.id,
+                        type: mapAction(entry.action),
+                        actor: entry.actor_email || 'system',
+                        target: entry.resource_type ? `${entry.resource_type}` : undefined,
+                        details: entry.action + (entry.details ? `: ${JSON.stringify(entry.details)}` : ''),
+                        timestamp: entry.created_at,
+                    })));
+                }
+            }
+        } catch {
+            // Fallback: no events
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -150,7 +134,11 @@ export default function AuditLogPage() {
                     </div>
 
                     <div className="divide-y divide-slate-100">
-                        {events.map((event) => (
+                        {loading ? (
+                            <div className="px-6 py-12 text-center text-sm text-slate-500">Loading audit log...</div>
+                        ) : events.length === 0 ? (
+                            <div className="px-6 py-12 text-center text-sm text-slate-500">No audit events recorded yet.</div>
+                        ) : events.map((event) => (
                             <div key={event.id} className="px-6 py-4 flex items-start gap-4">
                                 <EventIcon type={event.type} />
                                 <div className="flex-1 min-w-0">

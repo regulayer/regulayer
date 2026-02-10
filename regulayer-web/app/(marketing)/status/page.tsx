@@ -27,7 +27,7 @@ export default function StatusPage() {
             } else {
                 setStatus('degraded'); // Assume issues if status page fails
             }
-        } catch (e) {
+        } catch {
             setStatus('degraded');
         } finally {
             setLoading(false);

@@ -77,7 +77,7 @@ export default function UsagePage() {
                         <AlertTriangle className="w-5 h-5 text-slate-400 mt-0.5" />
                         <div className="flex-1">
                             <p className="font-medium text-slate-700">No alerts</p>
-                            <p className="text-sm text-slate-500">You're well within your plan limits</p>
+                            <p className="text-sm text-slate-500">You&apos;re well within your plan limits</p>
                         </div>
                     </div>
                 </div>

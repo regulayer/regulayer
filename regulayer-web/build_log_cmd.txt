@@ -1,0 +1,58 @@
+
+> regulayer-web@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/(app)/reports/page.tsx
+138:45  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+138:70  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./app/(app)/settings/notifications/page.tsx
+5:17  Error: 'Webhook' is defined but never used.  @typescript-eslint/no-unused-vars
+5:26  Error: 'Check' is defined but never used.  @typescript-eslint/no-unused-vars
+6:18  Error: 'Key' is defined but never used.  @typescript-eslint/no-unused-vars
+6:23  Error: 'Snowflake' is defined but never used.  @typescript-eslint/no-unused-vars
+6:34  Error: 'Clock' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(app)/settings/webhooks/page.tsx
+6:36  Error: 'ExternalLink' is defined but never used.  @typescript-eslint/no-unused-vars
+151:22  Error: 'setWebhooks' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/(app)/team/page.tsx
+4:10  Error: 'Users' is defined but never used.  @typescript-eslint/no-unused-vars
+4:49  Error: 'MoreVertical' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(app)/usage/page.tsx
+80:70  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(marketing)/docs/page.tsx
+2:10  Error: 'Book' is defined but never used.  @typescript-eslint/no-unused-vars
+2:16  Error: 'Code' is defined but never used.  @typescript-eslint/no-unused-vars
+110:102  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(marketing)/pricing/page.tsx
+2:25  Error: 'Zap' is defined but never used.  @typescript-eslint/no-unused-vars
+2:30  Error: 'Building2' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(marketing)/status/page.tsx
+30:18  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/auth/sso/page.tsx
+50:77  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./components/TrustStatusCard.tsx
+21:22  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/api.ts
+9:7  Error: 'BILLING_URL' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+98:14  Error: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules

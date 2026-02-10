@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import {
-    Shield, Plus, CheckCircle, AlertCircle,
-    ExternalLink, TestTube, Settings, Trash2,
+    Shield, Plus,
+    TestTube,
     Globe, Lock
 } from 'lucide-react';
 
@@ -23,6 +23,15 @@ interface IdentityProvider {
     status: ProviderStatus;
     emailDomains: string[];
     lastLoginAt: string | null;
+}
+
+interface IdentityProviderConfig {
+    name: string;
+    type: ProviderType;
+    issuer: string;
+    metadataUrl: string;
+    clientId: string;
+    domains: string;
 }
 
 // ============================================================
@@ -53,7 +62,7 @@ function ConfigureProviderModal({
     onCreate
 }: {
     onClose: () => void;
-    onCreate: (config: any) => void;
+    onCreate: (config: IdentityProviderConfig) => void;
 }) {
     const [name, setName] = useState('');
     const [type, setType] = useState<ProviderType>('SAML');
@@ -279,7 +288,7 @@ export default function IdentitySettingsPage() {
         },
     ]);
 
-    const handleCreate = (config: any) => {
+    const handleCreate = (config: IdentityProviderConfig) => {
         console.log('Creating provider:', config);
         setShowConfigModal(false);
     };

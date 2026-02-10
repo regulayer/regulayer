@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import {
     GitBranch, Building2, ArrowRight, Shield,
-    Calendar, CheckCircle, Clock, AlertCircle,
-    FileText, ExternalLink
+    Calendar, CheckCircle, AlertCircle
 } from 'lucide-react';
 
 // ============================================================

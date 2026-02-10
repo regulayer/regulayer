@@ -9,7 +9,7 @@ export default function TermsPage() {
 
             <h2>1. Introduction</h2>
             <p>
-                These Terms of Service ("Terms") govern your access to and use of the Regulayer platform ("Service"), provided by Regulayer Inc. ("Regulayer", "we", "us").
+                These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Regulayer platform (&quot;Service&quot;), provided by Regulayer Inc. (&quot;Regulayer&quot;, &quot;we&quot;, &quot;us&quot;).
                 By accessing or using the Service, you agree to be bound by these Terms.
             </p>
 

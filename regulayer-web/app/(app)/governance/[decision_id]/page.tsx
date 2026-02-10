@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft,
@@ -14,13 +14,11 @@ import {
     Plus,
     Lock,
     ShieldCheck,
-    FileJson,
-    Info
+    FileJson
 } from 'lucide-react';
 import {
     getDecision,
     getGovernance,
-    getOrg,
     getMe,
     addGovernanceAnnotation,
     addGovernanceTag,
@@ -136,6 +134,10 @@ export default function GovernanceDetailPage() {
 
                 // 2. Handle Decision Error (Critical)
                 if (decRes.error) throw new Error(decRes.error);
+                getDecision(decisionId).then(res => {
+                    if (res.error) throw new Error(res.error);
+                });
+
                 setDecision(decRes.data || null);
 
                 // 3. Handle Governance (Overlay)
@@ -154,16 +156,18 @@ export default function GovernanceDetailPage() {
                 }
 
                 // 4. Handle Context (Org/User)
-                // Assuming getMe returns { user: { role }, org: { status } }
-                // Adjust based on actual API response structure
-                const userData = meRes.data?.user || {};
-                const orgData = meRes.data?.org || {};
+                const userData = meRes.data?.user || { role: 'member' };
+                const orgData = meRes.data?.org || { status: 'active' };
 
                 setUserRole(userData.role || 'member');
                 setOrgStatus(orgData.status || 'active');
 
-            } catch (err: any) {
-                setError(err.message || 'Failed to load');
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    setError(err.message);
+                } else {
+                    setError('An unknown error occurred');
+                }
             } finally {
                 setLoading(false);
             }
@@ -236,8 +240,12 @@ export default function GovernanceDetailPage() {
             if (res.data) {
                 setGovernance(res.data);
             }
-        } catch (err: any) {
-            alert(err.message || 'State transition failed');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                alert(err.message || 'State transition failed');
+            } else {
+                alert('State transition failed');
+            }
         } finally {
             setSubmitting(false);
         }
@@ -322,10 +330,8 @@ export default function GovernanceDetailPage() {
                                 </div>
                                 <div className="col-span-2">
                                     <dt className="text-slate-500 mb-1">Verification Hash (SHA-256)</dt>
-                                    {/* Placeholder hash if not in model yet, or add to API response */}
                                     <dd className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-100 break-all">
-                                        {/* Using record_hash if available, else placeholder */}
-                                        {(decision as any).record_hash || "Fetch Verification Proof to see Hash"}
+                                        {decision.record_hash || "Fetch Verification Proof to see Hash"}
                                     </dd>
                                 </div>
                             </dl>
@@ -533,7 +539,7 @@ export default function GovernanceDetailPage() {
                             </div>
                             <div className="flex justify-between">
                                 <span>Record ID:</span>
-                                <span className="font-mono">{(decision as any).record_id || '?'}</span>
+                                <span className="font-mono">{decision.record_id || '?'}</span>
                             </div>
                         </div>
 

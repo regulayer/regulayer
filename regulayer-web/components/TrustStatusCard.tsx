@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, AlertTriangle, RefreshCw, XCircle } from 'lucide-react';
-import { getPublicStatus, SystemStatus } from '@/lib/api';
+import { getPublicStatus } from '@/lib/api';
 
 export function TrustStatusCard() {
     const [status, setStatus] = useState<string>('loading');
@@ -18,7 +18,7 @@ export function TrustStatusCard() {
                 } else {
                     setStatus('unknown');
                 }
-            } catch (e) {
+            } catch {
                 setStatus('unknown');
             } finally {
                 setLoading(false);

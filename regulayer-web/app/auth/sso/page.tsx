@@ -47,7 +47,7 @@ export default function SSOLoginPage() {
                         <Shield className="w-8 h-8 text-primary-600" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900">Sign in with SSO</h1>
-                    <p className="text-slate-600 mt-2">Use your organization's identity provider</p>
+                    <p className="text-slate-600 mt-2">Use your organization&apos;s identity provider</p>
                 </div>
 
                 {/* SSO Form */}
@@ -69,7 +69,7 @@ export default function SSOLoginPage() {
                                 />
                             </div>
                             <p className="text-xs text-slate-500 mt-2">
-                                We'll redirect you to your organization's login page
+                                We&apos;ll redirect you to your organization&apos;s login page
                             </p>
                         </div>
 

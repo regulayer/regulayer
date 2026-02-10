@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     Trash2, Clock, Shield, AlertCircle,
-    CheckCircle, FileText, Lock, Eye, EyeOff,
+    CheckCircle, FileText, Lock, EyeOff,
     Plus, X
 } from 'lucide-react';
 
@@ -32,6 +32,13 @@ interface RetentionPolicy {
     enabled: boolean;
 }
 
+interface DeletionRequestParams {
+    decisionId: string;
+    requestType: DeletionRequestType;
+    scope: DeletionScope;
+    reason: string;
+}
+
 // ============================================================
 // Status Badge
 // ============================================================
@@ -55,7 +62,7 @@ function StatusBadge({ status }: { status: DeletionStatus }) {
 // Request Deletion Modal
 // ============================================================
 
-function RequestDeletionModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (data: any) => void }) {
+function RequestDeletionModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (data: DeletionRequestParams) => void }) {
     const [decisionId, setDecisionId] = useState('');
     const [requestType, setRequestType] = useState<DeletionRequestType>('gdpr');
     const [scope, setScope] = useState<DeletionScope>('visibility');
@@ -179,7 +186,7 @@ export default function RetentionSettingsPage() {
         },
     ]);
 
-    const handleSubmit = (data: any) => {
+    const handleSubmit = (data: DeletionRequestParams) => {
         console.log('Deletion request:', data);
         setShowRequestModal(false);
     };

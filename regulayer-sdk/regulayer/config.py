@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Config:
+class RegulayerConfig:
     """SDK configuration."""
     api_key: Optional[str] = None
     endpoint: str = "https://api.regulayer.io"
@@ -23,7 +23,7 @@ class Config:
 
 
 # Global config
-_config: Optional[Config] = None
+_config: Optional[RegulayerConfig] = None
 
 
 def configure(
@@ -48,7 +48,7 @@ def configure(
         >>> configure(api_key="rl_live_xxx")
     """
     global _config
-    _config = Config(
+    _config = RegulayerConfig(
         api_key=api_key,
         endpoint=endpoint,
         timeout_seconds=timeout_seconds,
@@ -56,7 +56,7 @@ def configure(
     )
 
 
-def get_config() -> Config:
+def get_config() -> RegulayerConfig:
     """Get current configuration."""
     global _config
     if _config is None:

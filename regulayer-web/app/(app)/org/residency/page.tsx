@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import {
-    Globe, Lock, CheckCircle, AlertCircle,
-    Info, Shield, Download, MapPin
+    Globe, Lock, CheckCircle,
+    Shield, Download
 } from 'lucide-react';
 
 // ============================================================
@@ -163,7 +163,7 @@ function RegionCard({
 export default function ResidencySettingsPage() {
     const [primaryRegion, setPrimaryRegion] = useState<ResidencyRegion>('eu');
     const [allowedRegions, setAllowedRegions] = useState<ResidencyRegion[]>(['eu']);
-    const [isLocked, setIsLocked] = useState(true); // Locked after first ingest
+    const [isLocked] = useState(true); // Locked after first ingest
 
     const toggleRegion = (regionId: ResidencyRegion) => {
         if (regionId === primaryRegion) return; // Can't remove primary
@@ -281,7 +281,7 @@ export default function ResidencySettingsPage() {
                         </div>
                     </div>
                     <p className="text-xs text-slate-400 mt-4 pt-4 border-t border-slate-200">
-                        Note: Regulayer "supports" and "enables" compliance. This does not constitute legal advice.
+                        Note: Regulayer &quot;supports&quot; and &quot;enables&quot; compliance. This does not constitute legal advice.
                     </p>
                 </div>
 

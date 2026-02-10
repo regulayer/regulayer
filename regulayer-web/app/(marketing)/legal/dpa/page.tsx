@@ -8,12 +8,12 @@ export default function DPAPage() {
             <p className="lead">Last Updated: February 2026</p>
 
             <p>
-                This Data Processing Addendum ("DPA") forms part of the Regulayer Terms of Service and applies to the processing of Personal Data by Regulayer on behalf of the Customer.
+                This Data Processing Addendum (&quot;DPA&quot;) forms part of the Regulayer Terms of Service and applies to the processing of Personal Data by Regulayer on behalf of the Customer.
             </p>
 
             <h2>1. Definitions</h2>
             <p>
-                Terms such as "Controller", "Processor", "Data Subject", and "Personal Data" shall have the meanings given to them in the GDPR.
+                Terms such as &quot;Controller&quot;, &quot;Processor&quot;, &quot;Data Subject&quot;, and &quot;Personal Data&quot; shall have the meanings given to them in the GDPR.
             </p>
 
             <h2>2. Roles</h2>

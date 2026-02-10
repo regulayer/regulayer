@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CheckCircle, AlertTriangle, AlertCircle, X } from 'lucide-react';
 
 // ============================================================

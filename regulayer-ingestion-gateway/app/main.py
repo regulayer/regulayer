@@ -134,16 +134,7 @@ async def ingest_decision(request: Request, response: Response):
 
 
 # ============================================================
-# Forbidden Endpoints
-# ============================================================
-
-from .proxy import router as proxy_router
-
-app.include_router(proxy_router)
-
-
-# ============================================================
-# Health Check
+# Health Check (MUST be before proxy catch-all)
 # ============================================================
 
 @app.get("/health")
@@ -155,6 +146,18 @@ async def health_check():
     }
 
 
+# ============================================================
+# Proxy Router (catch-all — must be LAST)
+# ============================================================
+
+from .proxy import router as proxy_router
+
+app.include_router(proxy_router)
+
+
+# ============================================================
+# Quota Status
+# ============================================================
 @app.get("/v1/quota/status")
 async def quota_status(request: Request):
     """

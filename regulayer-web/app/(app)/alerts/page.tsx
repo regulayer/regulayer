@@ -19,7 +19,7 @@ export default function AlertsPage() {
                 } else if (res.error) {
                     setError(res.error);
                 }
-            } catch (e) {
+            } catch {
                 setError("Failed to load incidents");
             } finally {
                 setLoading(false);

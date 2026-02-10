@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Book, Code, Zap, Shield, ArrowRight, Terminal } from 'lucide-react';
+import { Zap, Shield, ArrowRight, Terminal } from 'lucide-react';
 
 export default function DocsPage() {
     return (
@@ -107,7 +107,7 @@ export default function DocsPage() {
                             These can be verified offline, without Regulayer, without internet access.
                         </p>
                         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
-                            <strong>Why this matters:</strong> Regulayer disappearing tomorrow wouldn't affect proof validity.
+                            <strong>Why this matters:</strong> Regulayer disappearing tomorrow wouldn&apos;t affect proof validity.
                         </div>
                     </div>
                 </div>

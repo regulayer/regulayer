@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     GitMerge, ArrowRight, ArrowLeft, CheckCircle,
-    AlertCircle, Shield, Plus, Eye, Network
+    AlertCircle, Shield, Network
 } from 'lucide-react';
 
 // ============================================================
