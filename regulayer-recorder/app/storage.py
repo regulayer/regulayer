@@ -237,6 +237,17 @@ async def get_total_records(session: AsyncSession) -> int:
     return result.scalar_one()
 
 
+async def get_chain_record_count(session: AsyncSession, chain_id: str) -> int:
+    """
+    Get total record count for a specific chain.
+    """
+    from sqlalchemy import select, func
+    
+    stmt = select(func.count(DecisionRecordDB.record_id)).where(DecisionRecordDB.chain_id == chain_id)
+    result = await session.execute(stmt)
+    return result.scalar_one()
+
+
 async def get_records_in_range(
     session: AsyncSession,
     start_record_id: int,

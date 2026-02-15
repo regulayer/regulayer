@@ -53,4 +53,31 @@ class Settings(BaseSettings):
         env_prefix = "GATEWAY_"
 
 
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Override with standard names if present
+        import os
+        if os.getenv("CONTROL_PLANE_URL"):
+            self.control_plane_url = os.getenv("CONTROL_PLANE_URL")
+        if os.getenv("RECORDER_URL"):
+            self.recorder_url = os.getenv("RECORDER_URL")
+        if os.getenv("GOVERNANCE_URL"):
+            self.governance_url = os.getenv("GOVERNANCE_URL")
+        if os.getenv("REPORTS_URL"):
+            self.reports_url = os.getenv("REPORTS_URL")
+        if os.getenv("INCIDENTS_URL"):
+            self.incidents_url = os.getenv("INCIDENTS_URL")
+        if os.getenv("REDIS_URL"):
+            self.redis_url = os.getenv("REDIS_URL")
+
+        # Enforce Prod Checks
+        if os.getenv("ENV") == "prod":
+            if "localhost" in self.control_plane_url or "127.0.0.1" in self.control_plane_url:
+                 # In docker, we can't easily distinguish 'localhost' from host network vs bad config
+                 # But generally in prod we expect service names
+                 # Passing for now to avoid blocking k8s local setups
+                 pass
+
+
 settings = Settings()

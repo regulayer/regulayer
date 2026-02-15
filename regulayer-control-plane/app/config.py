@@ -20,16 +20,30 @@ class Settings(BaseSettings):
     # Security
     cors_origins: list = ["*"]
     jwt_secret: str = "dev_secret"
-    stripe_api_key: str = "mock_key"
+    stripe_api_key: str = os.getenv("STRIPE_SECRET_KEY", "mock_key")
+    stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    stripe_price_id_pro: str = os.getenv("STRIPE_PRICE_ID_PRO", "price_mock_pro")
     
     class Config:
         env_prefix = "REGULAYER_CONTROL_"
     
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Fallback to standard DATABASE_URL if present and not set by prefix
-        if os.getenv("DATABASE_URL") and self.database_url == "sqlite:///./control_plane.db":
+        if os.getenv("DATABASE_URL"):
              self.database_url = os.getenv("DATABASE_URL")
+        
+        # Auto-convert to async driver
+        if "postgresql://" in self.database_url and "postgresql+asyncpg://" not in self.database_url:
+            self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+
+        # Enforce SSL in production
+        if os.getenv("ENV") == "prod":
+            if not self.database_url:
+                raise RuntimeError("DATABASE_URL is required in production mode")
+            if "sslmode" not in self.database_url:
+                raise RuntimeError("SSL is required in production (sslmode=require or verify-full)")
 
 
 settings = Settings()

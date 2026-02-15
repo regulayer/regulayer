@@ -14,8 +14,137 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session as DBSession
 
 from .models import User, TenantContext
-from .enums import UserRole
-from .storage import UserDB, SessionDB, OrganizationDB
+from .enums import UserRole, OrgStatus, ProjectEnvironment
+from .storage import UserDB, SessionDB, OrganizationDB, PasswordResetTokenDB, OtpCodeDB, ProjectDB
+
+
+# ============================================================
+# OTP Service (Signup)
+# ============================================================
+
+
+
+class OtpService:
+    """Manages OTP-based signup flow."""
+    
+    def __init__(self, db: DBSession):
+        self.db = db
+        self.user_auth = UserAuthService(db)
+
+    def request_otp(self, email: str) -> str:
+        """
+        Generate and store an OTP for the given email.
+        Returns the cleartext code (to be sent via email).
+        """
+        # 1. Check if user already exists
+        existing_user = self.db.query(UserDB).filter(UserDB.email == email).first()
+        if existing_user:
+            raise ValueError("User with this email already exists")
+
+        # 2. Generate Code (6 digits)
+        code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        
+        # 3. Store in DB
+        otp_record = OtpCodeDB(
+            id=uuid4(),
+            email=email,
+            code_hash=code_hash,
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+            verified=False
+        )
+        self.db.add(otp_record)
+        self.db.commit()
+        
+        return code
+
+    def verify_otp(self, email: str, code: str) -> Optional[str]:
+        """
+        Verify the OTP code.
+        If valid, marks as verified and returns a 'signup_token' (the record ID).
+        """
+        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        
+        # Find valid, unexpired, matching code
+        otp_record = self.db.query(OtpCodeDB).filter(
+            OtpCodeDB.email == email,
+            OtpCodeDB.code_hash == code_hash,
+            OtpCodeDB.expires_at > datetime.now(timezone.utc),
+            OtpCodeDB.verified == False
+        ).order_by(OtpCodeDB.created_at.desc()).first()
+        
+        if not otp_record:
+            return None
+            
+        # Mark verified
+        otp_record.verified = True
+        self.db.commit()
+        
+        return str(otp_record.id)
+
+    def complete_signup(self, signup_token: str, org_name: str, password: str) -> tuple[str, User]:
+        """
+        Complete signup using a verified signup_token.
+        Creates Organization, User, and logs them in.
+        Returns (session_token, User).
+        """
+        # 1. Validate Token
+        try:
+            token_uuid = UUID(signup_token)
+        except ValueError:
+            raise ValueError("Invalid signup token format")
+
+        otp_record = self.db.query(OtpCodeDB).filter(
+            OtpCodeDB.id == token_uuid,
+            OtpCodeDB.verified == True
+        ).first()
+        
+        if not otp_record:
+            raise ValueError("Invalid or expired signup token")
+            
+        # 2. Create Org & User (Reusing logic from UserAuthService would be cleaner, but avoiding circular dep)
+        # Check email again just in case
+        existing = self.db.query(UserDB).filter(UserDB.email == otp_record.email).first()
+        if existing:
+            raise ValueError("User already registered")
+
+        # Org
+        org = OrganizationDB(
+            id=uuid4(),
+            name=org_name,
+            status=OrgStatus.ACTIVE,
+            is_demo=False,
+            environment="prod"
+        )
+        self.db.add(org)
+        
+        # User
+        user = UserDB(
+            id=uuid4(),
+            organization_id=org.id,
+            email=otp_record.email,
+            password_hash=hash_password(password),
+            role=UserRole.OWNER
+        )
+        self.db.add(user)
+        
+        # Default Project
+        project = ProjectDB(
+            id=uuid4(),
+            organization_id=org.id,
+            name="Default Project",
+            environment=ProjectEnvironment.DEV
+        )
+        self.db.add(project)
+
+        # Cleanup OTP
+        self.db.delete(otp_record)
+        
+        self.db.commit()
+        
+        # 3. Login
+        return self.user_auth.login(user.email, password)
+
 
 
 # ============================================================
@@ -211,12 +340,60 @@ class UserAuthService:
             last_login_at=user.last_login_at
         )
     
-    def change_role(self, user_id: UUID, new_role: UserRole) -> bool:
-        """Change a user's role."""
-        user = self.db.query(UserDB).filter(UserDB.id == user_id).first()
+
+
+    def create_reset_token(self, email: str) -> Optional[str]:
+        """
+        Generate a password reset token for the given email.
+        Returns the token string if user exists, else None.
+        """
+        user = self.db.query(UserDB).filter(UserDB.email == email).first()
+        if not user:
+            return None
+            
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        reset_token = PasswordResetTokenDB(
+            id=uuid4(),
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+        )
+        
+        self.db.add(reset_token)
+        self.db.commit()
+        
+        return token
+
+    def reset_password(self, token: str, new_password: str) -> bool:
+        """
+        Reset password using a valid token.
+        Returns True if successful, False if token invalid/expired.
+        """
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        reset_token = self.db.query(PasswordResetTokenDB).filter(
+            PasswordResetTokenDB.token_hash == token_hash,
+            PasswordResetTokenDB.used == False,
+            PasswordResetTokenDB.expires_at > datetime.now(timezone.utc)
+        ).first()
+        
+        if not reset_token:
+            return False
+            
+        user = self.db.query(UserDB).filter(UserDB.id == reset_token.user_id).first()
         if not user:
             return False
+            
+        # Update User Password
+        user.password_hash = hash_password(new_password)
         
-        user.role = new_role
+        # Mark token used
+        reset_token.used = True
+        
+        # Invalidate all existing sessions (Security best practice)
+        self.session_service.invalidate_user_sessions(user.id)
+        
         self.db.commit()
         return True

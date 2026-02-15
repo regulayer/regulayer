@@ -28,6 +28,17 @@ class GovernanceSettings(BaseSettings):
         # Map DATABASE_URL to governance_database_url if present
         if os.getenv("DATABASE_URL"):
              self.governance_database_url = os.getenv("DATABASE_URL")
+        
+        # Auto-convert to async driver
+        if "postgresql://" in self.governance_database_url and "postgresql+asyncpg://" not in self.governance_database_url:
+            self.governance_database_url = self.governance_database_url.replace("postgresql://", "postgresql+asyncpg://")
+
+        # Enforce SSL in production
+        if os.getenv("ENV") == "prod":
+            if not self.governance_database_url:
+                raise RuntimeError("DATABASE_URL is required in production mode")
+            if "sslmode" not in self.governance_database_url:
+                raise RuntimeError("SSL is required in production (sslmode=require or verify-full)")
 
 
 settings = GovernanceSettings()

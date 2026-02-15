@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Building2, Copy, CheckCircle, Shield, Key,
-    FileText, AlertTriangle, ExternalLink, Lock
+    FileText, AlertTriangle, ExternalLink, Lock, Loader2
 } from 'lucide-react';
+import { getMe } from '@/lib/api';
 
 // ============================================================
 // Main Org Settings Page
@@ -13,16 +14,41 @@ import {
 
 export default function OrgSettingsPage() {
     const [copied, setCopied] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [orgId, setOrgId] = useState('');
+    const [orgName, setOrgName] = useState('');
+    const [createdAt, setCreatedAt] = useState('');
 
-    const orgId = 'org_abc123xyz';
-    const orgName = 'Acme Corporation';
-    const createdAt = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+    useEffect(() => {
+        (async () => {
+            try {
+                const me = await getMe();
+                if (me.data?.org) {
+                    setOrgId(me.data.org.id);
+                    setOrgName(me.data.org.name);
+                    setCreatedAt(me.data.org.created_at);
+                }
+            } catch (err) {
+                console.error('Failed to load org settings:', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
     const copyOrgId = () => {
         navigator.clipboard.writeText(orgId);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -45,20 +71,24 @@ export default function OrgSettingsPage() {
                     <div className="space-y-4">
                         <div className="flex justify-between items-center py-3 border-b border-slate-100">
                             <span className="text-slate-600">Organization Name</span>
-                            <span className="font-medium text-slate-900">{orgName}</span>
+                            <span className="font-medium text-slate-900">{orgName || '—'}</span>
                         </div>
                         <div className="flex justify-between items-center py-3 border-b border-slate-100">
                             <span className="text-slate-600">Organization ID</span>
                             <div className="flex items-center gap-2">
-                                <code className="font-mono text-sm text-slate-700">{orgId}</code>
-                                <button onClick={copyOrgId} className="text-slate-400 hover:text-slate-600">
-                                    {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                                </button>
+                                <code className="font-mono text-sm text-slate-700">{orgId || '—'}</code>
+                                {orgId && (
+                                    <button onClick={copyOrgId} className="text-slate-400 hover:text-slate-600">
+                                        {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="flex justify-between items-center py-3">
                             <span className="text-slate-600">Created</span>
-                            <span className="text-slate-900">{new Date(createdAt).toLocaleDateString()}</span>
+                            <span className="text-slate-900">
+                                {createdAt ? new Date(createdAt).toLocaleDateString() : '—'}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -109,7 +139,7 @@ export default function OrgSettingsPage() {
                             <Shield className="w-5 h-5 text-slate-600" />
                             <span className="font-medium text-slate-900">Team</span>
                         </Link>
-                        <Link href="/keys" className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                        <Link href="/api-keys" className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                             <Key className="w-5 h-5 text-slate-600" />
                             <span className="font-medium text-slate-900">API Keys</span>
                         </Link>

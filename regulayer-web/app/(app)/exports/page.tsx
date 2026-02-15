@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import {
-    Download, FileText, Shield,
-    ChevronDown, ChevronRight, Copy, CheckCircle, Lock, AlertTriangle
-} from 'lucide-react';
+    IconDownload,
+    IconFileDescription,
+    IconShieldLock,
+    IconChevronDown,
+    IconCopy,
+    IconCheck,
+    IconLock,
+    IconAlertTriangle,
+    IconLoader2
+} from '@tabler/icons-react';
 import { getMe } from '@/lib/api';
+import { GlazedCard } from '@/components/ui/glazed-card';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================
 // Types
@@ -20,23 +30,43 @@ interface Export {
     hash?: string;
 }
 
+// Mock Data (replace with API when available)
+const MOCK_EXPORTS: Export[] = [
+    {
+        id: 'exp_12345678',
+        type: 'proof_bundle',
+        name: 'Weekly Decision Proof Bundle',
+        createdAt: new Date().toISOString(),
+        size: '1.2 GB',
+        hash: '0x8f...2a1b'
+    },
+    {
+        id: 'exp_87654321',
+        type: 'governance_report',
+        name: 'Q1 Governance Compliance Report',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        size: '4.5 MB',
+    }
+];
+
 // ============================================================
 // Export Type Badge
 // ============================================================
 
 function ExportTypeBadge({ type }: { type: string }) {
-    const config: Record<string, { bg: string; text: string; label: string }> = {
-        proof_bundle: { bg: 'bg-green-100', text: 'text-green-700', label: 'Proof Bundle' },
-        governance_report: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Governance Report' },
-        trust_report: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Trust Report' },
-        submission_package: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Submission Package' },
+    const styles = {
+        proof_bundle: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+        governance_report: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+        trust_report: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+        submission_package: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800',
     };
 
-    const c = config[type] || { bg: 'bg-slate-100', text: 'text-slate-700', label: type };
+    // @ts-ignore
+    const s = styles[type] || 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
 
     return (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${c.bg} ${c.text}`}>
-            {c.label}
+        <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border", s)}>
+            {type.replace(/_/g, ' ')}
         </span>
     );
 }
@@ -46,61 +76,81 @@ function ExportTypeBadge({ type }: { type: string }) {
 // ============================================================
 
 function ExportRow({ exp }: { exp: Export }) {
-    const [showHash, setShowHash] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
-    const copyHash = () => {
-        if (exp.hash) {
-            navigator.clipboard.writeText(exp.hash);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
+    const copyHash = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!exp.hash) return;
+        navigator.clipboard.writeText(exp.hash);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
-        <div className="border-b border-slate-100 last:border-0">
-            <div className="flex items-center justify-between px-6 py-4">
+        <div className="group border-b border-zinc-100 dark:border-zinc-800/50 last:border-0">
+            <div
+                onClick={() => setExpanded(!expanded)}
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
+            >
                 <div className="flex items-center gap-4">
-                    <div className="p-2 bg-slate-100 rounded-lg">
-                        <FileText className="w-5 h-5 text-slate-600" />
+                    <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+                        <IconFileDescription size={20} />
                     </div>
                     <div>
-                        <p className="font-medium text-slate-900">{exp.name}</p>
-                        <p className="text-sm text-slate-500">{new Date(exp.createdAt).toLocaleString()}</p>
+                        <h4 className="font-medium text-zinc-900 dark:text-zinc-100">{exp.name}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-zinc-500">{new Date(exp.createdAt).toLocaleDateString()}</span>
+                            <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                            <span className="text-xs text-zinc-500 font-mono">{exp.size}</span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                     <ExportTypeBadge type={exp.type} />
-                    <span className="text-sm text-slate-500">{exp.size}</span>
-
-                    {exp.hash && (
-                        <button
-                            onClick={() => setShowHash(!showHash)}
-                            className="text-slate-400 hover:text-slate-600 text-sm flex items-center gap-1"
-                        >
-                            {showHash ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                            Hash
-                        </button>
-                    )}
-
-                    <button className="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center gap-1">
-                        <Download className="w-4 h-4" />
-                        Download
+                    <button className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                        <IconDownload size={18} />
                     </button>
+                    <IconChevronDown
+                        size={16}
+                        className={cn("text-zinc-400 transition-transform duration-300", expanded && "rotate-180")}
+                    />
                 </div>
             </div>
 
-            {showHash && exp.hash && (
-                <div className="px-6 pb-4">
-                    <div className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
-                        <code className="text-xs text-slate-600 font-mono">{exp.hash}</code>
-                        <button onClick={copyHash} className="text-slate-400 hover:text-slate-600">
-                            {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                        </button>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {expanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden bg-zinc-50/50 dark:bg-black/20"
+                    >
+                        <div className="p-4 pl-[72px] grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <h5 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Export ID</h5>
+                                <code className="text-zinc-700 dark:text-zinc-300 font-mono">{exp.id}</code>
+                            </div>
+                            {exp.hash && (
+                                <div>
+                                    <h5 className="text-xs font-semibold text-zinc-500 uppercase mb-1">Cryptographic Hash</h5>
+                                    <div className="flex items-center gap-2">
+                                        <IconLock size={12} className="text-emerald-500" />
+                                        <code className="text-zinc-700 dark:text-zinc-300 font-mono">{exp.hash}</code>
+                                        <button
+                                            onClick={copyHash}
+                                            className="ml-auto text-zinc-400 hover:text-indigo-500"
+                                        >
+                                            {copied ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -110,116 +160,70 @@ function ExportRow({ exp }: { exp: Export }) {
 // ============================================================
 
 export default function ExportsPage() {
-    const [isDemo, setIsDemo] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [hasOrg, setHasOrg] = useState(false);
 
     useEffect(() => {
-        async function checkOrg() {
-            try {
-                const res = await getMe();
-                if (res.data?.org?.is_demo) {
-                    setIsDemo(true);
-                }
-            } catch {
-                // Ignore
-            }
-        }
         checkOrg();
     }, []);
 
-    const [exports] = useState<Export[]>([
-        {
-            id: 'exp_001',
-            type: 'proof_bundle',
-            name: 'January 2026 Proof Bundle',
-            createdAt: new Date().toISOString(),
-            size: '2.4 MB',
-            hash: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-        },
-        {
-            id: 'exp_002',
-            type: 'governance_report',
-            name: 'Q4 2025 Governance Evidence',
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            size: '1.1 MB',
-            hash: 'sha256:d7a8fbb307d7809469ca3e4f29e0c58a2e3f7f3a5a2ee5c3e3d7889d0917f2b4'
-        },
-        {
-            id: 'exp_003',
-            type: 'trust_report',
-            name: 'Loan Approval Trust Report',
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-            size: '456 KB',
-            hash: 'sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
-        },
-        {
-            id: 'exp_004',
-            type: 'submission_package',
-            name: 'Audit Submission - External',
-            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            size: '5.8 MB',
-            hash: 'sha256:6dcd4ce23d88e2ee9568ba546c007c63d9131c1b2b0e9c6e4d8e1f4a5b6c7d8e'
-        },
-    ]);
+    const checkOrg = async () => {
+        try {
+            const me = await getMe();
+            if (me.data?.org) {
+                setHasOrg(true);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="p-20 flex flex-col items-center justify-center gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-zinc-200 border-t-indigo-500 animate-spin" />
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-7xl mx-auto px-8 py-8">
-                {/* Demo Watermark Banner */}
-                {isDemo && (
-                    <div className="bg-amber-100 border-2 border-amber-400 rounded-lg p-4 mb-6 flex items-center gap-3">
-                        <AlertTriangle className="w-6 h-6 text-amber-600" />
-                        <div>
-                            <p className="font-bold text-amber-800">DEMO ACCOUNT — NOT FOR PRODUCTION USE</p>
-                            <p className="text-sm text-amber-700">
-                                Exports from demo accounts are watermarked and should not be used for legal or regulatory purposes.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900">Exports</h1>
-                    <p className="text-slate-600">Download proof bundles and governance evidence</p>
-                </div>
-
-                {/* Trust Notice */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-green-600 mt-0.5" />
-                    <div>
-                        <p className="text-green-800 text-sm font-medium">Offline Verification Available</p>
-                        <p className="text-green-700 text-sm">
-                            These exports can be verified without Regulayer.{' '}
-                            <a href="/docs/verify-offline" className="underline hover:no-underline">
-                                Learn how →
-                            </a>
-                        </p>
-                    </div>
-                </div>
-
-                {/* Exports List */}
-                <div className="bg-white rounded-xl border border-slate-200">
-                    <div className="p-6 border-b border-slate-200">
-                        <h3 className="font-semibold text-slate-900">Available Exports</h3>
-                    </div>
-
-                    {exports.map((exp) => (
-                        <ExportRow key={exp.id} exp={exp} />
-                    ))}
-                </div>
-
-                {/* Always Available Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6 flex items-start gap-3">
-                    <Lock className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <p className="text-blue-800 text-sm">
-                        <strong>Exports are always available</strong> — even if ingestion is paused due to billing.
+        <div className="max-w-5xl mx-auto pb-20 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400">
+                        Exports & Reports
+                    </h1>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                        Cryptographic proof bundles and compliance reports.
                     </p>
                 </div>
 
-                {/* Footer Disclaimer */}
-                <p className="text-center text-xs text-slate-400 mt-8">
-                    Regulayer interfaces do not modify cryptographic records.
-                </p>
+                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95">
+                    <IconDownload size={18} />
+                    New Export
+                </button>
+            </div>
+
+            <GlazedCard className="overflow-hidden">
+                {!hasOrg ? (
+                    <div className="p-12 text-center text-zinc-500">
+                        Need an organization to view exports.
+                    </div>
+                ) : (
+                    <div>
+                        {MOCK_EXPORTS.map(exp => (
+                            <ExportRow key={exp.id} exp={exp} />
+                        ))}
+                    </div>
+                )}
+            </GlazedCard>
+
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4 flex gap-4">
+                <IconAlertTriangle className="text-amber-600 dark:text-amber-500 shrink-0" size={24} />
+                <div>
+                    <h4 className="font-semibold text-amber-900 dark:text-amber-200">Retention Policy</h4>
+                    <p className="text-sm text-amber-800/80 dark:text-amber-500/80 mt-1">
+                        Exported files are available for download for 30 days. Cryptographic hashes are permanent and can be verified offline using the Regulayer CLI tool.
+                    </p>
+                </div>
             </div>
         </div>
     );

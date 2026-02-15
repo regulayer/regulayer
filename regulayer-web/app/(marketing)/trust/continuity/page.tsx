@@ -72,9 +72,13 @@ export default function ContinuityPage() {
                 <p className="text-slate-300 text-sm mb-4">
                     Includes the offline verifier script, the latest root key snapshot, and the evidence standard spec.
                 </p>
-                <button className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors">
+                <a
+                    href="/trust-kit-v1.0.2.zip"
+                    download
+                    className="inline-block px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors"
+                >
                     Download Kit (v1.0.2)
-                </button>
+                </a>
             </div>
         </div>
     );

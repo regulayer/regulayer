@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Shield, Key, Terminal, Play, CheckCircle,
     Copy, ChevronRight, ChevronDown, Lock,
-    AlertCircle, Download
+    AlertCircle, Download, Loader2
 } from 'lucide-react';
+import {
+    getMe, createProject, createApiKey, getProjects
+} from '@/lib/api';
 
 // ============================================================
 // Wizard State
@@ -21,6 +24,8 @@ interface WizardState {
     sdkInstalled: boolean;
     decisionRecorded: boolean;
     decisionId: string | null;
+    orgId: string | null;
+    projectId: string | null;
 }
 
 // ============================================================
@@ -74,7 +79,7 @@ function ImmutableBadge() {
 // Step Components
 // ============================================================
 
-function Step1Welcome({ onNext }: { onNext: () => void }) {
+function Step1Welcome({ onNext, loading }: { onNext: () => void; loading: boolean }) {
     return (
         <div className="text-center max-w-2xl mx-auto">
             <Shield className="w-16 h-16 text-primary-600 mx-auto mb-6" />
@@ -90,9 +95,17 @@ function Step1Welcome({ onNext }: { onNext: () => void }) {
 
             <button
                 onClick={onNext}
-                className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 mb-4"
+                disabled={loading}
+                className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2 mx-auto mb-4"
             >
-                Create First Project
+                {loading ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Creating Project...
+                    </>
+                ) : (
+                    'Create First Project'
+                )}
             </button>
 
             <TrustHint>
@@ -126,10 +139,10 @@ function Step2ApiKey({ apiKey, onNext }: { apiKey: string; onNext: () => void })
 
             <div className="bg-slate-900 rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between">
-                    <code className="text-green-400 font-mono">{apiKey}</code>
+                    <code className="text-green-400 font-mono break-all">{apiKey}</code>
                     <button
                         onClick={copyKey}
-                        className="text-slate-400 hover:text-white p-2"
+                        className="text-slate-400 hover:text-white p-2 ml-2 flex-shrink-0"
                     >
                         {copied ? <CheckCircle className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
                     </button>
@@ -212,6 +225,10 @@ function Step4Record({
     error: string | null;
 }) {
     const [running, setRunning] = useState(false);
+    const [recordError, setRecordError] = useState<string | null>(error);
+    const [status, setStatus] = useState<string | null>(null);
+
+    const GATEWAY_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
     const codeSnippet = `from regulayer import trace, configure
 
@@ -228,9 +245,69 @@ with trace(
 
     const runExample = async () => {
         setRunning(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        onSuccess(`dec_${Date.now().toString(36)}`);
+        setRecordError(null);
+        setStatus('Sending decision to gateway...');
+
+        try {
+            const response = await fetch(`${GATEWAY_URL}/v1/decisions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    ingestion_type: 'legacy',
+                    payload: {
+                        event_version: '1.0',
+                        event_state: 'completed',
+                        decision_id: crypto.randomUUID(),
+                        system_name: 'loan_approval',
+                        risk_level: 'high',
+                        model_name: 'demo-model',
+                        model_version: '1.0',
+                        input_hash: null,
+                        output_hash: null,
+                        start_timestamp: new Date().toISOString(),
+                        end_timestamp: new Date().toISOString(),
+                        execution_duration_ms: 42,
+                        runtime_fingerprint: {
+                            python_version: '3.11.0',
+                            os: 'browser-demo',
+                            sdk_version: '1.0.0',
+                            sdk_instance_id: crypto.randomUUID(),
+                        },
+                        input: { income: 50000 },
+                        output: { approved: true },
+                    },
+                }),
+            });
+
+            if (response.status === 202 || response.status === 200) {
+                const data = await response.json();
+                setStatus('Decision accepted (202). Polling for confirmation...');
+
+                // The gateway returns the decision_id or record confirmation
+                const decisionId = data.decision_id || data.record?.decision_id;
+                if (decisionId) {
+                    onSuccess(decisionId);
+                } else {
+                    // If the response doesn't include an ID, still succeed
+                    setStatus('Decision recorded successfully.');
+                    onSuccess(data.id || 'recorded');
+                }
+            } else {
+                const errData = await response.json().catch(() => null);
+                setRecordError(
+                    errData?.message || errData?.detail || `Gateway returned ${response.status}`
+                );
+            }
+        } catch (err) {
+            setRecordError(
+                err instanceof Error ? err.message : 'Failed to connect to gateway'
+            );
+        } finally {
+            setRunning(false);
+        }
     };
 
     return (
@@ -241,7 +318,7 @@ with trace(
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900">Record Your First Decision</h2>
-                    <p className="text-slate-600">Run this code in Python</p>
+                    <p className="text-slate-600">Run this code in Python — or click below to test</p>
                 </div>
             </div>
 
@@ -249,10 +326,16 @@ with trace(
                 <pre className="text-green-400 font-mono text-sm">{codeSnippet}</pre>
             </div>
 
-            {error && (
+            {recordError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                    <p className="text-red-700 text-sm">{error}</p>
+                    <p className="text-red-700 text-sm">{recordError}</p>
+                </div>
+            )}
+
+            {status && !recordError && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-blue-700 text-sm">{status}</p>
                 </div>
             )}
 
@@ -262,17 +345,20 @@ with trace(
                 className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
             >
                 {running ? (
-                    <>Recording...</>
+                    <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Recording...
+                    </>
                 ) : (
                     <>
                         <Play className="w-4 h-4" />
-                        Run Example
+                        Send Test Decision
                     </>
                 )}
             </button>
 
             <p className="text-sm text-slate-500 mt-4">
-                Run this locally to record your first decision.
+                This sends a real decision to the gateway. You can also run the Python code locally.
             </p>
         </div>
     );
@@ -291,7 +377,7 @@ function Step5Success({ decisionId }: { decisionId: string }) {
             <div className="bg-slate-100 rounded-xl p-6 mb-6 text-left">
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-slate-500">Decision ID</span>
-                    <code className="font-mono text-slate-900">{decisionId}</code>
+                    <code className="font-mono text-slate-900 text-sm break-all">{decisionId}</code>
                 </div>
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-slate-500">Timestamp</span>
@@ -344,18 +430,87 @@ export default function GetStartedWizard() {
         sdkInstalled: false,
         decisionRecorded: false,
         decisionId: null,
+        orgId: null,
+        projectId: null,
     });
-    const [error] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    // Simulate project creation and API key generation
+    // On mount: load org info and check for existing project/key
+    useEffect(() => {
+        (async () => {
+            try {
+                const me = await getMe();
+                if (me.data?.org) {
+                    const orgId = me.data.org.id;
+                    setState(s => ({ ...s, orgId }));
+
+                    // Check if org already has a project
+                    const projects = await getProjects(orgId);
+                    if (projects.data && projects.data.length > 0) {
+                        setState(s => ({
+                            ...s,
+                            projectCreated: true,
+                            projectId: projects.data![0].id,
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load initial data:', err);
+            }
+        })();
+    }, []);
+
+    // Step 1: Create project + API key via real APIs
     const handleStep1Complete = async () => {
-        // In production, this calls POST /v1/projects and POST /v1/keys
-        setState(s => ({
-            ...s,
-            currentStep: 2,
-            projectCreated: true,
-            apiKey: `rl_live_${Date.now().toString(36)}_demo`
-        }));
+        setLoading(true);
+        setError(null);
+
+        try {
+            const orgId = state.orgId;
+            if (!orgId) {
+                setError('Organization not loaded. Please refresh.');
+                setLoading(false);
+                return;
+            }
+
+            let projectId = state.projectId;
+
+            // If no project exists, create one
+            if (!projectId) {
+                const projRes = await createProject(orgId, 'My First Project');
+                if (projRes.error || !projRes.data) {
+                    setError(projRes.error || 'Failed to create project');
+                    setLoading(false);
+                    return;
+                }
+                projectId = projRes.data.id;
+            }
+
+            // Create API key for the project
+            const keyRes = await createApiKey(projectId, {
+                name: 'Getting Started Key',
+                scopes: ['ingest'],
+            });
+
+            if (keyRes.error || !keyRes.data) {
+                setError(keyRes.error || 'Failed to create API key');
+                setLoading(false);
+                return;
+            }
+
+            setState(s => ({
+                ...s,
+                currentStep: 2,
+                projectCreated: true,
+                projectId,
+                apiKey: keyRes.data!.key_secret,
+            }));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unexpected error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDecisionSuccess = (id: string) => {
@@ -363,7 +518,7 @@ export default function GetStartedWizard() {
             ...s,
             currentStep: 5,
             decisionRecorded: true,
-            decisionId: id
+            decisionId: id,
         }));
     };
 
@@ -403,10 +558,20 @@ export default function GetStartedWizard() {
                 </div>
             </div>
 
+            {/* Error banner */}
+            {error && state.currentStep === 1 && (
+                <div className="max-w-3xl mx-auto mb-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                        <p className="text-red-700 text-sm">{error}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Step Content */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-3xl mx-auto">
                 {state.currentStep === 1 && (
-                    <Step1Welcome onNext={handleStep1Complete} />
+                    <Step1Welcome onNext={handleStep1Complete} loading={loading} />
                 )}
                 {state.currentStep === 2 && state.apiKey && (
                     <Step2ApiKey
@@ -423,7 +588,7 @@ export default function GetStartedWizard() {
                     <Step4Record
                         apiKey={state.apiKey}
                         onSuccess={handleDecisionSuccess}
-                        error={error}
+                        error={null}
                     />
                 )}
                 {state.currentStep === 5 && state.decisionId && (

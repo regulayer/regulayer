@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir \
     fastapi>=0.109.0 \
     pydantic>=2.0.0 \
     pydantic-settings>=2.0.0 \
-    uvicorn>=0.27.0
+    uvicorn>=0.27.0 \
+    httpx>=0.27.0
 
 # Copy source
 COPY . .

@@ -346,7 +346,7 @@ export default function TeamPage() {
         try {
             const meRes = await getMe();
             if (meRes.data) {
-                setCurrentUserRole((meRes.data.user?.role as Role) || 'member');
+                setCurrentUserRole((meRes.data?.role as Role) || 'member');
                 if (meRes.data.org?.id) {
                     const oid = meRes.data.org.id;
                     setOrgId(oid);

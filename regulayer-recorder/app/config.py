@@ -60,20 +60,21 @@ class Settings(BaseSettings):
     
     def validate_production_readiness(self):
         """Validate configuration for production deployment."""
-        # Ensure database URL uses postgres:// or postgresql://
-        if not self.database_url.startswith(("postgres://", "postgresql://")):
-            raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
+        if not self.database_url:
+            raise RuntimeError("DATABASE_URL is required in production mode")
+
+        # Auto-convert to async driver
+        if "postgresql://" in self.database_url and "postgresql+asyncpg://" not in self.database_url:
+            self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+
+        # Enforce SSL in production
+        if self.recorder_environment == "prod" and "sslmode" not in self.database_url:
+            raise RuntimeError("SSL is required in production (sslmode=require or verify-full)")
         
         # Ensure HMAC key is sufficiently strong
         if len(self.hmac_secret_key) < 32:
             raise ValueError("HMAC_SECRET_KEY must be at least 32 characters")
-        
-        # In production, should use TLS-enabled database
-        # (This is a warning, not a hard requirement for dev)
-        if "sslmode" not in self.database_url:
-            import logging
-            logging.warning("DATABASE_URL does not specify sslmode - consider using TLS in production")
-
 
 # Global settings instance
 settings = Settings()
+settings.validate_production_readiness()

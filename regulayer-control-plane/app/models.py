@@ -24,12 +24,14 @@ from .enums import OrgStatus, ProjectEnvironment, UserRole, ApiKeyScope
 class OrganizationCreate(BaseModel):
     """Request to create an organization."""
     name: str = Field(min_length=1, max_length=255)
-    
+    logo_url: Optional[str] = None
+
 
 class Organization(BaseModel):
     """Organization (tenant) in Regulayer SaaS."""
     id: UUID
     name: str
+    logo_url: Optional[str] = None
     status: OrgStatus = OrgStatus.ACTIVE
     is_demo: bool = False
     environment: str = "prod"  # "dev", "staging", "prod"
@@ -37,6 +39,11 @@ class Organization(BaseModel):
     subscription_status: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+class OrganizationUpdate(BaseModel):
+    """Request to update organization details."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    logo_url: Optional[str] = None
 
 
 # ============================================================
@@ -57,6 +64,22 @@ class Project(BaseModel):
     environment: ProjectEnvironment
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+class ProjectUpdate(BaseModel):
+    """Request to update project details."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+
+
+class CheckoutSessionRequest(BaseModel):
+    """Request to create a checkout session."""
+    plan_id: str
+    success_url: str
+    cancel_url: str
+
+
+class PortalSessionRequest(BaseModel):
+    """Request to create a portal session."""
+    return_url: str
 
 
 # ============================================================
@@ -131,7 +154,7 @@ class TenantContext(BaseModel):
     Injected by middleware, used throughout request lifecycle.
     """
     organization_id: UUID
-    project_id: UUID
+    project_id: Optional[UUID] = None
     api_key_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     role: Optional[UserRole] = None
@@ -175,4 +198,19 @@ class AuditLog(BaseModel):
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     created_at: datetime
+
+
+# ============================================================
+# Password Reset
+# ============================================================
+
+class PasswordResetRequest(BaseModel):
+    """Request to initiate password reset."""
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    """Request to complete password reset."""
+    token: str
+    new_password: str = Field(min_length=8)
+
 

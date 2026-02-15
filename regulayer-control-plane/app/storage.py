@@ -29,6 +29,7 @@ class OrganizationDB(Base):
     
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
+    logo_url = Column(String(500), nullable=True) # URL to logo image
     status = Column(SQLEnum(OrgStatus), default=OrgStatus.ACTIVE, nullable=False)
     is_demo = Column(Boolean, default=False, nullable=False)
     environment = Column(String(20), default="prod", nullable=False)
@@ -125,6 +126,45 @@ class SessionDB(Base):
     __table_args__ = (
         Index("ix_sessions_user_id", "user_id"),
         Index("ix_sessions_token_hash", "token_hash"),
+    )
+
+
+
+class PasswordResetTokenDB(Base):
+    """Token for password reset workflow."""
+    __tablename__ = "password_reset_tokens"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    used = Column(Boolean, default=False, nullable=False)
+    
+    # Relationships
+    user = relationship("UserDB")
+    
+    # Indexes
+    __table_args__ = (
+        Index("ix_pwd_reset_token_hash", "token_hash"),
+        Index("ix_pwd_reset_user_id", "user_id"),
+    )
+
+
+class OtpCodeDB(Base):
+    """OTP codes for signup verification."""
+    __tablename__ = "otp_codes"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    email = Column(String(255), nullable=False)
+    code_hash = Column(String(64), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    verified = Column(Boolean, default=False, nullable=False) # True if verified but not yet used for cleanup
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Indexes
+    __table_args__ = (
+        Index("ix_otp_codes_email", "email"),
     )
 
 

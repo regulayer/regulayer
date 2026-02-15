@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/app/debug_internal_otp.py", line 44, in debug_otp
+    svc.complete_signup(str(otp_id), f"Debug Org {uuid4().hex[:4]}", "password123")
+  File "/app/app/user_auth.py", line 136, in complete_signup
+    environment=ProjectEnvironment.DEV
+                ^^^^^^^^^^^^^^^^^^
+NameError: name 'ProjectEnvironment' is not defined
+--- Starting Debug OTP ---
+Creating OTP record for debug_c6d5c08d@example.com...
+OTP Created: 46bbbcad-2608-42b2-bfa4-e9941135acaf
+Calling complete_signup...
+FAILURE: complete_signup raised exception:

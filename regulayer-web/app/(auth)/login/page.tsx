@@ -1,106 +1,122 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { Shield, ArrowRight, Mail, Lock } from 'lucide-react';
-import { login } from '@/lib/api';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { login } from "@/lib/api";
+import { setToken } from "@/lib/auth";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setError("");
 
-        try {
-            const { data, error: apiError } = await login(email, password);
+        const res = await login(email, password);
 
-            if (data) {
-                localStorage.setItem('regulayer_token', data.token);
-                window.location.href = '/dashboard';
-            } else {
-                setError(apiError || 'Login failed');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
+        if (res.data?.token) {
+            setToken(res.data.token);
+            router.push("/dashboard");
+        } else {
+            setError(res.error || "Invalid email or password.");
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
+            {/* Background */}
+            <div className="absolute inset-0 mesh-gradient opacity-30" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
+
+            <div className="relative z-10 w-full max-w-md px-6">
                 {/* Logo */}
-                <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-                    <Shield className="w-10 h-10 text-primary-400" />
-                    <span className="text-2xl font-bold text-white">Regulayer</span>
-                </Link>
+                <div className="flex justify-center mb-8">
+                    <Link href="/" className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <span className="text-white font-bold">R</span>
+                        </div>
+                    </Link>
+                </div>
 
-                {/* Card */}
-                <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8">
-                    <h1 className="text-2xl font-bold text-white text-center mb-2">Welcome back</h1>
-                    <p className="text-slate-400 text-center mb-8">Sign in to your account</p>
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-8">
+                    <h2 className="text-2xl font-bold text-white text-center mb-1">Welcome back</h2>
+                    <p className="text-sm text-zinc-500 text-center mb-8">Sign in to your Regulayer dashboard</p>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                                    placeholder="you@company.com"
-                                    required
-                                />
-                            </div>
+                    {error && (
+                        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                            <p className="text-sm text-red-400">{error}</p>
+                        </div>
+                    )}
+
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="text-sm font-medium text-zinc-400">Email</label>
+                            <input
+                                id="email"
+                                type="email"
+                                required
+                                autoComplete="email"
+                                placeholder="name@company.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={loading}
+                                className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
+                            />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                                    placeholder="••••••••"
-                                    required
-                                />
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="password" className="text-sm font-medium text-zinc-400">Password</label>
+                                <Link href="/forgot-password" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                                    Forgot password?
+                                </Link>
                             </div>
+                            <input
+                                id="password"
+                                type="password"
+                                required
+                                autoComplete="current-password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
+                                className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
+                            />
                         </div>
-
-                        {error && (
-                            <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
-                                {error}
-                            </div>
-                        )}
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
-                            {!loading && <ArrowRight className="w-5 h-5" />}
+                            {loading ? (
+                                <>
+                                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Signing in...
+                                </>
+                            ) : (
+                                "Sign in"
+                            )}
                         </button>
-                    </form>
 
-                    <div className="mt-6 text-center">
-                        <p className="text-slate-400">
-                            Don&apos;t have an account?{' '}
-                            <Link href="/signup" className="text-primary-400 hover:text-primary-300 font-medium">
+                        <p className="text-center text-sm text-zinc-500 mt-6">
+                            Don&apos;t have an account?{" "}
+                            <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">
                                 Sign up
                             </Link>
                         </p>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

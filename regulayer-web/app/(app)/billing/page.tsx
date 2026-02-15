@@ -1,162 +1,217 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle, ExternalLink, Shield, AlertCircle } from 'lucide-react';
-import { getMe } from '@/lib/api';
+import {
+    IconCreditCard,
+    IconCheck,
+    IconShieldCheck,
+    IconAlertCircle,
+    IconLoader2,
+    IconExternalLink
+} from '@tabler/icons-react';
+import { getMe, getUsage, createPortalSession, Organization } from '@/lib/api';
+import { GlazedCard } from '@/components/ui/glazed-card';
+import { cn } from '@/lib/utils';
+
+// Plan definitions
+const PLANS = {
+    starter: {
+        name: 'Starter',
+        price: 'Free',
+        features: ['1,000 decisions / month', '7-day retention', 'Basic Support', '1 Team Member'],
+    },
+    pro: {
+        name: 'Pro',
+        price: '$49 / mo',
+        features: ['100,000 decisions / month', '1-year retention', 'Priority Support', '5 Team Members', 'Audit Logs'],
+    },
+    enterprise: {
+        name: 'Enterprise',
+        price: 'Custom',
+        features: [
+            'Unlimited decisions / day',
+            'Cryptographic Evidence Export',
+            'Offline Verification Tool',
+            'Governance Overlay',
+            'Dedicated Support',
+            'Custom SLAs',
+        ],
+    },
+};
 
 export default function BillingPage() {
-    const [loading, setLoading] = useState(false);
-    const [isDemo, setIsDemo] = useState(false);
-    const [checkingOrg, setCheckingOrg] = useState(true);
+    const [org, setOrg] = useState<Organization | null>(null);
+    const [usage, setUsage] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [portalLoading, setPortalLoading] = useState(false);
 
     useEffect(() => {
-        async function checkOrg() {
-            try {
-                const res = await getMe();
-                if (res.data?.org?.is_demo) {
-                    setIsDemo(true);
-                }
-            } catch {
-                // Ignore - default to non-demo
-            } finally {
-                setCheckingOrg(false);
-            }
-        }
-        checkOrg();
+        loadBillingData();
     }, []);
 
-    const handlePortal = () => {
-        setLoading(true);
-        // Mock redirect to Stripe Portal
-        setTimeout(() => {
-            window.location.href = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL || 'https://billing.stripe.com/p/login/mock';
+    const loadBillingData = async () => {
+        try {
+            const me = await getMe();
+            if (me.data?.org) {
+                setOrg(me.data.org);
+                const usageRes = await getUsage(me.data.org.id);
+                if (usageRes.data) {
+                    setUsage(usageRes.data);
+                }
+            }
+        } finally {
             setLoading(false);
-        }, 1000);
+        }
     };
 
-    // Demo org restriction
-    if (!checkingOrg && isDemo) {
-        return (
-            <div className="min-h-screen bg-slate-50">
-                <div className="max-w-5xl mx-auto px-8 py-8">
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-slate-900">Billing & Subscription</h1>
-                        <p className="text-slate-600">Manage your plan and payment methods</p>
-                    </div>
+    const handlePortal = async () => {
+        if (!org) return;
+        setPortalLoading(true);
+        try {
+            const res = await createPortalSession(org.id);
+            if (res.data?.url) {
+                window.location.href = res.data.url;
+            } else {
+                alert('No billing portal available used for this organization.');
+            }
+        } catch {
+            alert('Failed to redirect to billing portal');
+        } finally {
+            setPortalLoading(false);
+        }
+    };
 
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
-                        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold text-slate-900 mb-2">Billing Not Available for Demo Accounts</h2>
-                        <p className="text-slate-600 max-w-lg mx-auto">
-                            Demo organizations cannot access billing features. To upgrade to a paid plan,
-                            please create a new production organization.
-                        </p>
-                        <div className="mt-6 p-4 bg-amber-100 rounded-lg inline-block">
-                            <p className="text-sm text-amber-800 font-medium">
-                                Demo data and decisions cannot be migrated to production.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+    if (loading) {
+        return (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-zinc-200 border-t-indigo-500 animate-spin" />
             </div>
         );
     }
 
+    const currentPlanKey = (org?.plan || 'starter') as keyof typeof PLANS;
+    const currentPlan = PLANS[currentPlanKey] || PLANS.starter;
+
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-5xl mx-auto px-8 py-8">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900">Billing & Subscription</h1>
-                    <p className="text-slate-600">Manage your plan and payment methods</p>
+        <div className="max-w-7xl mx-auto space-y-8 pb-20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400">
+                        Billing & Usage
+                    </h1>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+                        Manage your subscription and view usage limits.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* Current Plan */}
-                    <div className="md:col-span-2 space-y-6">
-                        <div className="bg-white rounded-xl border border-slate-200 p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="font-semibold text-slate-900">Current Plan</h3>
-                                    <p className="text-sm text-slate-500">Your organization&apos;s subscription tier</p>
-                                </div>
-                                <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    Pro Plan
-                                </span>
-                            </div>
+                <button
+                    onClick={handlePortal}
+                    disabled={portalLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                >
+                    {portalLoading ? <IconLoader2 className="animate-spin" size={18} /> : <IconCreditCard size={18} />}
+                    Manage Subscription
+                </button>
+            </div>
 
-                            <div className="space-y-4 mb-8">
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span>100,000 decisions / day</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span>Cryptographic Evidence Export</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span>Offline Verification Tool</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <CheckCircle className="w-5 h-5 text-green-500" />
-                                    <span>Governance Overlay</span>
-                                </div>
-                            </div>
+            {/* Current Plan Card */}
+            <GlazedCard className="overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
 
-                            <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
-                                <div className="text-sm">
-                                    <p className="text-slate-900 font-medium">$299 / month</p>
-                                    <p className="text-slate-500">Next billing date: Mar 01, 2026</p>
-                                </div>
-                                <button
-                                    onClick={handlePortal}
-                                    disabled={loading}
-                                    className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    <CreditCard className="w-4 h-4" />
-                                    {loading ? 'Redirecting...' : 'Manage Subscription'}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl border border-slate-200 p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Invoice History</h3>
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 px-2 rounded -mx-2 transition">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center">
-                                                <ExternalLink className="w-4 h-4 text-slate-500" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-900">Invoice #INV-2026-00{i}</p>
-                                                <p className="text-xs text-slate-500">Feb 01, 2026</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-sm font-medium text-slate-900">$299.00</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Trust Promise */}
+                <div className="p-8 grid md:grid-cols-2 gap-8 relative z-10">
                     <div>
-                        <div className="bg-slate-900 text-white rounded-xl p-6">
-                            <Shield className="w-8 h-8 text-primary-400 mb-4" />
-                            <h3 className="font-bold text-lg mb-2">Billing never affects truth.</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                                If your payment fails, ingestion may pause, but your existing cryptographic proofs are <strong>never deleted</strong> and always <strong>exportable</strong>.
-                            </p>
-                            <div className="bg-slate-800 rounded-lg p-4">
-                                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Guarantee</p>
-                                <p className="text-sm text-white font-medium">
-                                    &quot;Your evidence belongs to you, regardless of your subscription status.&quot;
-                                </p>
-                            </div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-200 dark:border-indigo-500/30">
+                                Current Plan
+                            </span>
+                            {org?.status === 'active' ? (
+                                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                    <IconCheck size={14} /> Active
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                    <IconAlertCircle size={14} /> payment_past_due
+                                </span>
+                            )}
+                        </div>
+                        <h2 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+                            {currentPlan.name}
+                        </h2>
+                        <div className="text-xl text-zinc-500 dark:text-zinc-400 flex items-baseline gap-1">
+                            {currentPlan.price} <span className="text-sm">/ month</span>
                         </div>
                     </div>
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            <span>Monthly Decisions</span>
+                            <span>{usage?.decisions_count?.toLocaleString() || 0} / {currentPlanKey === 'starter' ? '1,000' : currentPlanKey === 'pro' ? '100,000' : 'Unlimited'}</span>
+                        </div>
+                        <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                            <div
+                                className="bg-indigo-500 h-full rounded-full transition-all duration-1000"
+                                style={{ width: `${Math.min(((usage?.decisions_count || 0) / (currentPlanKey === 'starter' ? 1000 : 100000)) * 100, 100)}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            Usage resets on the 1st of every month.
+                        </p>
+                    </div>
                 </div>
+            </GlazedCard>
+
+            {/* Plans Grid */}
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-12 mb-6">Available Plans</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+                {Object.entries(PLANS).map(([key, plan]) => {
+                    const isCurrent = key === currentPlanKey;
+                    return (
+                        <GlazedCard
+                            key={key}
+                            className={cn(
+                                "flex flex-col p-6 h-full transition-all duration-300 hover:translate-y-[-4px]",
+                                isCurrent && "border-indigo-500/50 dark:border-indigo-500/50 ring-1 ring-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/10"
+                            )}
+                        >
+                            <div className="mb-4">
+                                <h4 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{plan.name}</h4>
+                                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mt-2">{plan.price}</div>
+                            </div>
+
+                            <ul className="space-y-3 flex-1 mb-8">
+                                {plan.features.map((feature, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                        <IconCheck className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                        <span>{feature}</span>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            <button
+                                disabled={isCurrent}
+                                className={cn(
+                                    "w-full py-2 rounded-lg font-medium transition-colors",
+                                    isCurrent
+                                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-default"
+                                        : "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90"
+                                )}
+                            >
+                                {isCurrent ? 'Current Plan' : 'Upgrade'}
+                            </button>
+                        </GlazedCard>
+                    );
+                })}
+            </div>
+
+            <div className="mt-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 text-center">
+                <IconShieldCheck className="w-8 h-8 text-zinc-400 mx-auto mb-3" />
+                <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Enterprise Security</h4>
+                <p className="text-sm text-zinc-500 max-w-lg mx-auto mt-1">
+                    Need SOC2 Type II reports, on-premise deployment, or custom BAA? Contact our sales team for an enterprise agreement.
+                </p>
+                <button className="mt-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline flex items-center justify-center gap-1">
+                    Contact Sales <IconExternalLink size={14} />
+                </button>
             </div>
         </div>
     );

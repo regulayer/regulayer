@@ -7,13 +7,14 @@ Tenant context injection and validation middleware.
 from typing import Optional, Callable
 from uuid import UUID
 
-from fastapi import Request, HTTPException, Depends
+from fastapi import Request, HTTPException, Depends, Header
 from fastapi.security import APIKeyHeader
 
 from .models import TenantContext
 from .enums import ApiKeyScope
 from .storage import SessionLocal, get_db
 from .auth import AuthService
+from .user_auth import UserAuthService
 
 
 # API key header
@@ -22,31 +23,48 @@ api_key_header = APIKeyHeader(name="X-Regulayer-API-Key", auto_error=False)
 
 async def get_tenant_context(
     request: Request,
-    api_key: Optional[str] = Depends(api_key_header)
+    api_key: Optional[str] = Depends(api_key_header),
+    authorization: Optional[str] = Header(None)
 ) -> Optional[TenantContext]:
     """
     Extract tenant context from request.
     
-    Validates API key and returns tenant context.
-    Returns None if no API key provided (for public endpoints).
+    Validates API key OR User Session and returns tenant context.
+    Returns None if no credentials provided.
     """
-    if not api_key:
-        return None
-    
     # Get database session
     db = next(get_db())
-    
     try:
-        auth_service = AuthService(db)
-        validation = auth_service.validate_api_key(api_key)
-        
-        if not validation.valid:
-            raise HTTPException(
-                status_code=401,
-                detail=validation.error or "Invalid API key"
-            )
-        
-        return auth_service.build_tenant_context(validation)
+        # Case A: API Key
+        if api_key:
+            auth_service = AuthService(db)
+            validation = auth_service.validate_api_key(api_key)
+            
+            if not validation.valid:
+                raise HTTPException(
+                    status_code=401,
+                    detail=validation.error or "Invalid API key"
+                )
+            
+            return auth_service.build_tenant_context(validation)
+
+        # Case B: User Session (Bearer Token)
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.split(" ")[1]
+            user_auth = UserAuthService(db)
+            user = user_auth.get_user_from_token(token)
+            
+            if user:
+                return TenantContext(
+                    organization_id=user.organization_id,
+                    project_id=None, # Users are org-scoped, not project-bound in context
+                    user_id=user.id,
+                    role=user.role,
+                    # We could fetch org status here if needed, but for now we trust session validity
+                )
+                
+        return None
+
     finally:
         db.close()
 

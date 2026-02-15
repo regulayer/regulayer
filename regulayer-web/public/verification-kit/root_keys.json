@@ -1,0 +1,15 @@
+{
+    "version": "1.0",
+    "snapshot_date": "2026-02-12T00:00:00Z",
+    "authority": "Regulayer Trust Registry",
+    "active_keys": [
+        {
+            "kid": "root-2026-01",
+            "algorithm": "Ed25519",
+            "public_key": "302a300506032b6570032100...[PLACEHOLDER_REAL_KEY]...",
+            "status": "active",
+            "valid_until": "2027-01-01T00:00:00Z"
+        }
+    ],
+    "revoked_keys": []
+}

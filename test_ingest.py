@@ -2,7 +2,7 @@ from regulayer import configure, trace
 
 configure(
     api_key="PASTE_YOUR_REAL_API_KEY_HERE",
-    endpoint="http://localhost:8080"
+    endpoint="http://localhost:8080/v1/ingest/decision"
 )
 
 with trace(system="local_test") as t:

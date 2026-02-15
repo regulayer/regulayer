@@ -2,21 +2,6 @@ services:
   # ============================================================================
   # DATA LAYER
   # ============================================================================
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      # Init script will create the 3 databases
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7
     healthcheck:
@@ -24,6 +9,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    ports:
+      - "6379:6379"
 
   # ============================================================================
   # CORE TRUST LAYER (The Truth)
@@ -36,12 +23,9 @@ services:
       - DATABASE_URL=${RECORDER_DB_URL}
       - SIGNING_KEY_PATH=${RECORDER_SIGNING_KEY_PATH}
       - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
-      - RECORDER_ENVIRONMENT=dev
+      - RECORDER_ENVIRONMENT=prod
     volumes:
       - recorder_keys:/keys
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
       - "8300:8000"
 
@@ -80,14 +64,14 @@ services:
       context: ./regulayer-ingestion-queue
       dockerfile: Dockerfile
     environment:
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=redis://redis:6379
       - RECORDER_URL=http://recorder:8000
       - QUEUE_QUEUE_BACKEND=redis
     depends_on:
       redis:
         condition: service_healthy
       recorder:
-        condition: service_healthy
+        condition: service_started
 
   # ============================================================================
   # CONTROL & GOVERNANCE LAYER
@@ -98,11 +82,9 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=${CONTROL_DB_URL}
-      - REGULAYER_CONTROL_JWT_SECRET=${JWT_SECRET}
-      - REGULAYER_CONTROL_STRIPE_API_KEY=${STRIPE_API_KEY}
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - REGULAYER_CONTROL_JWT_SECRET=dev_jwt_secret_do_not_use_in_prod
+      - REGULAYER_CONTROL_STRIPE_API_KEY=mock_stripe_key
+      - INTERNAL_SECRET=${CONTROL_PLANE_INTERNAL_SECRET}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
@@ -118,10 +100,7 @@ services:
       - "8002"
     environment:
       - DATABASE_URL=${GOVERNANCE_DB_URL}
-      - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET:-regulayer_internal_secret_value_change_in_prod}
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
       interval: 10s
@@ -136,7 +115,7 @@ services:
       - GOVERNANCE_URL=http://governance:8002
     depends_on:
       recorder:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
       interval: 10s
@@ -147,11 +126,8 @@ services:
       context: ./regulayer-incidents
       dockerfile: Dockerfile
     environment:
-      - INCIDENTS_DB_URL=${INCIDENTS_DB_URL}
-      - INCIDENTS_INTERNAL_SECRET=${INCIDENTS_INTERNAL_SECRET:-regulayer_internal_secret_value_change_in_prod}
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - DATABASE_URL=${INCIDENTS_DB_URL}
+      - INCIDENTS_INTERNAL_SECRET=${INCIDENTS_INTERNAL_SECRET}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
@@ -165,7 +141,7 @@ services:
       context: ./regulayer-web
       dockerfile: Dockerfile
     environment:
-      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+      - NEXT_PUBLIC_API_BASE=http://localhost:8080
     ports:
       - "3000:3000"
     depends_on:
@@ -173,5 +149,4 @@ services:
         condition: service_healthy
 
 volumes:
-  postgres_data:
   recorder_keys:

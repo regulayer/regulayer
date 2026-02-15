@@ -1,0 +1,73 @@
+﻿
+> regulayer-web@1.0.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/43) ...
+   Generating static pages (10/43) 
+   Generating static pages (21/43) 
+   Generating static pages (32/43) 
+ Γ£ô Generating static pages (43/43)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Γöî Γùï /                                    5.62 kB         108 kB
+Γö£ Γùï /_not-found                          876 B          88.2 kB
+Γö£ Γùï /about                               3.42 kB         106 kB
+Γö£ Γùï /alerts                              3.22 kB        90.5 kB
+Γö£ Γùï /api-keys                            5.41 kB         137 kB
+Γö£ Γùï /audit                               3.02 kB        90.3 kB
+Γö£ Γùï /auth/sso                            1.99 kB          98 kB
+Γö£ Γùï /billing                             3.89 kB        91.2 kB
+Γö£ Γùï /dashboard                           8.3 kB          145 kB
+Γö£ ╞Æ /decisions/[id]                      5.2 kB          101 kB
+Γö£ Γùï /docs                                4.13 kB         107 kB
+Γö£ Γùï /exports                             4.24 kB        91.6 kB
+Γö£ Γùï /forgot-password                     2.85 kB        98.9 kB
+Γö£ Γùï /get-started                         6.19 kB         102 kB
+Γö£ Γùï /governance                          2.37 kB        98.4 kB
+Γö£ ╞Æ /governance/[decision_id]            6.5 kB          103 kB
+Γö£ Γùï /keys                                167 B          87.5 kB
+Γö£ Γùï /legal/cookies                       167 B          87.5 kB
+Γö£ Γùï /legal/dpa                           167 B          87.5 kB
+Γö£ Γùï /legal/privacy                       167 B          87.5 kB
+Γö£ Γùï /legal/terms                         167 B          87.5 kB
+Γö£ Γùï /login                               2.78 kB        98.8 kB
+Γö£ Γùï /onboarding                          5.18 kB        92.5 kB
+Γö£ Γùï /org/audit-log                       3.73 kB        91.1 kB
+Γö£ Γùï /org/deployment                      3.39 kB        90.7 kB
+Γö£ Γùï /org/identity                        3.49 kB        90.8 kB
+Γö£ Γùï /org/residency                       3 kB           90.3 kB
+Γö£ Γùï /org/retention                       3.92 kB        91.2 kB
+Γö£ Γùï /org/settings                        4.01 kB         100 kB
+Γö£ Γùï /org/team                            4.67 kB          92 kB
+Γö£ Γùï /pricing                             3.56 kB         106 kB
+Γö£ Γùï /projects                            3.97 kB         100 kB
+Γö£ Γùï /reports                             2.4 kB         98.4 kB
+Γö£ Γùï /reset-password                      3.16 kB        99.2 kB
+Γö£ Γùï /security                            167 B          87.5 kB
+Γö£ Γùï /settings                            4.89 kB        92.2 kB
+Γö£ Γùï /settings/notifications              2.03 kB        89.4 kB
+Γö£ Γùï /settings/webhooks                   3.45 kB        90.8 kB
+Γö£ Γùï /signup                              3.8 kB         99.8 kB
+Γö£ Γùï /status                              3.08 kB        90.4 kB
+Γö£ Γùï /team                                4.13 kB        91.5 kB
+Γö£ Γùï /trust/continuity                    167 B          87.5 kB
+Γöö Γùï /usage                               3.31 kB        90.6 kB
++ First Load JS shared by all            87.3 kB
+  Γö£ chunks/2117-667027fcfd059403.js      31.7 kB
+  Γö£ chunks/fd9d1056-39b3200568d8d092.js  53.6 kB
+  Γöö other shared chunks (total)          1.95 kB
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

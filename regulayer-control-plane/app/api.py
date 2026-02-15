@@ -8,22 +8,25 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .enums import ProjectEnvironment, UserRole
 
 from .models import (
     Organization, OrganizationCreate,
-    Project, ProjectCreate,
+    Project, ProjectCreate, ProjectUpdate,
     ApiKey, ApiKeyCreate, ApiKeyWithSecret,
-    User, UserCreate, UserWithOrg, OrgStatusUpdate, # Added imports
-    TenantContext, KeyValidationResult, AuditLog
+    User, UserCreate, UserWithOrg, OrgStatusUpdate, OrganizationUpdate,
+    TenantContext, KeyValidationResult, AuditLog,
+    PasswordResetRequest, PasswordResetConfirm,
+    CheckoutSessionRequest, PortalSessionRequest
 )
+from .billing import BillingService
 from .storage import (
     get_db, init_db,
     OrganizationDB, ProjectDB, UserDB, ApiKeyDB,
-    OrgStatus
+    OrgStatus, UserRole # Added UserRole
 )
 from .auth import AuthService
 from .audit import AuditService
@@ -114,6 +117,52 @@ async def startup():
 # ============================================================
 # Organization Endpoints
 # ============================================================
+
+@app.patch("/v1/orgs/{org_id}", response_model=Organization, tags=["organizations"])
+async def update_organization(
+    org_id: UUID,
+    request: OrganizationUpdate,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+) -> Organization:
+    """Update organization details (Name, Logo)."""
+    # Authorization: Must be Owner or Admin of THAT org
+    if tenant.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Check if user is owner/admin?
+    # require_tenant_context doesn't enforce role, just context.
+    # We should enforce role here.
+    user = db.query(UserDB).filter(UserDB.id == tenant.user_id).first()
+    if not user or user.role not in [UserRole.OWNER, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only Owners or Admins can update organization settings")
+
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    if request.name is not None:
+        org.name = request.name
+    
+    if request.logo_url is not None:
+        org.logo_url = request.logo_url
+        
+    db.commit()
+    db.refresh(org)
+    
+    return Organization(
+        id=org.id,
+        name=org.name,
+        logo_url=org.logo_url,
+        status=org.status,
+        is_demo=org.is_demo,
+        environment=org.environment,
+        stripe_customer_id=org.stripe_customer_id,
+        subscription_status=org.subscription_status,
+        created_at=org.created_at,
+        updated_at=org.updated_at
+    )
+
 
 @app.patch("/v1/orgs/{org_id}/status", tags=["organizations"])
 async def patch_organization_status(
@@ -258,6 +307,41 @@ async def get_project(
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    return Project(
+        id=project.id,
+        organization_id=project.organization_id,
+        name=project.name,
+        environment=project.environment,
+        created_at=project.created_at,
+        updated_at=project.updated_at
+    )
+
+
+
+@app.patch("/v1/projects/{project_id}", response_model=Project, tags=["projects"])
+async def update_project(
+    project_id: UUID,
+    request: ProjectUpdate,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+) -> Project:
+    """Update project details (Name)."""
+    # 1. Verify project belongs to tenant app context?
+    # require_tenant_context gives us the Org ID.
+    
+    project = db.query(ProjectDB).filter(ProjectDB.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    if project.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    if request.name:
+        project.name = request.name
+        
+    db.commit()
+    db.refresh(project)
     
     return Project(
         id=project.id,
@@ -432,10 +516,19 @@ async def logout(
 
 @app.get("/v1/auth/me", response_model=UserWithOrg, tags=["auth"])
 async def get_current_user(
-    token: str,
+    token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> UserWithOrg:
     """Get current user from session token."""
+    # Extract token from header if not in query param
+    if not token and authorization:
+        if authorization.startswith("Bearer "):
+            token = authorization.split(" ")[1]
+            
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     auth_service = UserAuthService(db)
     user = auth_service.get_user_from_token(token)
     
@@ -544,6 +637,147 @@ async def signup(
         if "organizations_name_key" in str(e): # PSQL error string guess
              raise HTTPException(status_code=400, detail="Organization name already taken")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+
+# ============================================================
+# OTP Signup Endpoints
+# ============================================================
+
+class OtpRequest(BaseModel):
+    email: EmailStr
+
+class OtpVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class OtpVerifyResponse(BaseModel):
+    signup_token: str
+    email: EmailStr
+
+class SignupCompleteRequest(BaseModel):
+    signup_token: str
+    orgName: str
+    password: str
+
+@app.post("/v1/auth/signup/otp-request", tags=["auth"])
+async def request_otp(
+    request: OtpRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 1: Request an OTP for email verification.
+    """
+    from .user_auth import OtpService
+    otp_service = OtpService(db)
+    
+    try:
+        code = otp_service.request_otp(request.email)
+        # In PROD, send via Email (SendGrid/SES)
+        # In DEV, log to console
+        print(f"==========================================")
+        print(f"OTP FOR {request.email}: {code}")
+        print(f"==========================================")
+        return {"status": "otp_sent", "message": "Check your email for the code"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/v1/auth/signup/otp-verify", response_model=OtpVerifyResponse, tags=["auth"])
+async def verify_otp(
+    request: OtpVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 2: Verify OTP and get a signup token.
+    """
+    from .user_auth import OtpService
+    otp_service = OtpService(db)
+    
+    token = otp_service.verify_otp(request.email, request.code)
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        
+    return OtpVerifyResponse(signup_token=token, email=request.email)
+
+@app.post("/v1/auth/signup/complete", response_model=LoginResponse, tags=["auth"])
+async def complete_signup(
+    request: SignupCompleteRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 3: Complete signup with verified token.
+    """
+    from .user_auth import OtpService
+    otp_service = OtpService(db)
+    
+    try:
+        # Create Org, User, Project
+        token, user = otp_service.complete_signup(
+            request.signup_token,
+            request.orgName,
+            request.password
+        )
+        
+        # Populate UserWithOrg
+        # We need to fetch the Org to return full object
+        org = db.query(OrganizationDB).filter(OrganizationDB.id == user.organization_id).first()
+        
+        user_with_org = UserWithOrg(
+            **user.dict(),
+            org=Organization(
+                id=org.id,
+                name=org.name,
+                status=org.status,
+                is_demo=org.is_demo,
+                environment=org.environment,
+                created_at=org.created_at
+            )
+        )
+        return LoginResponse(token=token, user=user_with_org)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/v1/auth/forgot-password", tags=["auth"])
+async def forgot_password(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Initiate password reset.
+    
+    Generates a token and 'sends' an email.
+    In this version, the link is printed to server logs.
+    """
+    auth_service = UserAuthService(db)
+    token = auth_service.create_reset_token(request.email)
+    
+    if token:
+        # In a real deployment, integration with SendGrid/SES goes here.
+        # For now, we log the link for the admin/developer.
+        print(f"============================================================")
+        print(f"PASSWORD RESET LINK for {request.email}:")
+        print(f"http://localhost:3000/reset-password?token={token}")
+        print(f"============================================================")
+    
+    # Always return success to prevent email enumeration
+    return {"status": "email_sent"}
+
+
+@app.post("/v1/auth/reset-password", tags=["auth"])
+async def reset_password_endpoint(
+    request: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    """Complete password reset with token."""
+    auth_service = UserAuthService(db)
+    if not auth_service.reset_password(request.token, request.new_password):
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        
+    return {"status": "password_reset"}
+
+
 
 
 # ============================================================
@@ -691,6 +925,82 @@ async def change_user_role(
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"status": "role_updated", "user_id": str(user_id), "new_role": request.role.value}
+
+
+# ============================================================
+# Usage & Billing Endpoints
+# ============================================================
+
+class UsageStats(BaseModel):
+    period_start: datetime
+    period_end: datetime
+    decision_count: int
+    used: int
+    limit: int
+
+
+@app.get("/v1/usage/orgs/{org_id}", response_model=UsageStats, tags=["usage"])
+async def get_org_usage(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+) -> UsageStats:
+    """
+    Get organization usage statistics.
+    Aggregates decision counts from Recorder.
+    """
+    # Authorization
+    if tenant.organization_id != org_id:
+         raise HTTPException(status_code=403, detail="Access denied")
+
+    # 1. Get all projects for Org
+    projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
+    project_ids = [str(p.id) for p in projects]
+    
+    if not project_ids:
+        return UsageStats(
+            period_start=datetime.now(timezone.utc),
+            period_end=datetime.now(timezone.utc),
+            decision_count=0,
+            used=0,
+            limit=100000
+        )
+
+    # 2. Call Recorder Internal API
+    import httpx
+    # Assuming 'recorder' is the docker service name and port 8000
+    # In config.py: recorder_url might be "http://recorder:8000"
+    recorder_url = settings.recorder_url if hasattr(settings, 'recorder_url') else "http://recorder:8000"
+    # Ensure no trailing slash
+    recorder_url = recorder_url.rstrip("/")
+    
+    total_usage = 0
+    
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(
+                f"{recorder_url}/internal/usage",
+                params={"project_ids": ",".join(project_ids)}
+            )
+            
+            if resp.status_code == 200:
+                counts = resp.json()
+                total_usage = sum(counts.values())
+            else:
+                print(f"Failed to fetch usage from recorder: {resp.status_code} {resp.text}")
+                # Fallback to 0 or error? Fallback to 0 to not break UI
+                
+    except Exception as e:
+         print(f"Usage fetch error: {e}")
+         # Fail graceful
+         
+    return UsageStats(
+        period_start=datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        period_end=datetime.now(timezone.utc),
+        decision_count=total_usage,
+        used=total_usage,
+        limit=100000 # Hardcoded Trial Limit
+    )
 
 
 # ============================================================
@@ -891,3 +1201,51 @@ async def get_audit_logs(
 ) -> List[AuditLog]:
     """Get audit logs for an organization."""
     return audit.get_logs(org_id, limit, offset)
+
+
+# ============================================================
+# Real Billing Endpoints (Stripe)
+# ============================================================
+
+@app.post("/v1/billing/checkout", tags=["billing"])
+async def create_checkout_session(
+    request: CheckoutSessionRequest,
+    tenant: TenantContext = Depends(require_tenant_context),
+    db: Session = Depends(get_db)
+):
+    """Create a Stripe Checkout Session."""
+    if tenant.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Only owners can manage billing")
+        
+    billing_service = BillingService(db)
+    try:
+        url = billing_service.create_checkout_session(
+            org_id=tenant.organization_id,
+            plan_id=request.plan_id,
+            success_url=request.success_url,
+            cancel_url=request.cancel_url
+        )
+        return {"url": url}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/v1/billing/portal", tags=["billing"])
+async def create_portal_session(
+    request: PortalSessionRequest,
+    tenant: TenantContext = Depends(require_tenant_context),
+    db: Session = Depends(get_db)
+):
+    """Create a Stripe Customer Portal Session."""
+    if tenant.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Only owners can manage billing")
+        
+    billing_service = BillingService(db)
+    try:
+        url = billing_service.create_portal_session(
+            org_id=tenant.organization_id,
+            return_url=request.return_url
+        )
+        return {"url": url}
+    except ValueError as e:
+         raise HTTPException(status_code=400, detail=str(e))

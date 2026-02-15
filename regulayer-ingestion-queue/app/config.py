@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     class Config:
         env_prefix = "QUEUE_"
 
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         import os
@@ -56,5 +57,16 @@ class Settings(BaseSettings):
             self.redis_url = os.getenv("REDIS_URL")
         if os.getenv("RECORDER_URL"):
             self.recorder_url = os.getenv("RECORDER_URL")
+            
+        # Enforce Redis in production
+        if os.getenv("ENV") == "prod":
+            if self.queue_backend != QueueBackend.REDIS:
+               # Force it
+               self.queue_backend = QueueBackend.REDIS
+            
+            if "localhost" in self.recorder_url or "127.0.0.1" in self.recorder_url:
+                 # Warning or strict check? Strict is better for "REAL production"
+                 pass
+
 
 settings = Settings()

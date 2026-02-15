@@ -129,7 +129,7 @@ export default function GovernanceDetailPage() {
                 const [decRes, govRes, meRes] = await Promise.all([
                     getDecision(decisionId),
                     getGovernance(decisionId).catch(() => ({ error: 'unavailable', data: null })), // Fail-safe
-                    getMe().catch(() => ({ data: { user: { role: 'member' }, org: { status: 'active' } } })) // Fallback
+                    getMe().catch(() => ({ data: { role: 'member', org: { status: 'active' } } })) // Fallback
                 ]);
 
                 // 2. Handle Decision Error (Critical)
@@ -156,7 +156,7 @@ export default function GovernanceDetailPage() {
                 }
 
                 // 4. Handle Context (Org/User)
-                const userData = meRes.data?.user || { role: 'member' };
+                const userData = meRes.data || { role: 'member' };
                 const orgData = meRes.data?.org || { status: 'active' };
 
                 setUserRole(userData.role || 'member');
@@ -528,6 +528,26 @@ export default function GovernanceDetailPage() {
                             >
                                 <FileJson className="w-4 h-4 inline mr-2 text-slate-500" />
                                 Download Evidence Bundle
+                            </a>
+                        </div>
+
+                        {/* Trust Report */}
+                        <div className="bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 rounded-xl p-6">
+                            <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                                <FileJson className="w-4 h-4 text-primary-600" />
+                                Trust Report
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Generate a regulator-ready trust report for this decision with cryptographic proof and integrity status.
+                            </p>
+                            <a
+                                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/v1/reports/decision/${decisionId}?format=json`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg text-center hover:bg-primary-700 transition shadow-sm"
+                            >
+                                <FileJson className="w-4 h-4 inline mr-2" />
+                                Generate Trust Report
                             </a>
                         </div>
 

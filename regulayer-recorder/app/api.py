@@ -53,6 +53,30 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# ============================================================
+# Internal API (No Auth / Internal Only)
+# ============================================================
+@router.get("/internal/usage")
+async def get_internal_usage(
+    project_ids: str,  # Comma separated
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Get usage counts for projects.
+    Internal only (called by Control Plane).
+    """
+    from .storage import get_chain_record_count
+    
+    ids = project_ids.split(",")
+    results = {}
+    
+    for pid in ids:
+        count = await get_chain_record_count(session, pid)
+        results[pid] = count
+        
+    return results
+
+
 @router.post(
     "/decisions",
     response_model=RecordConfirmation,
