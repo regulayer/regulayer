@@ -14,8 +14,11 @@ COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir .
 
 # Install alembic/psycopg2 explicitly if not in pyproject
-RUN pip install alembic psycopg2-binary uvicorn
+RUN pip install alembic psycopg2-binary uvicorn asyncpg
 
 COPY . .
 
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]

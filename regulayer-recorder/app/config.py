@@ -17,15 +17,17 @@ class Settings(BaseSettings):
     """
     
     # Database
-    database_url: str
+    database_url: str | None = None
+    recorder_db_url: str | None = None
     
     # Security
     hmac_secret_key: str
     governance_internal_secret: str = "regulayer_internal_secret_value_change_in_prod" # Fallback for dev
+    recorder_signing_key_path: str = "recorder_ed25519.key"
     
     # Service configuration
     log_level: str = "INFO"
-    allowed_sdk_versions: str = "1.0.0"  # Comma-separated
+    allowed_sdk_versions: str = "1.0.0,2.0.0,2.0.1"  # Comma-separated
     max_timestamp_drift_seconds: int = 300  # 5 minutes
     
     # Ingestion configuration
@@ -40,10 +42,13 @@ class Settings(BaseSettings):
     
     # Server configuration
     host: str = "0.0.0.0"
-    # Server configuration
-    host: str = "0.0.0.0"
     port: int = 8000
+    cors_origins: str = "*"
 
+    # Governance
+    governance_url: str = "http://governance:8002"
+    policy_engine_url: str = "http://policy-engine:8000"
+    
     # Incidents
     incidents_url: str = "http://incidents:8000"
     incidents_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
@@ -51,8 +56,17 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False
+        case_sensitive=False,
+        extra="ignore"
     )
+    
+
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Map recorder_db_url to database_url if not set
+        if not self.database_url and self.recorder_db_url:
+            self.database_url = self.recorder_db_url
     
     def get_allowed_sdk_versions(self) -> List[str]:
         """Parse allowed SDK versions from comma-separated string."""

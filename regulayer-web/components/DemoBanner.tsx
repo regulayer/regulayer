@@ -14,7 +14,7 @@ interface DemoBannerProps {
 export function DemoBanner({ className = "" }: DemoBannerProps) {
     return (
         <div
-            className={`bg-amber-500 text-black px-4 py-2 text-center font-medium text-sm ${className}`}
+            className={`bg-brand-600 text-black px-4 py-2 text-center font-medium text-sm ${className}`}
             role="alert"
             aria-live="polite"
         >

@@ -78,3 +78,18 @@ def verify_record_hash(canonical_payload: str, claimed_hash: str) -> bool:
     """
     actual_hash = hash_canonical_event(canonical_payload)
     return actual_hash == claimed_hash
+
+
+def compute_canonical_hash(payload: dict) -> str:
+    """
+    Compute hash of a canonical payload dictionary.
+    Re-serializes deterministically before hashing.
+    """
+    import json
+    canonical_json = json.dumps(
+        payload,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(',', ':')
+    )
+    return hash_canonical_event(canonical_json)

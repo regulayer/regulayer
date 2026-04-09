@@ -4,169 +4,116 @@ import React, { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { resetPassword } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Loader2, AlertTriangle, Check } from "lucide-react";
+import { RegulayerLogo } from "@/components/ui/regulayer-logo";
 
 function ResetPasswordForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get("token");
-
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
 
+    const inputCls = "w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all duration-150 disabled:opacity-50";
+
     if (!token) {
         return (
-            <div className="text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
-                    <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                    </svg>
+            <div className="text-center">
+                <div className="w-10 h-10 rounded-lg bg-destructive/5 flex items-center justify-center mx-auto mb-4">
+                    <AlertTriangle className="w-4 h-4 text-destructive" />
                 </div>
-                <h2 className="text-xl font-bold text-white">Invalid Reset Link</h2>
-                <p className="text-sm text-zinc-500">This link is invalid or has expired.</p>
-                <Link href="/forgot-password" className="text-indigo-400 hover:text-indigo-300 font-medium text-sm">
-                    Request a new link
-                </Link>
+                <h2 className="text-xl font-display font-semibold text-foreground mb-1">Invalid reset link</h2>
+                <p className="text-sm text-muted-foreground mb-4">This link is invalid or has expired.</p>
+                <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">Request a new link →</Link>
+            </div>
+        );
+    }
+
+    if (success) {
+        return (
+            <div className="text-center">
+                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-4 h-4 text-success" />
+                </div>
+                <h2 className="text-xl font-display font-semibold text-foreground mb-1">Password updated</h2>
+                <p className="text-sm text-muted-foreground mb-4">Redirecting to login...</p>
+                <Button variant="outline" className="rounded-lg" onClick={() => router.push("/login")}>
+                    Go to Login <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
             </div>
         );
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
-            setError("Passwords do not match.");
-            return;
-        }
-        if (password.length < 8) {
-            setError("Password must be at least 8 characters.");
-            return;
-        }
-
+        if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+        if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
         setLoading(true);
         setError("");
-
-        const res = await resetPassword(token, password);
-
-        if (res.error) {
-            setError(res.error);
-            setLoading(false);
-            return;
-        }
-
-        setSuccess(true);
-        setTimeout(() => router.push("/login"), 2000);
+        try {
+            await resetPassword(token, password);
+            setSuccess(true);
+            setTimeout(() => router.push("/login"), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.detail || "Failed to reset password.");
+        } finally { setLoading(false); }
     };
-
-    if (success) {
-        return (
-            <div className="text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto">
-                    <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                </div>
-                <h2 className="text-xl font-bold text-white">Password Reset!</h2>
-                <p className="text-sm text-zinc-500">Your password has been updated. Redirecting to login...</p>
-                <button
-                    onClick={() => router.push("/login")}
-                    className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
-                >
-                    Go to Login
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-                </button>
-            </div>
-        );
-    }
 
     return (
         <>
-            <h2 className="text-2xl font-bold text-white text-center mb-1">Set new password</h2>
-            <p className="text-sm text-zinc-500 text-center mb-8">Create a strong password for your account.</p>
+            <h1 className="text-xl font-display font-semibold text-foreground mb-1">Set a new password</h1>
+            <p className="text-sm text-muted-foreground mb-6">Choose a strong, unique password for your account.</p>
 
-            {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-                    <p className="text-sm text-red-400">{error}</p>
+            {error && <div className="mb-4 p-3 rounded-lg bg-destructive/5 border border-destructive/10 text-sm text-destructive">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-foreground">New password</label>
+                    <input type="password" required minLength={8} autoComplete="new-password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} className={inputCls} />
+                    <p className="text-[11px] text-muted-foreground">Minimum 8 characters</p>
                 </div>
-            )}
-
-            <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                    <label htmlFor="password" className="text-sm font-medium text-zinc-400">New Password</label>
-                    <input
-                        id="password"
-                        type="password"
-                        required
-                        minLength={8}
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={loading}
-                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                    />
+                <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-foreground">Confirm password</label>
+                    <input type="password" required minLength={8} autoComplete="new-password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={loading} className={inputCls} />
                 </div>
-
-                <div className="space-y-2">
-                    <label htmlFor="confirmPassword" className="text-sm font-medium text-zinc-400">Confirm Password</label>
-                    <input
-                        id="confirmPassword"
-                        type="password"
-                        required
-                        minLength={8}
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        disabled={loading}
-                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                    {loading ? (
-                        <>
-                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                            Resetting...
-                        </>
-                    ) : (
-                        "Reset Password"
-                    )}
-                </button>
+                <Button type="submit" disabled={loading} className="w-full rounded-lg font-display font-semibold">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Reset Password <ArrowRight className="w-3.5 h-3.5 ml-1" /></>}
+                </Button>
             </form>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+                <Link href="/login" className="hover:text-foreground transition-colors duration-150">← Back to login</Link>
+            </p>
         </>
     );
 }
 
 export default function ResetPasswordPage() {
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 mesh-gradient opacity-30" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
-
-            <div className="relative z-10 w-full max-w-md px-6">
-                <div className="flex justify-center mb-8">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <span className="text-white font-bold">R</span>
-                        </div>
-                    </Link>
+        <div className="min-h-screen flex bg-background">
+            <div className="hidden lg:flex lg:w-[480px] flex-col justify-between p-10 bg-primary text-primary-foreground">
+                <Link href="/" className="flex items-center gap-2">
+                    <RegulayerLogo className="w-7 h-7 drop-shadow-sm" color="white" />
+                    <span className="font-display font-semibold text-sm">Regulayer</span>
+                </Link>
+                <div className="max-w-sm">
+                    <h2 className="text-2xl font-bold tracking-tight mb-3 leading-snug">Security starts with a strong password.</h2>
+                    <p className="text-primary-foreground/50 text-sm leading-relaxed">Choose a password that is unique to your Regulayer account.</p>
                 </div>
-
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-8">
-                    <Suspense fallback={<div className="text-center text-zinc-500 py-8">Loading...</div>}>
+                <p className="text-[11px] text-primary-foreground/30">© {new Date().getFullYear()} Regulayer Inc.</p>
+            </div>
+            <div className="flex-1 flex items-center justify-center px-6 py-12">
+                <div className="w-full max-w-sm">
+                    <div className="lg:hidden mb-8">
+                        <Link href="/" className="flex items-center gap-2">
+                            <RegulayerLogo className="w-7 h-7 drop-shadow-sm" color="hsl(15,85%,58%)" />
+                            <span className="font-display font-semibold text-sm text-foreground">Regulayer</span>
+                        </Link>
+                    </div>
+                    <Suspense fallback={<div className="text-sm text-muted-foreground text-center py-8">Loading...</div>}>
                         <ResetPasswordForm />
                     </Suspense>
                 </div>

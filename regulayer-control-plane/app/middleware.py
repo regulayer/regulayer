@@ -15,16 +15,18 @@ from .enums import ApiKeyScope
 from .storage import SessionLocal, get_db
 from .auth import AuthService
 from .user_auth import UserAuthService
+from .config import settings
 
 
 # API key header
 api_key_header = APIKeyHeader(name="X-Regulayer-API-Key", auto_error=False)
 
 
-async def get_tenant_context(
+def get_tenant_context(
     request: Request,
     api_key: Optional[str] = Depends(api_key_header),
-    authorization: Optional[str] = Header(None)
+    authorization: Optional[str] = Header(None),
+    db = Depends(get_db)
 ) -> Optional[TenantContext]:
     """
     Extract tenant context from request.
@@ -32,44 +34,38 @@ async def get_tenant_context(
     Validates API key OR User Session and returns tenant context.
     Returns None if no credentials provided.
     """
-    # Get database session
-    db = next(get_db())
-    try:
-        # Case A: API Key
-        if api_key:
-            auth_service = AuthService(db)
-            validation = auth_service.validate_api_key(api_key)
+    # Case A: API Key
+    if api_key:
+        auth_service = AuthService(db)
+        validation = auth_service.validate_api_key(api_key)
+        
+        if not validation.valid:
+            raise HTTPException(
+                status_code=401,
+                detail=validation.error or "Invalid API key"
+            )
+        
+        return auth_service.build_tenant_context(validation)
+
+    # Case B: User Session (Bearer Token)
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        user_auth = UserAuthService(db)
+        user = user_auth.get_user_from_token(token)
+        
+        if user:
+            return TenantContext(
+                organization_id=user.organization_id,
+                project_id=None, # Users are org-scoped, not project-bound in context
+                user_id=user.id,
+                role=user.role,
+                # We could fetch org status here if needed, but for now we trust session validity
+            )
             
-            if not validation.valid:
-                raise HTTPException(
-                    status_code=401,
-                    detail=validation.error or "Invalid API key"
-                )
-            
-            return auth_service.build_tenant_context(validation)
-
-        # Case B: User Session (Bearer Token)
-        if authorization and authorization.startswith("Bearer "):
-            token = authorization.split(" ")[1]
-            user_auth = UserAuthService(db)
-            user = user_auth.get_user_from_token(token)
-            
-            if user:
-                return TenantContext(
-                    organization_id=user.organization_id,
-                    project_id=None, # Users are org-scoped, not project-bound in context
-                    user_id=user.id,
-                    role=user.role,
-                    # We could fetch org status here if needed, but for now we trust session validity
-                )
-                
-        return None
-
-    finally:
-        db.close()
+    return None
 
 
-async def require_tenant_context(
+def require_tenant_context(
     tenant: Optional[TenantContext] = Depends(get_tenant_context)
 ) -> TenantContext:
     """
@@ -92,7 +88,7 @@ def require_scope(scope: ApiKeyScope) -> Callable:
     Usage:
         @app.post("/decisions", dependencies=[Depends(require_scope(ApiKeyScope.INGEST))])
     """
-    async def scope_checker(
+    def scope_checker(
         tenant: TenantContext = Depends(require_tenant_context)
     ) -> TenantContext:
         if not tenant.has_scope(scope):
@@ -103,6 +99,12 @@ def require_scope(scope: ApiKeyScope) -> Callable:
         return tenant
     
     return scope_checker
+
+
+
+def require_internal_secret(x_internal_secret: str = Header(None)):
+    if x_internal_secret != settings.internal_secret:
+        raise HTTPException(status_code=403, detail="Internal secret required")
 
 
 class TenantMiddleware:
@@ -128,7 +130,7 @@ class TenantMiddleware:
 # Header-based tenant identification (for internal services)
 # ============================================================
 
-async def get_project_from_header(
+def get_project_from_header(
     request: Request
 ) -> Optional[UUID]:
     """
@@ -145,7 +147,7 @@ async def get_project_from_header(
     return None
 
 
-async def get_org_from_header(
+def get_org_from_header(
     request: Request
 ) -> Optional[UUID]:
     """

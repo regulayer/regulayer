@@ -104,6 +104,7 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         # User management
         Permission.USERS_VIEW,
         Permission.USERS_INVITE,
+        Permission.USERS_MANAGE,
         
         # Projects
         Permission.PROJECTS_VIEW,

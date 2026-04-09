@@ -75,7 +75,7 @@ export const WavyBackground = ({
             ctx.lineWidth = waveWidth || 50;
             ctx.strokeStyle = waveColors[i % waveColors.length];
             for (x = 0; x < w; x += 5) {
-                var y = noise(x / 800, 0.3 * i, nt) * 100;
+                const y = noise(x / 800, 0.3 * i, nt) * 100;
                 ctx.lineTo(x, y + h * 0.5); // adjust for height, currently at 50% of the container
             }
             ctx.stroke();
@@ -132,7 +132,7 @@ export const WavyBackground = ({
 };
 
 export const createNoise3D = () => {
-    let perm: number[] = new Array(512);
+    const perm: number[] = new Array(512);
 
     const grad3 = [
         [1, 1, 0],
@@ -186,16 +186,16 @@ export const createNoise3D = () => {
     };
 
     return function (x: number, y: number, z: number) {
-        let X = Math.floor(x) & 255;
-        let Y = Math.floor(y) & 255;
-        let Z = Math.floor(z) & 255;
+        const X = Math.floor(x) & 255;
+        const Y = Math.floor(y) & 255;
+        const Z = Math.floor(z) & 255;
         x -= Math.floor(x);
         y -= Math.floor(y);
         z -= Math.floor(z);
-        let u = fade(x);
-        let v = fade(y);
-        let w = fade(z);
-        let A = perm[X] + Y,
+        const u = fade(x);
+        const v = fade(y);
+        const w = fade(z);
+        const A = perm[X] + Y,
             AA = perm[A] + Z,
             AB = perm[A + 1] + Z,
             B = perm[X + 1] + Y,

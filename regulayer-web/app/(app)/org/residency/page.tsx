@@ -62,7 +62,7 @@ const REGIONS: RegionConfig[] = [
         id: 'global',
         name: 'Global',
         code: 'GLOBAL',
-        flag: '🌐',
+        flag: '🌍',
         frameworks: [],
         description: 'No regional restrictions',
     },
@@ -92,37 +92,37 @@ function RegionCard({
             ? 'border-primary-500 bg-primary-50'
             : isAllowed
                 ? 'border-green-300 bg-green-50'
-                : 'border-slate-200 bg-white'
+                : 'border-border bg-card'
             }`}>
             <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                     <span className="text-2xl">{region.flag}</span>
                     <div>
-                        <h3 className="font-semibold text-slate-900">{region.name}</h3>
-                        <p className="text-xs text-slate-500">{region.code}</p>
+                        <h3 className="font-semibold text-foreground">{region.name}</h3>
+                        <p className="text-xs text-muted-foreground">{region.code}</p>
                     </div>
                 </div>
                 {isPrimary && (
-                    <span className="bg-primary-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="bg-slate-800 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                         {isLocked && <Lock className="w-3 h-3" />}
                         Primary
                     </span>
                 )}
             </div>
 
-            <p className="text-sm text-slate-600 mb-3">{region.description}</p>
+            <p className="text-sm text-muted-foreground mb-3">{region.description}</p>
 
             {region.frameworks.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                     {region.frameworks.map((f) => (
-                        <span key={f} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        <span key={f} className="text-xs text-zinc-100 bg-slate-900 px-2 py-0.5 rounded">
                             {f}
                         </span>
                     ))}
                 </div>
             )}
 
-            <div className="flex items-center gap-2 pt-3 border-t border-slate-200">
+            <div className="flex items-center gap-2 pt-3 border-t border-border">
                 {!isPrimary && (
                     <>
                         <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -133,12 +133,12 @@ function RegionCard({
                                 disabled={isPrimary}
                                 className="rounded"
                             />
-                            <span className="text-slate-700">Allowed</span>
+                            <span className="text-foreground">Allowed</span>
                         </label>
                         {isAllowed && !isLocked && (
                             <button
                                 onClick={onSetPrimary}
-                                className="text-xs text-primary-600 hover:underline ml-auto"
+                                className="text-xs bg-slate-800 hover:underline ml-auto"
                             >
                                 Set as Primary
                             </button>
@@ -146,7 +146,7 @@ function RegionCard({
                     </>
                 )}
                 {isPrimary && isLocked && (
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Lock className="w-3 h-3" />
                         Locked after first ingest
                     </span>
@@ -183,14 +183,14 @@ export default function ResidencySettingsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="min-h-screen bg-secondary">
+            <div className="px-6 md:px-10 py-8">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
-                    <Globe className="w-6 h-6 text-slate-600" />
+                    <Globe className="w-6 h-6 text-muted-foreground" />
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Data Residency</h1>
-                        <p className="text-slate-600">Control where your data is stored and processed</p>
+                        <h1 className="text-2xl font-bold text-foreground">Data Residency</h1>
+                        <p className="text-muted-foreground">Control where your data is stored and processed</p>
                     </div>
                 </div>
 
@@ -236,60 +236,61 @@ export default function ResidencySettingsPage() {
                 </div>
 
                 {/* Export Guarantees */}
-                <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+                <div className="bg-card rounded-xl border border-border p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4">
-                        <Download className="w-5 h-5 text-slate-600" />
-                        <h3 className="font-semibold text-slate-900">Export Guarantees</h3>
+                        <Download className="w-5 h-5 text-muted-foreground" />
+                        <h3 className="font-semibold text-foreground">Export Guarantees</h3>
                     </div>
-                    <p className="text-sm text-slate-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                         Export is <strong>always available</strong> regardless of:
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         {['Active', 'Frozen', 'Org Closed', 'Region Outage', 'Regulayer Down'].map((state) => (
                             <div key={state} className="flex items-center gap-2 text-sm">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
-                                <span className="text-slate-700">{state}</span>
+                                <span className="text-foreground">{state}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Compliance Frameworks */}
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
-                    <h3 className="font-semibold text-slate-900 mb-4">Supported Frameworks</h3>
+                <div className="bg-card rounded-xl border border-border p-6">
+                    <h3 className="font-semibold text-foreground mb-4">Supported Frameworks</h3>
                     <div className="space-y-3 text-sm">
                         <div className="flex items-start gap-3">
                             <span className="text-xl">🇪🇺</span>
                             <div>
-                                <span className="font-medium text-slate-900">EU: GDPR, AI Act</span>
-                                <p className="text-slate-600">Supports data residency requirements</p>
+                                <span className="font-medium text-foreground">EU: GDPR, AI Act</span>
+                                <p className="text-muted-foreground">Supports data residency requirements</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <span className="text-xl">🇮🇳</span>
                             <div>
-                                <span className="font-medium text-slate-900">India: DPDP Act</span>
-                                <p className="text-slate-600">Supports local storage requirements</p>
+                                <span className="font-medium text-foreground">India: DPDP Act</span>
+                                <p className="text-muted-foreground">Supports local storage requirements</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <span className="text-xl">🏛️</span>
                             <div>
-                                <span className="font-medium text-slate-900">US Gov: FedRAMP</span>
-                                <p className="text-slate-600">Supports government cloud requirements</p>
+                                <span className="font-medium text-foreground">US Gov: FedRAMP</span>
+                                <p className="text-muted-foreground">Supports government cloud requirements</p>
                             </div>
                         </div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-4 pt-4 border-t border-slate-200">
+                    <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
                         Note: Regulayer &quot;supports&quot; and &quot;enables&quot; compliance. This does not constitute legal advice.
                     </p>
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-xs text-slate-400 mt-8">
+                <p className="text-center text-xs text-muted-foreground mt-8">
                     Jurisdiction controls storage and access — never evidence, hashes, or verification semantics.
                 </p>
             </div>
         </div>
     );
 }
+

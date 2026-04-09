@@ -102,6 +102,18 @@ async def record_decision(
             "notice": "NON-PRODUCTION PROOF"
         }
 
+    # Extract SDK identification securely
+    sdk_instance_id_str = "00000000-0000-0000-0000-000000000000"
+    sdk_version = "unknown"
+    if event.runtime_fingerprint:
+        sdk_instance_id_str = event.runtime_fingerprint.sdk_instance_id
+        sdk_version = event.runtime_fingerprint.sdk_version
+    elif event.client_metadata and isinstance(event.client_metadata, dict) and "runtime_fingerprint" in event.client_metadata:
+        rf = event.client_metadata["runtime_fingerprint"]
+        if isinstance(rf, dict):
+            sdk_instance_id_str = rf.get("sdk_instance_id", sdk_instance_id_str)
+            sdk_version = rf.get("sdk_version", sdk_version)
+
     # 6. Insert record (append-only)
     db_record = await insert_record(
         session=session,
@@ -111,11 +123,11 @@ async def record_decision(
         canonical_payload=canonical_dict,
         canonical_payload_hash=canonical_payload_hash,
         chain_id=chain_id,
-        sdk_instance_id=UUID(event.runtime_fingerprint.sdk_instance_id),
-        system_name=event.system_name,
+        sdk_instance_id=UUID(sdk_instance_id_str),
+        system_name=event.system_name or getattr(event, 'system', 'default'),
         risk_level=event.risk_level,
         event_state=event.event_state,
-        sdk_version=event.runtime_fingerprint.sdk_version,
+        sdk_version=sdk_version,
         # Attestation
         signature_algorithm=signature_algorithm,
         identity_id=identity_id,

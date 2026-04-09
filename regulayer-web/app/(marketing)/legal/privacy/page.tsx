@@ -1,50 +1,27 @@
+"use client";
 
-import React from 'react';
+import React from "react";
 
 export default function PrivacyPage() {
     return (
-        <div>
-            <h1>Privacy Policy</h1>
-            <p className="lead">Last Updated: February 2026</p>
+        <div className="max-w-3xl mx-auto py-16 px-6">
+            <div className="mb-12 border-b border-slate-200 pb-8">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">Privacy Policy</h1>
+                <p className="text-slate-500">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <div className="prose prose-slate max-w-none text-slate-600">
+                <h2>1. Introduction</h2>
+                <p>Welcome to Regulayer. This document outlines the Privacy Policy governing your use of our cryptographic trust layer and associated APIs.</p>
 
-            <h2>1. Data We Collect</h2>
-            <p>
-                Regulayer collects the minimum amount of data necessary to provide our service:
-            </p>
-            <ul>
-                <li><strong>Account Info:</strong> Email address, organization name, and billing details (processed via Stripe).</li>
-                <li><strong>System usage:</strong> API logs, usage metrics, and audit logs for security.</li>
-                <li><strong>Ingested Data:</strong> The content of the decisions you ingest.</li>
-            </ul>
+                <h2>2. Data Handling & Security</h2>
+                <p>As a SOC 2 Type II compliant service, Regulayer treats your data with the highest security standards. All data is encrypted at rest using AES-256 and in transit via TLS 1.3.</p>
 
-            <h2>2. How We Use Data</h2>
-            <p>
-                We use your data solely to:
-            </p>
-            <ul>
-                <li>Provide the cryptographic verification service.</li>
-                <li>Bill for services rendered.</li>
-                <li>Comply with legal obligations.</li>
-            </ul>
-            <p>
-                <strong>We do not sell your data.</strong> We do not use your ingested decision data for training general AI models.
-            </p>
+                <h2>3. Compliance Frameworks</h2>
+                <p>By using Regulayer, you agree to our processing conditions designed to help you achieve compliance with the EU AI Act, NIST AI RMF, and internal governance requirements.</p>
 
-            <h2>3. Data Immutability</h2>
-            <p>
-                Due to the nature of our service (immutable cryptographic ledger), records ingested into the Regulayer system cannot be deleted or modified once finalized, in accordance with audit requirements.
-                If you ingest personal data, please ensure you have the necessary consent and legal basis to do so in an immutable format.
-            </p>
-
-            <h2>4. Data Security</h2>
-            <p>
-                We implement industry-standard security measures, including encryption at rest and in transit, strict access controls, and regular security audits.
-            </p>
-
-            <h2>5. Contact Us</h2>
-            <p>
-                For privacy-related inquiries, please contact <a href="mailto:privacy@regulayer.tech">privacy@regulayer.tech</a>.
-            </p>
+                <h2>4. Contact Information</h2>
+                <p>For any inquiries regarding this Privacy Policy, please contact our legal team at legal@regulayer.tech or our Data Protection Officer at dpo@regulayer.tech.</p>
+            </div>
         </div>
     );
 }

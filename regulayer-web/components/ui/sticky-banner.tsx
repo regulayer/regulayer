@@ -24,7 +24,7 @@ export const StickyBanner = ({
                 duration: 0.5,
             }}
             className={cn(
-                "fixed z-[5000] top-0 inset-x-0 mx-auto bg-blue-500 py-3 px-4 md:px-8 flex items-center justify-center",
+                "fixed z-[5000] top-0 inset-x-0 mx-auto -zinc-500 py-3 px-4 md:px-8 flex items-center justify-center",
                 className
             )}
         >

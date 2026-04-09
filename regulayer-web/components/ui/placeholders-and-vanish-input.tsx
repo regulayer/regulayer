@@ -70,9 +70,9 @@ export function PlaceholdersAndVanishInput({
         const newData: any[] = [];
 
         for (let t = 0; t < 800; t++) {
-            let i = 4 * t * 800;
+            const i = 4 * t * 800;
             for (let n = 0; n < 800; n++) {
-                let e = i + 4 * n;
+                const e = i + 4 * n;
                 if (
                     pixelData[e] !== 0 &&
                     pixelData[e + 1] !== 0 &&
@@ -201,7 +201,7 @@ export function PlaceholdersAndVanishInput({
                 value={value}
                 type="text"
                 className={cn(
-                    "w-full relative z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
+                    "w-full relative z-50 border-none dark:text-slate-900 bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
                     animating && "text-transparent dark:text-transparent"
                 )}
             />
@@ -209,7 +209,7 @@ export function PlaceholdersAndVanishInput({
             <button
                 disabled={!value}
                 type="submit"
-                className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-gray-100 bg-black dark:bg-zinc-900 dark:disabled:bg-zinc-800 transition duration-200 flex items-center justify-center"
+                className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-muted bg-primary text-primary-foreground disabled:text-muted-foreground transition duration-200 flex items-center justify-center"
             >
                 <motion.svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -264,7 +264,7 @@ export function PlaceholdersAndVanishInput({
                                 duration: 0.3,
                                 ease: "linear",
                             }}
-                            className="dark:text-zinc-500 text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
+                            className="dark:text-slate-500 text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
                         >
                             {placeholders[currentPlaceholder]}
                         </motion.p>

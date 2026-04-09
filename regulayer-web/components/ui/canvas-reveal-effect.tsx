@@ -249,7 +249,7 @@ const ShaderMaterial = ({
                         value: new THREE.Vector3().fromArray(
                             (uniform.value as number[]).reduce(
                                 (acc, val) => acc.concat(val),
-                                []
+                                [] as number[]
                             )
                         ),
                         type: "3fv",

@@ -4,18 +4,20 @@ from fastapi.testclient import TestClient
 from app.api import router
 from fastapi import FastAPI
 
-app = FastAPI()
-app.include_router(router)
+from app.api import get_db_session
+import pytest
 
-async def override_get_db_session():
-    return AsyncMock()
-
-app.dependency_overrides["app.api.get_db_session"] = override_get_db_session
-
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def mock_db_session(client):
+    async def override_get_db_session():
+        yield AsyncMock()
+    
+    client.app.dependency_overrides[get_db_session] = override_get_db_session
+    yield
+    client.app.dependency_overrides = {}
 
 @patch("app.api.record_decision")
-def test_tampered_payload_rejected_before_storage(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_tampered_payload_rejected_before_storage(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     mock_registry.get_identity.return_value = identity
     
     # 1. Create valid envelope

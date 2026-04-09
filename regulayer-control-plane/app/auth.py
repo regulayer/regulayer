@@ -133,6 +133,7 @@ class AuthService:
             project_id=project.id,
             environment=project.environment.value,
             org_status=org.status,  # Pass status to Gateway
+            governance_mode=project.governance_mode,
             is_demo_key=db_key.is_demo_key,
             scopes=[ApiKeyScope(s) for s in db_key.scopes]
         )

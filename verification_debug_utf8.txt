@@ -1,5 +1,0 @@
-﻿=== INCIDENT SYSTEM VERIFICATION ===
-Checking incidents...
-Error connecting to incidents service: All connection attempts failed
-Status check failed: All connection attempts failed
-=== VERIFICATION COMPLETE ===

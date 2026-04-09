@@ -17,7 +17,7 @@ export const MetricDisplay = ({
 }) => {
     return (
         <div className={cn("flex flex-col gap-1", className)}>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-500">
                 {label}
             </p>
             <div className="flex items-end gap-2">
@@ -51,7 +51,7 @@ function AnimatedNumber({ value }: { value: number }) {
     }, [value, motionValue]);
 
     return (
-        <motion.span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 table-cell">
+        <motion.span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-100 table-cell">
             {rounded}
         </motion.span>
     );

@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 class RegulayerError(Exception):
     """Base error for Regulayer SDK."""
-    def __init__(self, message: str, code: str = None, details: Dict[str, Any] = None, decision_id: Optional[str] = None):
+    def __init__(self, message: str, code: Optional[str] = None, details: Optional[Dict[str, Any]] = None, decision_id: Optional[str] = None):
         super().__init__(message)
         self.message = message
         self.code = code
@@ -21,7 +21,7 @@ class UnauthorizedError(RegulayerError):
         super().__init__(message, code="UNAUTHORIZED", decision_id=decision_id)
 
 class QuotaExceededError(RegulayerError):
-    def __init__(self, resets_at: str = None, decision_id: Optional[str] = None):
+    def __init__(self, resets_at: Optional[str] = None, decision_id: Optional[str] = None):
         super().__init__(
             "Quota exceeded. Upgrade plan or wait for reset.",
             code="QUOTA_EXCEEDED",
@@ -38,7 +38,7 @@ class IngestionPausedError(RegulayerError):
         )
 
 class RateLimitError(RegulayerError):
-    def __init__(self, retry_after: int = None, decision_id: Optional[str] = None):
+    def __init__(self, retry_after: Optional[int] = None, decision_id: Optional[str] = None):
         super().__init__(
             "Rate limit exceeded. Please slow down.",
             code="RATE_LIMITED",
@@ -114,6 +114,24 @@ class OrgFrozenError(RegulayerError):
             decision_id=decision_id
         )
 
+class GovernanceBlockedError(RegulayerError):
+    """Raised when a decision is blocked by a governance policy in Gate mode (403)."""
+    def __init__(self, message: str = "Decision requires approval.", decision_id: Optional[str] = None):
+        super().__init__(
+            message,
+            code="GOVERNANCE_BLOCKED",
+            decision_id=decision_id
+        )
+
+class GovernanceDeclinedError(RegulayerError):
+    """Raised when a decision is DECLINED by a human reviewer in Gate mode (poll -> declined)."""
+    def __init__(self, message: str = "Decision declined by governance.", decision_id: Optional[str] = None):
+        super().__init__(
+            message,
+            code="GOVERNANCE_DECLINED",
+            decision_id=decision_id
+        )
+
 class InvalidResponseError(RegulayerError):
     """Raised when the server response is invalid or missing expected fields."""
     def __init__(self, message: str = "Invalid response from server", decision_id: Optional[str] = None):
@@ -122,6 +140,11 @@ class InvalidResponseError(RegulayerError):
             code="INVALID_RESPONSE",
             decision_id=decision_id
         )
+
+class InvalidConfigurationError(RegulayerError):
+    """Raised when SDK configuration is invalid or missing."""
+    def __init__(self, message: str):
+        super().__init__(message, code="INVALID_CONFIGURATION")
 
 # Alias for backwards compatibility
 AuthenticationError = InvalidApiKeyError

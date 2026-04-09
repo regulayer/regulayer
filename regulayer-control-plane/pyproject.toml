@@ -9,13 +9,17 @@ description = "Multi-tenant SaaS control plane for Regulayer"
 authors = [{name = "Regulayer Team", email = "dev@regulayer.ai"}]
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.109.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "uvicorn>=0.27.0",
-    "sqlalchemy>=2.0.0",
-    "email-validator>=2.0.0",
-    "stripe>=5.0.0",
+    "fastapi",
+    "sqlalchemy",
+    "uvicorn[standard]",
+    "pydantic[email]",
+    "python-multipart",
+    "stripe",
+    "httpx",
+    "python-jose",
+    "passlib[bcrypt]",
+    "pydantic-settings",
+    "aiosmtplib",
 ]
 
 [tool.setuptools.packages.find]

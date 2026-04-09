@@ -57,3 +57,19 @@ class ServiceDegradedError(RecorderError):
 class OrderingViolationError(RecorderError):
     """Event received out of order or with a sequence gap."""
     pass
+
+
+class AttestationGuardError(RecorderError):
+    """Base error for guard failures."""
+    def __init__(self, message: str, decision_id: str = "unknown"):
+        super().__init__(message, decision_id=decision_id)
+
+
+class LegacyIngestionDisabledError(AttestationGuardError):
+    """Legacy ingestion is disabled."""
+    pass
+
+
+class InvalidAttestationError(AttestationGuardError):
+    """Attestation is invalid or missing."""
+    pass

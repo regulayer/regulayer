@@ -97,7 +97,7 @@ export function TrustStatusBanner({
 export function TrustIndicator({ state = 'healthy' }: { state?: TrustState }) {
     const colors: Record<TrustState, string> = {
         healthy: 'bg-green-500',
-        degraded: 'bg-amber-500',
+        degraded: 'bg-brand-600',
         outage: 'bg-red-500',
     };
 
@@ -129,7 +129,7 @@ export function StatusLegend() {
                     <span className="text-slate-600">Healthy — All systems operational</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="w-2 h-2 rounded-full bg-brand-600" />
                     <span className="text-slate-600">Degraded — Delays, but no data loss</span>
                 </div>
                 <div className="flex items-center gap-2">

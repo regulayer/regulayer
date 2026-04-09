@@ -2,15 +2,36 @@ services:
   # ============================================================================
   # DATA LAYER
   # ============================================================================
+
+
   redis:
     image: redis:7
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-regulayer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-regulayer}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-regulayer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init_dbs.sql:/docker-entrypoint-initdb.d/init_dbs.sql
 
   # ============================================================================
   # CORE TRUST LAYER (The Truth)
@@ -19,15 +40,23 @@ services:
     build:
       context: ./regulayer-recorder
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - DATABASE_URL=${RECORDER_DB_URL}
-      - SIGNING_KEY_PATH=${RECORDER_SIGNING_KEY_PATH}
+      - SIGNING_KEY_PATH=${RECORDER_SIGNING_KEY_PATH:-/keys/recorder.key}
       - HMAC_SECRET_KEY=${HMAC_SECRET_KEY}
-      - RECORDER_ENVIRONMENT=prod
+      - RECORDER_ENVIRONMENT=*
+      - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - GOVERNANCE_URL=http://governance:8002
     volumes:
       - recorder_keys:/keys
-    ports:
-      - "8300:8000"
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+      interval: 10s
+      start_period: 60s
+      retries: 5
+    expose:
+      - "8000"
 
   # ============================================================================
   # PUBLIC INGESTION LAYER
@@ -36,14 +65,21 @@ services:
     build:
       context: ./regulayer-ingestion-gateway
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - GATEWAY_PORT=8080
       - GATEWAY_CONTROL_PLANE_URL=http://control-plane:8000
       - GATEWAY_RECORDER_URL=http://recorder:8000
       - GATEWAY_GOVERNANCE_URL=http://governance:8002
       - GATEWAY_REPORTS_URL=http://reports:8003
+      - GATEWAY_INCIDENTS_URL=http://incidents:8000
+      - GATEWAY_POLICY_URL=http://policy-engine:8000
       - GATEWAY_REDIS_URL=redis://redis:6379
-      - GATEWAY_DEFAULT_DAILY_QUOTA=10000
+      - GATEWAY_DEFAULT_DAILY_QUOTA=${GATEWAY_DEFAULT_DAILY_QUOTA:-10000}
+      - GATEWAY_FORWARD_TIMEOUT_SECONDS=30
+      - GATEWAY_GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - GATEWAY_INCIDENTS_INTERNAL_SECRET=${INCIDENTS_INTERNAL_SECRET}
+      - GATEWAY_REPORTS_INTERNAL_SECRET=${REPORTS_INTERNAL_SECRET}
     ports:
       - "8080:8080"
     depends_on:
@@ -52,8 +88,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" ]
       interval: 10s
+      start_period: 60s
       retries: 5
 
   # ============================================================================
@@ -63,10 +100,12 @@ services:
     build:
       context: ./regulayer-ingestion-queue
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - REDIS_URL=redis://redis:6379
       - RECORDER_URL=http://recorder:8000
       - QUEUE_QUEUE_BACKEND=redis
+      - DATABASE_URL=${RECORDER_DB_URL}
     depends_on:
       redis:
         condition: service_healthy
@@ -80,57 +119,80 @@ services:
     build:
       context: ./regulayer-control-plane
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - DATABASE_URL=${CONTROL_DB_URL}
-      - REGULAYER_CONTROL_JWT_SECRET=dev_jwt_secret_do_not_use_in_prod
-      - REGULAYER_CONTROL_STRIPE_API_KEY=mock_stripe_key
+      - ENV=${ENV:-dev}
+      - REGULAYER_CONTROL_JWT_SECRET=${JWT_SECRET}
+      - REGULAYER_CONTROL_STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRICE_ID_PRO=${STRIPE_PRICE_ID_PRO}
       - INTERNAL_SECRET=${CONTROL_PLANE_INTERNAL_SECRET}
+      - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 10s
+      start_period: 60s
       retries: 5
-    ports:
-      - "8100:8000"
+    expose:
+      - "8000"
 
   governance:
     build:
       context: ./regulayer-governance
       dockerfile: Dockerfile
+    restart: unless-stopped
     expose:
       - "8002"
     environment:
       - DATABASE_URL=${GOVERNANCE_DB_URL}
+      - ENV=${ENV:-dev}
+      - INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
       - GOVERNANCE_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - GROQ_API_KEY=${GROQ_API_KEY}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8002/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')" ]
       interval: 10s
+      start_period: 60s
       retries: 5
 
   reports:
     build:
       context: ./regulayer-reports
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - RECORDER_URL=http://recorder:8000
       - GOVERNANCE_URL=http://governance:8002
+      - PENDING_REPORTS_DIR=/reports/pending
     depends_on:
       recorder:
         condition: service_started
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')" ]
       interval: 10s
+      start_period: 60s
       retries: 5
 
   incidents:
     build:
       context: ./regulayer-incidents
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - DATABASE_URL=${INCIDENTS_DB_URL}
+      - ENV=${ENV:-dev}
       - INCIDENTS_INTERNAL_SECRET=${INCIDENTS_INTERNAL_SECRET}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 10s
+      start_period: 60s
       retries: 5
 
   # ============================================================================
@@ -140,13 +202,57 @@ services:
     build:
       context: ./regulayer-web
       dockerfile: Dockerfile
+      args:
+        DOMAIN: ${DOMAIN:-localhost}
+    restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_BASE=http://localhost:8080
+      - DOMAIN=${DOMAIN:-localhost}
     ports:
       - "3000:3000"
     depends_on:
       control-plane:
         condition: service_healthy
 
+  policy-engine:
+    build:
+      context: ./regulayer-governance-policy
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - POLICY_DATABASE_URL=${GOVERNANCE_DB_URL}
+      - POLICY_RECORDER_URL=http://recorder:8000
+      - POLICY_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - POLICY_GROQ_API_KEY=${GROQ_API_KEY}
+      - ENV=${ENV:-dev}
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+      interval: 10s
+      start_period: 60s
+      retries: 5
+
+  # ============================================================================
+  # INGRESS LAYER (Reverse Proxy & Auto SSL)
+  # ============================================================================
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - REGULAYER_DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - gateway
+      - web
+
 volumes:
   recorder_keys:
+  postgres_data:
+  caddy_data:
+  caddy_config:

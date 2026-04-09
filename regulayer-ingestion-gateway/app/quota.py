@@ -61,32 +61,21 @@ class QuotaEnforcer:
         """
         key = self._get_key(project_id)
         
-        # Check first to avoid incrementing if already full
-        # Race condition possible but acceptable for soft quotas
-        # Strict enforcement would use Lua script
-        current = await self.redis.get(key)
-        if current and int(current) >= self.daily_limit:
-             raise QuotaExceededError(
-                f"Daily quota exceeded. Limit: {self.daily_limit}."
-            )
-            
-        # Increment
+        # Atomic Increment
         new_val = await self.redis.incr(key)
         
         # Set expiry on first write (24h + 1h buffer)
         if new_val == 1:
             await self.redis.expire(key, 90000)
             
-        # Double check after increment (strictness)
+        # Strict Enforcement: Check AFTER atomic increment
+        # If we exceeded, we still burned the counter, but request is rejected.
         if new_val > self.daily_limit:
-             # Looked okay before, but now exceeded.
-             # We let this one slide? Or block?
-             # Standard pattern: Allow if it WAS allowable, or strictly block?
-             # Let's strictly block and return error, client receives 429.
-             # Note: This "burns" a quota unit for a failed request, which is fine for DoS protection.
              raise QuotaExceededError(
                 f"Daily quota exceeded. Limit: {self.daily_limit}."
             )
+            
+        return max(0, self.daily_limit - new_val)
             
         return max(0, self.daily_limit - new_val)
     

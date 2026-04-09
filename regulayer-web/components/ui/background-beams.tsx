@@ -7,11 +7,11 @@ export const BackgroundBeams = ({ className }: { className?: string }) => {
     return (
         <div
             className={cn(
-                "absolute h-full w-full inset-0 bg-gradient-to-t from-sky-200 via-neutral-200 to-white dark:bg-black dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-950 opacity-40",
+                "absolute h-full w-full inset-0 bg-background opacity-40",
                 className
             )}
         >
-            <div className="absolute h-full w-full inset-0 bg-grid-black/[0.1] dark:bg-grid-white/[0.2] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+            <div className="absolute h-full w-full inset-0 bg-grid-primary/10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
             <motion.div
                 initial={{
                     opacity: 0,

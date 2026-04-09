@@ -29,10 +29,11 @@ class OrganizationDB(Base):
     
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
-    logo_url = Column(String(500), nullable=True) # URL to logo image
+    logo_url = Column(String(1024), nullable=True) # URL to logo image
     status = Column(SQLEnum(OrgStatus), default=OrgStatus.ACTIVE, nullable=False)
     is_demo = Column(Boolean, default=False, nullable=False)
-    environment = Column(String(20), default="prod", nullable=False)
+    environment = Column(String(50), default="prod", nullable=False)
+    data_region = Column(String(50), nullable=True)
     stripe_customer_id = Column(String(255), nullable=True)
     subscription_status = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -51,6 +52,10 @@ class ProjectDB(Base):
     organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     name = Column(String(255), nullable=False)
     environment = Column(SQLEnum(ProjectEnvironment), default=ProjectEnvironment.DEV, nullable=False)
+    data_region = Column(String(50), nullable=True)
+    ai_act_risk_category = Column(String(50), nullable=True)
+    governance_mode = Column(String(20), nullable=False, default="observe", server_default="observe")  # "observe" or "gate"
+    gate_decline_message = Column(String(500), nullable=True, default="Decision declined by governance.", server_default="Decision declined by governance.")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True)
     
@@ -168,6 +173,32 @@ class OtpCodeDB(Base):
     )
 
 
+class InvitationDB(Base):
+    """Pending invitations for users."""
+    __tablename__ = "invitations"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    email = Column(String(255), nullable=False)
+    role = Column(SQLEnum(UserRole), default=UserRole.MEMBER, nullable=False)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    inviter_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    organization = relationship("OrganizationDB")
+    inviter = relationship("UserDB")
+    
+    # Indexes
+    __table_args__ = (
+        Index("ix_invitations_token_hash", "token_hash"),
+        Index("ix_invitations_organization_id", "organization_id"),
+        Index("ix_invitations_email", "email"),
+    )
+
+
 class UsageEventDB(Base):
     """Usage event table for metering."""
     __tablename__ = "usage_events"
@@ -232,6 +263,48 @@ class AuditLogDB(Base):
         Index("ix_audit_logs_actor_id", "actor_id"),
     )
 
+class NotificationPreferenceDB(Base):
+    """Notification preferences for a user in an organization."""
+    __tablename__ = "notification_preferences"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    
+    # Types of notifications
+    incident_alerts = Column(Boolean, default=True, nullable=False)
+    governance_reviews = Column(Boolean, default=True, nullable=False)
+    billing_updates = Column(Boolean, default=True, nullable=False)
+    
+    # Channels
+    email_enabled = Column(Boolean, default=True, nullable=False)
+    in_app_enabled = Column(Boolean, default=True, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index("ix_notif_prefs_user_org", "user_id", "organization_id", unique=True),
+    )
+
+class WebhookDestinationDB(Base):
+    """Registered webhook endpoints for an organization."""
+    __tablename__ = "webhook_destinations"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    url = Column(String(1024), nullable=False)
+    secret = Column(String(255), nullable=False)
+    events = Column(JSON, nullable=False, default=list)
+    status = Column(String(50), nullable=False, default="active") # active, disabled, failing
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index("ix_webhook_dests_org_id", "organization_id"),
+    )
+
 
 # ============================================================
 # Database Setup
@@ -243,15 +316,28 @@ DATABASE_URL = settings.database_url
 
 engine = create_engine(
     DATABASE_URL,
+    pool_size=20,
+    max_overflow=50,
+    pool_pre_ping=True,
+    pool_recycle=3600,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+import time
 def init_db():
     """Initialize database tables."""
-    Base.metadata.create_all(bind=engine)
+    for attempt in range(10):
+        try:
+            Base.metadata.create_all(bind=engine)
+            break
+        except Exception as e:
+            if attempt == 9:
+                raise e
+            print(f"DB Init failed (attempt {attempt+1}/10), retrying in 3s... {e}")
+            time.sleep(3)
 
 
 def get_db():

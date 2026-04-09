@@ -3,7 +3,10 @@ Regulayer Control Plane - Configuration
 """
 
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -18,14 +21,28 @@ class Settings(BaseSettings):
     api_port: int = 8000
     
     # Security
-    cors_origins: list = ["*"]
-    jwt_secret: str = "dev_secret"
+    domain: str = os.getenv("DOMAIN", "localhost")
+    frontend_url: str = "http://localhost:3000" if domain == "localhost" else f"https://app.{domain}"
+    cors_origins: list = [
+        "http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000",
+        f"https://{domain}", f"https://app.{domain}", f"http://{domain}:3000"
+    ]
+    governance_url: str = "http://governance:8002"
+    internal_secret: str = "dev_internal_secret"
     stripe_api_key: str = os.getenv("STRIPE_SECRET_KEY", "mock_key")
     stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     stripe_price_id_pro: str = os.getenv("STRIPE_PRICE_ID_PRO", "price_mock_pro")
+
+    # Email (SMTP)
+    smtp_host: str = os.getenv("SMTP_HOST", "")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    from_email: str = os.getenv("FROM_EMAIL", f"no-reply@{os.getenv('DOMAIN', 'regulayer.tech')}")
     
-    class Config:
-        env_prefix = "REGULAYER_CONTROL_"
+    # Internal
+    
+    model_config = SettingsConfigDict(env_prefix="REGULAYER_CONTROL_")
     
     
     def __init__(self, **kwargs):
@@ -33,10 +50,11 @@ class Settings(BaseSettings):
         # Fallback to standard DATABASE_URL if present and not set by prefix
         if os.getenv("DATABASE_URL"):
              self.database_url = os.getenv("DATABASE_URL")
+        elif os.getenv("CONTROL_DB_URL"):
+             self.database_url = os.getenv("CONTROL_DB_URL")
         
-        # Auto-convert to async driver
-        if "postgresql://" in self.database_url and "postgresql+asyncpg://" not in self.database_url:
-            self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+        # No auto-conversion to async driver here as we use synchronous SQLAlchemym
+
 
         # Enforce SSL in production
         if os.getenv("ENV") == "prod":

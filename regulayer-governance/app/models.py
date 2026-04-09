@@ -10,7 +10,7 @@ CRITICAL CONSTRAINTS:
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any, Dict
 from uuid import UUID
 from pydantic import BaseModel, Field
 
@@ -26,14 +26,20 @@ class GovernanceReviewState(str, Enum):
     IN_REVIEW = "in_review"
     REVIEWED = "reviewed"
     ESCALATED = "escalated"
+    PENDING = "pending"
+    REJECTED = "rejected"
+    APPROVED = "approved"
 
 
 # Valid state transitions (enforced in API)
 VALID_REVIEW_TRANSITIONS = {
-    GovernanceReviewState.UNREVIEWED: [GovernanceReviewState.IN_REVIEW],
-    GovernanceReviewState.IN_REVIEW: [GovernanceReviewState.REVIEWED, GovernanceReviewState.ESCALATED],
-    GovernanceReviewState.REVIEWED: [GovernanceReviewState.ESCALATED, GovernanceReviewState.IN_REVIEW],
-    GovernanceReviewState.ESCALATED: [GovernanceReviewState.IN_REVIEW],
+    GovernanceReviewState.UNREVIEWED: [GovernanceReviewState.IN_REVIEW, GovernanceReviewState.APPROVED, GovernanceReviewState.REJECTED],
+    GovernanceReviewState.IN_REVIEW: [GovernanceReviewState.REVIEWED, GovernanceReviewState.ESCALATED, GovernanceReviewState.APPROVED, GovernanceReviewState.REJECTED],
+    GovernanceReviewState.REVIEWED: [GovernanceReviewState.ESCALATED, GovernanceReviewState.IN_REVIEW, GovernanceReviewState.APPROVED, GovernanceReviewState.REJECTED],
+    GovernanceReviewState.ESCALATED: [GovernanceReviewState.IN_REVIEW, GovernanceReviewState.APPROVED, GovernanceReviewState.REJECTED],
+    GovernanceReviewState.PENDING: [GovernanceReviewState.APPROVED, GovernanceReviewState.REJECTED, GovernanceReviewState.IN_REVIEW, GovernanceReviewState.ESCALATED],
+    GovernanceReviewState.APPROVED: [GovernanceReviewState.IN_REVIEW],  # Can reopen if needed
+    GovernanceReviewState.REJECTED: [GovernanceReviewState.IN_REVIEW],  # Can reopen if needed
 }
 
 
@@ -104,3 +110,76 @@ class ReviewStateUpdate(BaseModel):
     new_state: GovernanceReviewState = Field(
         ..., description="Target review state"
     )
+    action_reason: Optional[str] = Field(None, description="Reason for the review action")
+    risk_level: Optional[str] = Field(None, description="Updated risk level classification")
+
+
+class GovernanceReviewHistory(BaseModel):
+    id: int
+    decision_id: UUID
+    org_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    review_state: str
+    actor_role: str
+    actor_id: UUID
+    action_reason: Optional[str] = None
+    risk_level: Optional[str] = None
+    timestamp: datetime
+
+
+class GovernanceAssignmentQueueBase(BaseModel):
+    decision_id: UUID
+    assigned_to: Optional[UUID] = None
+    priority: str = "normal"
+
+class GovernanceAssignmentQueueCreate(GovernanceAssignmentQueueBase):
+    pass
+
+class GovernanceAssignmentQueue(GovernanceAssignmentQueueBase):
+    id: int
+    assigned_at: datetime
+
+
+class GovernancePoliciesBase(BaseModel):
+    policy_json: Dict[str, Any] = Field(default_factory=dict)
+
+class GovernancePoliciesCreate(GovernancePoliciesBase):
+    org_id: UUID
+
+class GovernancePolicies(GovernancePoliciesBase):
+    org_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+class GovernanceProposalCreate(BaseModel):
+    org_id: Optional[str] = None
+    project_id: Optional[str] = None
+    environment: str = "prod"
+    proposed_payload: Dict[str, Any]
+
+class GovernanceProposal(BaseModel):
+    id: UUID
+    org_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+    environment: str
+    proposed_payload: Dict[str, Any]
+    status: str
+    decision_id: Optional[UUID] = None
+    action_reason: Optional[str] = None
+    risk_level: Optional[str] = None
+    edit_chain: Optional[Dict[str, Any]] = None
+    created_at: datetime
+    updated_at: datetime
+
+class GateResolutionCreate(BaseModel):
+    status: Literal["approved", "declined"]
+    edited_output: Optional[Dict[str, Any]] = None
+    decline_message: Optional[str] = None
+
+class GateResolution(BaseModel):
+    decision_id: UUID
+    status: str
+    edited_output: Optional[Dict[str, Any]] = None
+    decline_message: Optional[str] = None
+    resolved_by: str
+    resolved_at: datetime

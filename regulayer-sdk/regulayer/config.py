@@ -6,20 +6,25 @@ Configure the SDK before use.
 
 from typing import Optional
 from dataclasses import dataclass
+from .constants import (
+    DEFAULT_API_ENDPOINT,
+    DEFAULT_TIMEOUT_SECONDS,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_ENVIRONMENT
+)
+from .errors import InvalidConfigurationError, DemoKeyError, ProdKeyError
 
 
 @dataclass
 class RegulayerConfig:
     """SDK configuration."""
-    api_key: Optional[str] = None
-    endpoint: str = "https://api.regulayer.io"
-    timeout_seconds: float = 30.0
-    max_retries: int = 3
-    
-    # Trust: SDK never does these
-    hash_payloads: bool = False  # Server hashes
-    sign_payloads: bool = False  # Server signs
-    persist_locally: bool = False  # No local state
+    api_key: str
+    endpoint: str = DEFAULT_API_ENDPOINT
+    project_id: Optional[str] = None
+    environment: str = DEFAULT_ENVIRONMENT
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+    max_retries: int = DEFAULT_MAX_RETRIES
+    demo: bool = False
 
 
 # Global config
@@ -28,9 +33,12 @@ _config: Optional[RegulayerConfig] = None
 
 def configure(
     api_key: str,
-    endpoint: str = "https://api.regulayer.io",
-    timeout_seconds: float = 30.0,
-    max_retries: int = 3
+    endpoint: str = DEFAULT_API_ENDPOINT,
+    project_id: Optional[str] = None,
+    environment: str = DEFAULT_ENVIRONMENT,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    demo: bool = False
 ) -> None:
     """
     Configure the Regulayer SDK.
@@ -38,21 +46,44 @@ def configure(
     Call this before using trace().
     
     Args:
-        api_key: Your API key (starts with rl_live_ or rl_test_)
-        endpoint: API endpoint (default: production)
-        timeout_seconds: Request timeout
-        max_retries: Number of retries on network failure
+        api_key: Your API key.
+        endpoint: API endpoint.
+        project_id: Optional project identifier.
+        environment: 'dev' | 'staging' | 'prod'.
+        timeout_seconds: Request timeout.
+        max_retries: Number of retries on network failure.
+        demo: Set to True if using a demo API key.
     
-    Example:
-        >>> from regulayer import configure
-        >>> configure(api_key="rl_live_xxx")
+    Raises:
+        InvalidConfigurationError: If configuration is invalid.
+        DemoKeyError: If demo key used without demo=True.
+        ProdKeyError: If prod key used with demo=True.
     """
     global _config
+    
+    if not api_key:
+        raise InvalidConfigurationError("api_key is required")
+
+    # Demo Credential Wall
+    is_demo_key = api_key.startswith("rl_demo_")
+    
+    if is_demo_key and not demo:
+        raise DemoKeyError()
+    
+    if not is_demo_key and demo:
+        raise ProdKeyError()
+
+    # Allow reconfiguration by simply updating the global config.
+    # This keeps tests and long-running processes flexible (for key
+    # rotation, endpoint changes, etc.).
     _config = RegulayerConfig(
         api_key=api_key,
         endpoint=endpoint,
+        project_id=project_id,
+        environment=environment,
         timeout_seconds=timeout_seconds,
-        max_retries=max_retries
+        max_retries=max_retries,
+        demo=demo
     )
 
 
@@ -60,9 +91,9 @@ def get_config() -> RegulayerConfig:
     """Get current configuration."""
     global _config
     if _config is None:
-        raise RuntimeError(
+        raise InvalidConfigurationError(
             "Regulayer SDK not configured. "
-            "Call regulayer.configure(api_key='...') first."
+            "Call regulayer.configure(...) first."
         )
     return _config
 

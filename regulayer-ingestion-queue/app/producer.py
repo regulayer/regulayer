@@ -136,7 +136,6 @@ class RedisQueue:
     
     async def dequeue(self, project_id: str) -> Optional[tuple[str, QueuedEvent]]:
         """Read from Redis Stream consumer group."""
-        print(f"DEBUG: STARTING Dequeue for {project_id}", flush=True)
         redis = await self._get_redis()
         stream = self.get_stream_name(project_id)
         
@@ -151,20 +150,17 @@ class RedisQueue:
         except Exception:
             pass  # Group may already exist
         
-        # Read messages
-        # DEBUG: Use xread to bypass group logic
-        print(f"DEBUG: Dequeueing from stream: {stream}", flush=True)
-        messages = await redis.xread(
-            {stream: "0"},
+        # Read messages using consumer group
+        messages = await redis.xreadgroup(
+            groupname=settings.consumer_group,
+            consumername="worker-1",
+            streams={stream: ">"},
             count=1,
             block=settings.batch_timeout_ms
         )
         
         if not messages:
-            print(f"DEBUG: xread returned empty for {stream}", flush=True)
             return None
-            
-        print(f"DEBUG: xread result: {messages}", flush=True)
         
         for stream_name, stream_messages in messages:
             for message_id, data in stream_messages:
@@ -206,12 +202,9 @@ def get_queue():
     global _queue
     
     if _queue is None:
-        print(f"DEBUG: INITIALIZING QUEUE. Configured Backend: {settings.queue_backend}", flush=True)
         if settings.queue_backend == QueueBackend.REDIS:
-            print("DEBUG: Using RedisQueue", flush=True)
             _queue = RedisQueue()
         else:
-            print(f"DEBUG: Using InMemoryQueue (Fallback? {settings.queue_backend})", flush=True)
             _queue = InMemoryQueue()
     
     return _queue

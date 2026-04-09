@@ -6,7 +6,7 @@ import {
     CheckCircle, Clock, AlertCircle, MoreVertical,
     UserMinus
 } from 'lucide-react';
-import { getMe, listTeamMembers, inviteTeamMember, changeUserRole, TeamMember as ApiTeamMember } from '@/lib/api';
+import { getMe, listTeamMembers, inviteTeamMember, changeUserRole, removeTeamMember, listInvitations, revokeInvitation, TeamMember as ApiTeamMember, PendingInvitation } from '@/lib/api';
 
 // ============================================================
 // Types
@@ -29,8 +29,8 @@ interface TeamMember {
 // ============================================================
 
 const roleConfig: Record<Role, { bg: string; text: string; label: string; description: string }> = {
-    owner: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Owner', description: 'Full org control + billing' },
-    admin: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Admin', description: 'Manage keys, projects, governance' },
+    owner: { bg: 'bg-slate-900', text: 'text-white', label: 'Owner', description: 'Full org control + billing' },
+    admin: { bg: 'bg-zinc-100', text: 'text-zinc-900', label: 'Admin', description: 'Manage keys, projects, governance' },
     member: { bg: 'bg-green-100', text: 'text-green-700', label: 'Member', description: 'Annotate & tag only' },
     auditor: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Auditor', description: 'View & export only' },
 };
@@ -56,7 +56,7 @@ function StatusBadge({ status }: { status: InviteStatus }) {
         </span>
     );
     return (
-        <span className="flex items-center gap-1.5 text-xs text-slate-400">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <AlertCircle className="w-3.5 h-3.5" /> Deactivated
         </span>
     );
@@ -71,28 +71,28 @@ function InviteModal({ onClose, onInvite }: { onClose: () => void; onInvite: (em
     const [role, setRole] = useState<Role>('member');
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-slate-900 mb-4">Invite Team Member</h2>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl border border-zinc-200">
+                <h2 className="text-xl font-bold text-foreground mb-4">Invite Team Member</h2>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Email</label>
                     <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="colleague@company.com"
                     />
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Role</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Role</label>
                     <div className="space-y-2">
                         {(['admin', 'member', 'auditor'] as Role[]).map((r) => (
                             <label
                                 key={r}
-                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${role === r ? 'border-primary-500 bg-primary-50' : 'border-slate-200 hover:bg-slate-50'
+                                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${role === r ? 'border-primary-500 bg-primary-50' : 'border-border hover:bg-zinc-100'
                                     }`}
                             >
                                 <input
@@ -104,16 +104,16 @@ function InviteModal({ onClose, onInvite }: { onClose: () => void; onInvite: (em
                                     className="mt-1"
                                 />
                                 <div>
-                                    <span className="font-medium text-slate-900">{roleConfig[r].label}</span>
-                                    <p className="text-sm text-slate-500">{roleConfig[r].description}</p>
+                                    <span className="font-medium text-foreground">{roleConfig[r].label}</span>
+                                    <p className="text-sm text-muted-foreground">{roleConfig[r].description}</p>
                                 </div>
                             </label>
                         ))}
                     </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                    <p className="text-blue-800 text-sm">
+                <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 mb-6">
+                    <p className="text-zinc-800 text-sm">
                         Invited users can never modify cryptographic records.
                     </p>
                 </div>
@@ -121,14 +121,14 @@ function InviteModal({ onClose, onInvite }: { onClose: () => void; onInvite: (em
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
+                        className="flex-1 border border-border text-foreground px-4 py-2 rounded-lg hover:bg-zinc-100"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={() => onInvite(email, role)}
                         disabled={!email.trim()}
-                        className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                        className="flex-1 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50"
                     >
                         Send Invite
                     </button>
@@ -154,10 +154,10 @@ function ChangeRoleModal({
     const [newRole, setNewRole] = useState<Role>(member.role);
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-slate-900 mb-4">Change Role</h2>
-                <p className="text-slate-600 mb-4">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl border border-zinc-200">
+                <h2 className="text-xl font-bold text-foreground mb-4">Change Role</h2>
+                <p className="text-muted-foreground mb-4">
                     Change role for <strong>{member.name}</strong>
                 </p>
 
@@ -165,7 +165,7 @@ function ChangeRoleModal({
                     {(['admin', 'member', 'auditor'] as Role[]).map((r) => (
                         <label
                             key={r}
-                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${newRole === r ? 'border-primary-500 bg-primary-50' : 'border-slate-200 hover:bg-slate-50'
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${newRole === r ? 'border-primary-500 bg-primary-50' : 'border-border hover:bg-zinc-100'
                                 }`}
                         >
                             <input
@@ -177,8 +177,8 @@ function ChangeRoleModal({
                                 className="mt-1"
                             />
                             <div>
-                                <span className="font-medium text-slate-900">{roleConfig[r].label}</span>
-                                <p className="text-sm text-slate-500">{roleConfig[r].description}</p>
+                                <span className="font-medium text-foreground">{roleConfig[r].label}</span>
+                                <p className="text-sm text-muted-foreground">{roleConfig[r].description}</p>
                             </div>
                         </label>
                     ))}
@@ -187,14 +187,14 @@ function ChangeRoleModal({
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
+                        className="flex-1 border border-border text-foreground px-4 py-2 rounded-lg hover:bg-zinc-100"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={() => onChange(newRole)}
                         disabled={newRole === member.role}
-                        className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                        className="flex-1 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50"
                     >
                         Save Changes
                     </button>
@@ -218,21 +218,21 @@ function RemoveMemberModal({
     onConfirm: () => void;
 }) {
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl border border-zinc-200">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 rounded-lg">
                         <UserMinus className="w-6 h-6 text-amber-600" />
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900">Remove Member?</h2>
+                    <h2 className="text-xl font-bold text-foreground">Remove Member?</h2>
                 </div>
 
-                <p className="text-slate-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                     Remove <strong>{member.name}</strong> from the organization?
                 </p>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                    <p className="text-blue-800 text-sm">
+                <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 mb-6">
+                    <p className="text-zinc-800 text-sm">
                         This removes access only. Decisions and proofs are unaffected.
                     </p>
                 </div>
@@ -240,7 +240,7 @@ function RemoveMemberModal({
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
+                        className="flex-1 border border-border text-foreground px-4 py-2 rounded-lg hover:bg-zinc-100"
                     >
                         Cancel
                     </button>
@@ -264,22 +264,25 @@ function MemberRow({
     member,
     currentUserRole,
     onChangeRole,
-    onRemove
+    onRemove,
+    onCancelInvite
 }: {
     member: TeamMember;
     currentUserRole: Role;
     onChangeRole: () => void;
     onRemove: () => void;
+    onCancelInvite: () => void;
 }) {
     const [showMenu, setShowMenu] = useState(false);
     const canManage = currentUserRole === 'owner' || (currentUserRole === 'admin' && member.role !== 'owner');
+    const isPending = member.status === 'pending';
 
     return (
-        <tr className="border-b border-slate-50 hover:bg-slate-50">
+        <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
             <td className="px-6 py-4">
                 <div>
-                    <p className="font-medium text-slate-900">{member.name}</p>
-                    <p className="text-sm text-slate-500">{member.email}</p>
+                    <p className="font-medium text-foreground">{member.name}</p>
+                    <p className="text-sm text-muted-foreground">{member.email}</p>
                 </div>
             </td>
             <td className="px-6 py-4">
@@ -288,23 +291,31 @@ function MemberRow({
             <td className="px-6 py-4">
                 <StatusBadge status={member.status} />
             </td>
-            <td className="px-6 py-4 text-sm text-slate-500">
+            <td className="px-6 py-4 text-sm text-muted-foreground">
                 {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : '—'}
             </td>
             <td className="px-6 py-4">
-                {canManage && member.role !== 'owner' && (
+                {canManage && isPending && (
+                    <button
+                        onClick={onCancelInvite}
+                        className="text-xs text-red-500 hover:text-red-700 font-medium px-3 py-1 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+                    >
+                        Cancel Invite
+                    </button>
+                )}
+                {canManage && !isPending && member.role !== 'owner' && (
                     <div className="relative">
                         <button
                             onClick={() => setShowMenu(!showMenu)}
-                            className="p-1 hover:bg-slate-100 rounded"
+                            className="p-1 hover:bg-secondary rounded"
                         >
-                            <MoreVertical className="w-5 h-5 text-slate-400" />
+                            <MoreVertical className="w-5 h-5 text-muted-foreground" />
                         </button>
                         {showMenu && (
-                            <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10">
+                            <div className="absolute right-0 top-8 bg-white border border-border rounded-lg shadow-lg py-1 z-10 w-32">
                                 <button
                                     onClick={() => { setShowMenu(false); onChangeRole(); }}
-                                    className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50"
+                                    className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-50"
                                 >
                                     Change role
                                 </button>
@@ -322,6 +333,7 @@ function MemberRow({
         </tr>
     );
 }
+
 
 // ============================================================
 // Main Team Page
@@ -350,17 +362,30 @@ export default function TeamPage() {
                 if (meRes.data.org?.id) {
                     const oid = meRes.data.org.id;
                     setOrgId(oid);
+
+                    // Fetch active members
                     const teamRes = await listTeamMembers(oid);
-                    if (teamRes.data) {
-                        setMembers(teamRes.data.map((u: ApiTeamMember) => ({
-                            id: u.id,
-                            name: u.email.split('@')[0],
-                            email: u.email,
-                            role: u.role as Role,
-                            status: 'active' as InviteStatus,
-                            joinedAt: u.created_at,
-                        })));
-                    }
+                    const activeMembers: TeamMember[] = teamRes.data ? teamRes.data.map((u: ApiTeamMember) => ({
+                        id: u.id,
+                        name: u.email.split('@')[0],
+                        email: u.email,
+                        role: u.role as Role,
+                        status: 'active' as InviteStatus,
+                        joinedAt: u.joined_at,
+                    })) : [];
+
+                    // Fetch pending invitations
+                    const invitesRes = await listInvitations(oid);
+                    const pendingMembers: TeamMember[] = invitesRes.data ? invitesRes.data.map((inv: PendingInvitation) => ({
+                        id: inv.id,
+                        name: inv.email.split('@')[0],
+                        email: inv.email,
+                        role: inv.role as Role,
+                        status: 'pending' as InviteStatus,
+                        joinedAt: null,
+                    })) : [];
+
+                    setMembers([...activeMembers, ...pendingMembers]);
                 }
             }
         } catch {
@@ -373,31 +398,29 @@ export default function TeamPage() {
     const handleInvite = async (email: string, role: Role) => {
         if (!orgId) return;
         try {
-            const res = await inviteTeamMember(orgId, {
-                email,
-                password: 'TempPass123!',
-                role: role as 'admin' | 'member' | 'auditor',
-            });
+            const res = await inviteTeamMember(orgId, email, role);
             if (res.data) {
-                setMembers([...members, {
-                    id: res.data.id,
-                    name: email.split('@')[0],
-                    email: res.data.email,
-                    role: res.data.role as Role,
-                    status: 'active',
-                    joinedAt: res.data.created_at,
-                }]);
+                loadTeam();
             }
-        } catch {
-            // Error handled silently
+        } catch (err: any) {
+            const detail = err.response?.data?.detail;
+            const status = err.response?.status;
+            if (typeof detail === 'string') {
+                alert(detail);
+            } else if (Array.isArray(detail)) {
+                // Pydantic validation error array
+                alert(`Validation error: ${detail.map((d: any) => d.msg).join(', ')}`);
+            } else {
+                alert(`Failed to send invitation (${status || 'unknown'}). Please try again.`);
+            }
         }
         setShowInviteModal(false);
     };
 
     const handleChangeRole = async (newRole: Role) => {
-        if (changeRoleMember) {
+        if (changeRoleMember && orgId) {
             try {
-                await changeUserRole(changeRoleMember.id, newRole);
+                await changeUserRole(orgId, changeRoleMember.id, newRole);
                 setMembers(members.map(m => m.id === changeRoleMember.id ? { ...m, role: newRole } : m));
             } catch {
                 // Error handled silently
@@ -406,62 +429,80 @@ export default function TeamPage() {
         }
     };
 
-    const handleRemove = () => {
-        if (removeMember) {
-            setMembers(members.filter(m => m.id !== removeMember.id));
-            setRemoveMember(null);
+    const handleRemove = async () => {
+        if (removeMember && orgId) {
+            try {
+                await removeTeamMember(orgId, removeMember.id);
+                loadTeam();
+                setRemoveMember(null);
+            } catch (err: any) {
+                alert(err.response?.data?.detail || 'Failed to remove member. You may not have permission.');
+            }
+        }
+    };
+
+    const handleCancelInvite = async (member: TeamMember) => {
+        if (!orgId) return;
+        if (!confirm(`Cancel the pending invitation for ${member.email}?`)) return;
+        try {
+            await revokeInvitation(orgId, member.id);
+            loadTeam();
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Failed to cancel invitation');
         }
     };
 
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="min-h-screen bg-transparent">
+            <div className="px-6 md:px-10 py-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Team</h1>
-                        <p className="text-slate-600">Manage organization members</p>
+                        <h1 className="text-2xl font-bold text-foreground">Team</h1>
+                        <p className="text-muted-foreground">Manage organization members</p>
                     </div>
-                    <button
-                        onClick={() => setShowInviteModal(true)}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Invite Member
-                    </button>
+                    {(currentUserRole === 'owner' || currentUserRole === 'admin') && (
+                        <button
+                            onClick={() => setShowInviteModal(true)}
+                            className="bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-slate-800 flex items-center gap-2 shadow-md transition-all active:scale-[0.98]"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Invite Member
+                        </button>
+                    )}
                 </div>
 
                 {/* Role Legend */}
-                <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-                    <h3 className="font-medium text-slate-900 mb-4">Role Permissions</h3>
+                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6 mb-6">
+                    <h3 className="font-medium text-foreground mb-4">Role Permissions</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {(['owner', 'admin', 'member', 'auditor'] as Role[]).map((r) => (
                             <div key={r} className="flex items-start gap-2">
                                 <RoleBadge role={r} />
-                                <span className="text-sm text-slate-500">{roleConfig[r].description}</span>
+                                <span className="text-sm text-muted-foreground">{roleConfig[r].description}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Members Table */}
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50">
-                                <th className="text-left text-xs font-medium text-slate-500 uppercase px-6 py-4">Member</th>
-                                <th className="text-left text-xs font-medium text-slate-500 uppercase px-6 py-4">Role</th>
-                                <th className="text-left text-xs font-medium text-slate-500 uppercase px-6 py-4">Status</th>
-                                <th className="text-left text-xs font-medium text-slate-500 uppercase px-6 py-4">Joined</th>
-                                <th className="text-left text-xs font-medium text-slate-500 uppercase px-6 py-4">Actions</th>
+                            <tr className="border-b border-zinc-200 bg-zinc-50">
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Member</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Role</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Status</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Joined</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">Loading team...</td></tr>
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">Loading team...</td></tr>
                             ) : members.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500">No team members yet. Invite your first member.</td></tr>
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-muted-foreground">No team members yet. Invite your first member.</td></tr>
                             ) : members.map((member) => (
                                 <MemberRow
                                     key={member.id}
@@ -469,6 +510,7 @@ export default function TeamPage() {
                                     currentUserRole={currentUserRole}
                                     onChangeRole={() => setChangeRoleMember(member)}
                                     onRemove={() => setRemoveMember(member)}
+                                    onCancelInvite={() => handleCancelInvite(member)}
                                 />
                             ))}
                         </tbody>
@@ -476,7 +518,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Footer Disclaimer */}
-                <p className="text-center text-xs text-slate-400 mt-8">
+                <p className="text-center text-xs text-muted-foreground mt-8">
                     User actions affect access, never cryptographic truth.
                 </p>
             </div>
@@ -506,3 +548,4 @@ export default function TeamPage() {
         </div>
     );
 }
+

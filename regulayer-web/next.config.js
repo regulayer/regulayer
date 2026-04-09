@@ -1,19 +1,13 @@
+const domain = process.env.DOMAIN || 'localhost';
+const isLocal = domain === 'localhost' || domain === '127.0.0.1';
+const defaultApiUrl = isLocal ? 'http://localhost:8080' : `https://api.${domain}`;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
     env: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8100',
-    },
-    eslint: {
-        // Warning: This allows production builds to successfully complete even if
-        // your project has ESLint errors.
-        ignoreDuringBuilds: true,
-    },
-    typescript: {
-        // !! WARN !!
-        // Dangerously allow production builds to successfully complete even if
-        // your project has type errors.
-        ignoreBuildErrors: true,
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || defaultApiUrl,
+        NEXT_PUBLIC_DOMAIN: domain,
     },
 };
 

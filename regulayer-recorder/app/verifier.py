@@ -164,7 +164,8 @@ async def verify_full_integrity(session: AsyncSession) -> dict:
     """
     from sqlalchemy import select, asc
     from .storage import DecisionRecordDB
-    from .recorder import compute_canonical_hash
+    # from .recorder import compute_canonical_hash as _unused_
+    from .hasher import compute_canonical_hash
     from .attestation_guard import guard
     from regulayer_attestation.app.models import AttestationEnvelope
     

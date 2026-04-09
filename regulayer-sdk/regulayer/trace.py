@@ -19,6 +19,8 @@ class Decision:
     started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     decision_id: Optional[str] = None
+    hidden_fields: Optional[list] = None
+    zkp_salt: str = ""
     
     def set_input(self, data: dict) -> None:
         """Set the decision input."""
@@ -55,12 +57,18 @@ class trace:
         system: str,
         decision_type: str = "default",
         risk_level: str = "standard",
+        hidden_fields: Optional[list] = None,
+        zkp_salt: str = "",
+        decision_id: Optional[str] = None,
         **metadata
     ):
         self.decision = Decision(
             system=system,
             decision_type=decision_type,
             risk_level=risk_level,
+            hidden_fields=hidden_fields,
+            zkp_salt=zkp_salt,
+            decision_id=decision_id,
             metadata=metadata
         )
     
@@ -80,23 +88,54 @@ class trace:
             # But the 'risk_level' might imply failure if we had that semantic
         
         # Record the decision
+        # Record the decision
         from .client import get_client
+        import time
+        from .errors import GovernanceDeclinedError
         
-        try:
-            client = get_client()
-            result = client.record_decision(
-                system=self.decision.system,
-                decision_type=self.decision.decision_type,
-                input_data=self.decision.input_data,
-                output_data=self.decision.output_data,
-                metadata=self.decision.metadata,
-                risk_level=self.decision.risk_level,
-                decision_id=self.decision.decision_id
-            )
-            self.decision.decision_id = result.get("decision_id")
-        except Exception:
-            # We log exceptions but do not re-raise them to avoid masking app errors
-            # Unless it's a critical infrastructure failure? 
-            # Spec says "Never silent success". But silence failure in trace?
-            # "If exception occurs inside block: Record failure state"
-            pass
+        # We allow SDK errors to propagate so the user knows if recording failed.
+        # This complies with "Never hide failures".
+        client = get_client()
+        result = client.record_decision(
+            system=self.decision.system,
+            decision_type=self.decision.decision_type,
+            input_data=self.decision.input_data,
+            output_data=self.decision.output_data,
+            metadata=self.decision.metadata,
+            risk_level=self.decision.risk_level,
+            decision_id=self.decision.decision_id,
+            hidden_fields=self.decision.hidden_fields,
+            zkp_salt=self.decision.zkp_salt
+        )
+        self.decision.decision_id = result.get("decision_id", self.decision.decision_id)
+        
+        if result.get("status") == "pending_review":
+            # Polling loop for Gate Mode
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Decision {self.decision.decision_id} pending governance review. Holding...")
+            
+            timeout = 300 # 5 minutes max wait
+            elapsed = 0
+            poll_interval = 2
+            
+            while elapsed < timeout:
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+                
+                status_res = client.check_review_status(self.decision.decision_id)
+                current_status = status_res.get("status")
+                
+                if current_status == "approved":
+                    logger.info(f"Decision {self.decision.decision_id} approved by governance.")
+                    # If edited, update the output data so the app can use it
+                    if status_res.get("edited_output"):
+                        self.decision.output_data.update(status_res.get("edited_output"))
+                    break
+                elif current_status == "declined":
+                    msg = status_res.get("decline_message") or "Decision declined by governance."
+                    raise GovernanceDeclinedError(message=msg, decision_id=self.decision.decision_id)
+                
+            if elapsed >= timeout:
+                logger.warning(f"Timeout waiting for governance review on decision {self.decision.decision_id}. Proceeding with original output.")
+

@@ -97,7 +97,6 @@ class BillingService:
 
         try:
             portal_session = stripe.billing_portal.Session.create(
-                customer=org.stripe_customer_id,
                 return_url=return_url,
             )
             return portal_session.url
@@ -106,3 +105,89 @@ class BillingService:
             if "mock" in settings.stripe_api_key:
                 return return_url
             raise e
+
+    def get_billing_status(self, org_id: UUID) -> dict:
+        """
+        Get comprehensive billing status from Stripe.
+        """
+        org = self.db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+        if not org:
+             raise ValueError("Organization not found")
+
+        # Default for non-stripe orgs (Free Tier)
+        status = {
+            "plan": {"id": "free", "name": "Free Tier", "price": "$0", "features": ["1,000 Decisions/mo"], "limit_decisions": 1000, "limit_members": 2},
+            "status": "active",
+            "current_period_end": None,
+            "invoices": []
+        }
+
+        # If Org is explicitly suspended in DB, reflect that
+        if org.status == OrgStatus.SUSPENDED:
+            status["status"] = "frozen"
+
+        # If no Stripe Customer, return default
+        if not org.stripe_customer_id:
+            return status
+
+        # Mock Short-circuit
+        if "mock" in settings.stripe_api_key:
+             return status
+
+        try:
+            # 1. Fetch Subscriptions
+            subs = stripe.Subscription.list(
+                customer=org.stripe_customer_id,
+                status='all',
+                limit=1
+            )
+            
+            if subs.data:
+                sub = subs.data[0]
+                status["status"] = sub.status # active, trialing, past_due, canceled, unpaid
+                status["current_period_end"] = sub.current_period_end # Timestamp
+                
+                # Map Price ID to Plan (Simple mapping for now)
+                price_id = sub.items.data[0].price.id
+                if price_id == settings.stripe_price_id_pro:
+                    status["plan"] = {
+                        "id": "pro",
+                        "name": "Pro", 
+                        "price": "$99/mo",
+                        "features": ["50k Decisions/mo", "Email Support", "Advanced Reports"],
+                        "limit_decisions": 50000,
+                        "limit_members": 20
+                    }
+                else:
+                    status["plan"] = {
+                        "id": "enterprise",
+                        "name": "Enterprise",
+                        "price": "Custom",
+                        "features": ["Unlimited", "SLA"],
+                        "limit_decisions": 1000000,
+                        "limit_members": 999999
+                    }
+            
+            # 2. Fetch Invoices
+            invoices = stripe.Invoice.list(
+                customer=org.stripe_customer_id,
+                limit=5
+            )
+            status["invoices"] = [
+                {
+                    "id": inv.id,
+                    "date": inv.created, # Timestamp
+                    "amount": f"${inv.amount_paid / 100:.2f}",
+                    "status": inv.status,
+                    "pdf": inv.invoice_pdf
+                }
+                for inv in invoices.data
+            ]
+            
+            return status
+
+        except Exception as e:
+            print(f"Stripe Fetch Error: {e}")
+            # Fallback to DB status if Stripe fails, to not block UI
+            return status
+

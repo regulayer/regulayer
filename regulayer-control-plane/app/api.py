@@ -7,10 +7,12 @@ REST API for tenant management.
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
+import stripe
 
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, EmailStr
 from .enums import ProjectEnvironment, UserRole
 
 from .models import (
@@ -20,19 +22,24 @@ from .models import (
     User, UserCreate, UserWithOrg, OrgStatusUpdate, OrganizationUpdate,
     TenantContext, KeyValidationResult, AuditLog,
     PasswordResetRequest, PasswordResetConfirm,
-    CheckoutSessionRequest, PortalSessionRequest
+    CheckoutSessionRequest, PortalSessionRequest,
+    Invitation, InvitationCreate, InvitationAccept
 )
 from .billing import BillingService
 from .storage import (
     get_db, init_db,
     OrganizationDB, ProjectDB, UserDB, ApiKeyDB,
-    OrgStatus, UserRole # Added UserRole
+    SessionDB, OtpCodeDB, PasswordResetTokenDB,
+    AuditLogDB, UsageEventDB, UsageMeterDB,
+    OrgStatus, UserRole, InvitationDB
 )
 from .auth import AuthService
 from .audit import AuditService
 
-from .middleware import require_tenant_context, get_tenant_context
+from .middleware import require_tenant_context, get_tenant_context, require_internal_secret
 from .config import settings
+from .config import settings
+from .rbac import has_permission, Permission
 
 
 app = FastAPI(
@@ -41,14 +48,67 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ---------- Custom Pure-ASGI CORS Middleware ----------
+# Starlette's CORSMiddleware does NOT work reliably when combined with
+# BaseHTTPMiddleware subclasses (SecurityHeaders, StructuredLogger, etc.).
+# This is a documented Starlette issue.  We use a pure-ASGI implementation
+# that intercepts at the lowest level and is immune to this conflict.
+
+class _CORSMiddleware:
+    """Lightweight pure-ASGI CORS middleware."""
+    def __init__(self, app):
+        self.app = app
+        self.allowed_origins = set(settings.cors_origins)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract Origin header
+        origin = None
+        for key, value in scope.get("headers", []):
+            if key == b"origin":
+                origin = value.decode()
+                break
+
+        # Pre-flight (OPTIONS)
+        if scope["method"] == "OPTIONS" and origin:
+            from starlette.responses import Response
+            headers = {
+                "access-control-allow-origin": origin if origin in self.allowed_origins else "",
+                "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+                "access-control-allow-headers": "authorization, content-type, x-regulayer-api-key, x-request-id, x-internal-secret",
+                "access-control-allow-credentials": "true",
+                "access-control-max-age": "600",
+            }
+            resp = Response(status_code=200, headers=headers)
+            await resp(scope, receive, send)
+            return
+
+        # Normal request – inject CORS headers into the response
+        async def send_with_cors(message):
+            if message["type"] == "http.response.start" and origin and origin in self.allowed_origins:
+                headers = list(message.get("headers", []))
+                headers.append((b"access-control-allow-origin", origin.encode()))
+                headers.append((b"access-control-allow-credentials", b"true"))
+                headers.append((b"vary", b"Origin"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_cors)
+
+
+# Apply middlewares -- order matters less now since our CORS is pure-ASGI
+from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(StructuredLoggerMiddleware)
+app.add_middleware(RequestIdMiddleware)
+app.add_middleware(_CORSMiddleware)
+
+
+
 
 
 # ============================================================
@@ -60,10 +120,24 @@ async def billing_webhook(request: Request, db: Session = Depends(get_db)):
     """
     Handle Stripe webhooks for subscription status updates.
     """
+    payload_body = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
     try:
-        payload = await request.json()
-        event_type = payload.get("type")
-        data = payload.get("data", {}).get("object", {})
+        # VERIFY SIGNATURE
+        event = stripe.Webhook.construct_event(
+            payload_body, sig_header, settings.stripe_webhook_secret
+        )
+    except ValueError as e:
+        # Invalid payload
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    try:
+        event_type = event["type"]
+        data = event["data"]["object"]
         
         # Extract Customer ID
         customer_id = data.get("customer")
@@ -119,24 +193,22 @@ async def startup():
 # ============================================================
 
 @app.patch("/v1/orgs/{org_id}", response_model=Organization, tags=["organizations"])
-async def update_organization(
+def update_organization(
     org_id: UUID,
     request: OrganizationUpdate,
     db: Session = Depends(get_db),
     tenant: TenantContext = Depends(require_tenant_context)
-) -> Organization:
+):
     """Update organization details (Name, Logo)."""
     # Authorization: Must be Owner or Admin of THAT org
     if tenant.organization_id != org_id:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Check if user is owner/admin?
-    # require_tenant_context doesn't enforce role, just context.
-    # We should enforce role here.
-    user = db.query(UserDB).filter(UserDB.id == tenant.user_id).first()
-    if not user or user.role not in [UserRole.OWNER, UserRole.ADMIN]:
-        raise HTTPException(status_code=403, detail="Only Owners or Admins can update organization settings")
+    # Enforce Role - RBAC
 
+    if not has_permission(tenant.role, Permission.ORG_EDIT):
+        raise HTTPException(status_code=403, detail="Permission denied: org:edit")
+    
     org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -165,11 +237,12 @@ async def update_organization(
 
 
 @app.patch("/v1/orgs/{org_id}/status", tags=["organizations"])
-async def patch_organization_status(
+def patch_organization_status(
     org_id: UUID,
     request: OrgStatusUpdate,
-    db: Session = Depends(get_db)
-) -> dict:
+    db: Session = Depends(get_db),
+    internal_check: None = Depends(require_internal_secret)
+):
     """Update organization status (e.g. suspend/freeze)."""
     org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
     if not org:
@@ -189,10 +262,11 @@ async def patch_organization_status(
 
 
 @app.post("/v1/orgs", response_model=Organization, tags=["organizations"])
-async def create_organization(
+def create_organization(
     request: OrganizationCreate,
-    db: Session = Depends(get_db)
-) -> Organization:
+    db: Session = Depends(get_db),
+    internal_check: None = Depends(require_internal_secret)
+):
     """Create a new organization (tenant)."""
     org = OrganizationDB(
         id=uuid4(),
@@ -213,11 +287,16 @@ async def create_organization(
 
 
 @app.get("/v1/orgs/{org_id}", response_model=Organization, tags=["organizations"])
-async def get_organization(
+def get_organization(
     org_id: UUID,
-    db: Session = Depends(get_db)
-) -> Organization:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """Get organization details."""
+    # Authorization
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
     
     if not org:
@@ -232,10 +311,12 @@ async def get_organization(
     )
 
 
+
 @app.get("/v1/orgs", response_model=List[Organization], tags=["organizations"])
-async def list_organizations(
-    db: Session = Depends(get_db)
-) -> List[Organization]:
+def list_organizations(
+    db: Session = Depends(get_db),
+    internal_check: None = Depends(require_internal_secret)
+):
     """List all organizations."""
     orgs = db.query(OrganizationDB).all()
     
@@ -251,18 +332,172 @@ async def list_organizations(
     ]
 
 
+@app.get("/v1/usage/{org_id}", tags=["billing"])
+async def get_usage(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Get organization usage quotas."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    billing_service = BillingService(db)
+    status = billing_service.get_billing_status(org_id)
+    
+    # Map to what frontend expects for now
+    # Frontend MetricDisplay uses: value={usage?.data?.decision_count}
+    return {
+        "decision_count": 0, # TODO: calculate real usage from decisions table
+        "limit": status.get("plan", {}).get("limit_decisions", 1000),
+        "tier": status.get("plan", {}).get("name", "Free")
+    }
+
+
+@app.get("/v1/orgs/{org_id}/audit-logs", response_model=List[AuditLog], tags=["audit"])
+def get_org_audit_logs(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Get audit logs for an organization."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    audit_service = AuditService(db)
+    return audit_service.get_logs(org_id)
+
+
+class UserMember(BaseModel):
+    id: UUID
+    email: EmailStr
+    role: UserRole
+    status: str = "active"
+    joined_at: datetime
+
+class RoleUpdate(BaseModel):
+    role: UserRole
+
+
+@app.get("/v1/orgs/{org_id}/members", response_model=List[UserMember], tags=["organizations"])
+def list_org_members(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """List members of an organization."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    users = db.query(UserDB).filter(UserDB.organization_id == org_id).all()
+    
+    return [
+        UserMember(
+            id=u.id,
+            email=u.email,
+            role=u.role,
+            status="active",
+            joined_at=u.created_at
+        )
+        for u in users
+    ]
+
+
 # ============================================================
 # Project Endpoints
 # ============================================================
 
+def check_manage_hierarchy(actor_role: UserRole, target_role: UserRole) -> bool:
+    """Helper to ensure admins can only manage members/auditors, and owners can manage anyone."""
+    if actor_role == UserRole.OWNER:
+        return True
+    if actor_role == UserRole.ADMIN:
+        return target_role in [UserRole.MEMBER, UserRole.AUDITOR]
+    return False
+
+@app.put("/v1/orgs/{org_id}/members/{user_id}", tags=["organizations"])
+def change_org_member_role(
+    org_id: UUID,
+    user_id: UUID,
+    request: RoleUpdate,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Change the role of an existing organization member."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    target_user = db.query(UserDB).filter(UserDB.id == user_id, UserDB.organization_id == org_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found in organization")
+        
+    if tenant.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
+        
+    if not check_manage_hierarchy(tenant.role, target_user.role):
+        raise HTTPException(status_code=403, detail=f"Cannot manage users with role {target_user.role.value}")
+        
+    if not check_manage_hierarchy(tenant.role, request.role):
+        raise HTTPException(status_code=403, detail=f"Cannot assign role {request.role.value}")
+
+    target_user.role = request.role
+    db.commit()
+    return {"status": "success"}
+
+@app.delete("/v1/orgs/{org_id}/members/{user_id}", tags=["organizations"])
+def remove_org_member(
+    org_id: UUID,
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Remove a member from the organization."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    target_user = db.query(UserDB).filter(UserDB.id == user_id, UserDB.organization_id == org_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found in organization")
+        
+    if tenant.user_id == user_id:
+        raise HTTPException(status_code=400, detail="Cannot remove yourself")
+        
+    if not check_manage_hierarchy(tenant.role, target_user.role):
+        raise HTTPException(status_code=403, detail=f"Cannot remove user with role {target_user.role.value}")
+
+    # Remove user's pending invitations sent by them
+    from .storage import InvitationDB, SessionDB
+    db.query(InvitationDB).filter(InvitationDB.inviter_id == user_id).delete()
+    
+    # Remove their active sessions
+    db.query(SessionDB).filter(SessionDB.user_id == user_id).delete()
+    
+    # Finally, remove the user
+    db.delete(target_user)
+    db.commit()
+    
+    return {"status": "success"}
+
+
+# ============================================================
+
 @app.post("/v1/orgs/{org_id}/projects", response_model=Project, tags=["projects"])
-async def create_project(
+def create_project(
     org_id: UUID,
     request: ProjectCreate,
     db: Session = Depends(get_db),
-    audit: AuditService = Depends(get_audit_service)
-) -> Project:
+    audit: AuditService = Depends(get_audit_service),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """Create a new project within an organization."""
+    # Authorization
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Enforce Role - RBAC
+    if not has_permission(tenant.role, Permission.PROJECTS_CREATE):
+        raise HTTPException(status_code=403, detail="Permission denied: projects:create")
+
     # Verify org exists
     org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
     if not org:
@@ -293,26 +528,35 @@ async def create_project(
         organization_id=project.organization_id,
         name=project.name,
         environment=project.environment,
+        governance_mode=project.governance_mode,
+        gate_decline_message=project.gate_decline_message,
         created_at=project.created_at
     )
 
 
 @app.get("/v1/projects/{project_id}", response_model=Project, tags=["projects"])
-async def get_project(
+def get_project(
     project_id: UUID,
-    db: Session = Depends(get_db)
-) -> Project:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """Get project details."""
     project = db.query(ProjectDB).filter(ProjectDB.id == project_id).first()
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+        
+    # Authorization
+    if project.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     return Project(
         id=project.id,
         organization_id=project.organization_id,
         name=project.name,
         environment=project.environment,
+        governance_mode=project.governance_mode,
+        gate_decline_message=project.gate_decline_message,
         created_at=project.created_at,
         updated_at=project.updated_at
     )
@@ -320,12 +564,12 @@ async def get_project(
 
 
 @app.patch("/v1/projects/{project_id}", response_model=Project, tags=["projects"])
-async def update_project(
+def update_project(
     project_id: UUID,
     request: ProjectUpdate,
     db: Session = Depends(get_db),
     tenant: TenantContext = Depends(require_tenant_context)
-) -> Project:
+):
     """Update project details (Name)."""
     # 1. Verify project belongs to tenant app context?
     # require_tenant_context gives us the Org ID.
@@ -336,9 +580,19 @@ async def update_project(
         
     if project.organization_id != tenant.organization_id:
         raise HTTPException(status_code=403, detail="Access denied")
+
+    # Enforce Role - RBAC
+    if not has_permission(tenant.role, Permission.PROJECTS_EDIT):
+        raise HTTPException(status_code=403, detail="Permission denied: projects:edit")
         
-    if request.name:
+    if request.name is not None:
         project.name = request.name
+        
+    if request.governance_mode is not None:
+        project.governance_mode = request.governance_mode
+        
+    if request.gate_decline_message is not None:
+        project.gate_decline_message = request.gate_decline_message
         
     db.commit()
     db.refresh(project)
@@ -348,17 +602,23 @@ async def update_project(
         organization_id=project.organization_id,
         name=project.name,
         environment=project.environment,
+        governance_mode=project.governance_mode,
+        gate_decline_message=project.gate_decline_message,
         created_at=project.created_at,
         updated_at=project.updated_at
     )
 
 
 @app.get("/v1/orgs/{org_id}/projects", response_model=List[Project], tags=["projects"])
-async def list_org_projects(
+def list_org_projects(
     org_id: UUID,
-    db: Session = Depends(get_db)
-) -> List[Project]:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """List all projects in an organization."""
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
     projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
     
     return [
@@ -367,6 +627,8 @@ async def list_org_projects(
             organization_id=p.organization_id,
             name=p.name,
             environment=p.environment,
+            governance_mode=p.governance_mode,
+            gate_decline_message=p.gate_decline_message,
             created_at=p.created_at,
             updated_at=p.updated_at
         )
@@ -379,40 +641,71 @@ async def list_org_projects(
 # ============================================================
 
 @app.post("/v1/projects/{project_id}/keys", response_model=ApiKeyWithSecret, tags=["api-keys"])
-async def create_api_key(
+def create_api_key(
     project_id: UUID,
     request: ApiKeyCreate,
-    db: Session = Depends(get_db)
-) -> ApiKeyWithSecret:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """
     Create a new API key for a project.
     
     ⚠️ The key secret is only shown once! Store it securely.
     """
+    # Verify project ownership
+    project = db.query(ProjectDB).filter(ProjectDB.id == project_id).first()
+    if not project or project.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=404, detail="Project not found") # 404 to verify existence/ownership same time
+
+    # Enforce Role - RBAC
+    if not has_permission(tenant.role, Permission.KEYS_CREATE):
+        raise HTTPException(status_code=403, detail="Permission denied: keys:create")
+
     auth_service = AuthService(db)
     
     try:
         return auth_service.create_api_key(project_id, request)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/v1/projects/{project_id}/keys", response_model=List[ApiKey], tags=["api-keys"])
-async def list_project_keys(
+def list_project_keys(
     project_id: UUID,
-    db: Session = Depends(get_db)
-) -> List[ApiKey]:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """List all API keys for a project."""
+    # Verify project ownership
+    project = db.query(ProjectDB).filter(ProjectDB.id == project_id).first()
+    if not project or project.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     auth_service = AuthService(db)
     return auth_service.get_project_keys(project_id)
 
 
 @app.post("/v1/keys/{key_id}/revoke", tags=["api-keys"])
-async def revoke_api_key(
+def revoke_api_key(
     key_id: UUID,
-    db: Session = Depends(get_db)
-) -> dict:
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
     """Revoke an API key."""
+    # We need to verify that this key belongs to a project in the tenant's organization
+    # Fetch key -> project -> org
+    key = db.query(ApiKeyDB).filter(ApiKeyDB.id == key_id).first()
+    if not key:
+        raise HTTPException(status_code=404, detail="Key not found")
+        
+    project = db.query(ProjectDB).filter(ProjectDB.id == key.project_id).first()
+    if not project or project.organization_id != tenant.organization_id:
+         raise HTTPException(status_code=404, detail="Key not found") # Obfuscate
+    
+    # Enforce Role - RBAC
+    if not has_permission(tenant.role, Permission.KEYS_REVOKE):
+        raise HTTPException(status_code=403, detail="Permission denied: keys:revoke")
+
     auth_service = AuthService(db)
     
     if not auth_service.revoke_api_key(key_id):
@@ -426,7 +719,7 @@ async def revoke_api_key(
 # ============================================================
 
 @app.get("/v1/me", response_model=TenantContext, tags=["auth"])
-async def get_current_context(
+def get_current_context(
     tenant: TenantContext = Depends(require_tenant_context)
 ) -> TenantContext:
     """Get current authentication context."""
@@ -434,7 +727,7 @@ async def get_current_context(
 
 
 @app.post("/v1/auth/validate", response_model=KeyValidationResult, tags=["auth"])
-async def validate_key(
+def validate_key(
     api_key: str,
     db: Session = Depends(get_db)
 ) -> KeyValidationResult:
@@ -452,8 +745,8 @@ async def validate_key(
 # ============================================================
 
 from pydantic import BaseModel, EmailStr
-from .user_auth import UserAuthService
-from .rbac import Permission, get_role_permissions, get_role_capabilities
+from .user_auth import UserAuthService, OtpService, InvitationService, hash_password
+from .rbac import Permission, has_permission, get_role_permissions, get_role_capabilities
 
 
 class LoginRequest(BaseModel):
@@ -473,7 +766,7 @@ class RegisterRequest(BaseModel):
 
 
 @app.post("/v1/auth/login", response_model=LoginResponse, tags=["auth"])
-async def login(
+def login(
     request: LoginRequest,
     db: Session = Depends(get_db)
 ) -> LoginResponse:
@@ -515,7 +808,7 @@ async def logout(
 
 
 @app.get("/v1/auth/me", response_model=UserWithOrg, tags=["auth"])
-async def get_current_user(
+def get_current_user(
     token: Optional[str] = None,
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -584,7 +877,7 @@ async def signup(
         db.add(org)
         
         # 3. Create User (Owner)
-        from .user_auth import hash_password
+
         user = UserDB(
             id=uuid4(),
             organization_id=org.id,
@@ -661,36 +954,37 @@ class SignupCompleteRequest(BaseModel):
     password: str
 
 @app.post("/v1/auth/signup/otp-request", tags=["auth"])
-async def request_otp(
+def request_otp(
     request: OtpRequest,
     db: Session = Depends(get_db)
 ):
     """
     Step 1: Request an OTP for email verification.
     """
-    from .user_auth import OtpService
+
     otp_service = OtpService(db)
     
     try:
         code = otp_service.request_otp(request.email)
-        # In PROD, send via Email (SendGrid/SES)
-        # In DEV, log to console
-        print(f"==========================================")
-        print(f"OTP FOR {request.email}: {code}")
-        print(f"==========================================")
+        
+        # Send via Email
+        from .mailer import send_otp_email
+        # Run in background to not block request
+        import asyncio
+        asyncio.create_task(send_otp_email(request.email, code))
+        
         return {"status": "otp_sent", "message": "Check your email for the code"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/v1/auth/signup/otp-verify", response_model=OtpVerifyResponse, tags=["auth"])
-async def verify_otp(
+def verify_otp(
     request: OtpVerifyRequest,
     db: Session = Depends(get_db)
 ):
     """
     Step 2: Verify OTP and get a signup token.
     """
-    from .user_auth import OtpService
     otp_service = OtpService(db)
     
     token = otp_service.verify_otp(request.email, request.code)
@@ -699,17 +993,58 @@ async def verify_otp(
         
     return OtpVerifyResponse(signup_token=token, email=request.email)
 
+# ============================================================
+# Service Proxies (Gateway Mode)
+# ============================================================
+import httpx
+
+GOVERNANCE_URL = "http://governance:8002"
+INCIDENTS_URL = "http://incidents:8000"
+
+@app.get("/v1/incidents", tags=["incidents"])
+async def proxy_get_incidents():
+    """Proxy to Incidents Service."""
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{INCIDENTS_URL}/v1/incidents")
+            if resp.status_code == 200:
+                return resp.json()
+            return []
+    except Exception as e:
+        print(f"Incidents Proxy Error: {e}")
+        return []
+
+
+# NOTE: /v1/decisions is handled by decisions_proxy.py router
+# (included via app.include_router at the bottom of this file)
+# which includes proper scope enforcement and usage recording.
+
+
+@app.get("/v1/governance/queue", tags=["governance"])
+async def proxy_governance_queue(
+    status: str = "unreviewed",
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Proxy Governance Queue."""
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{GOVERNANCE_URL}/v1/governance/queue", params={"status": status})
+            if resp.status_code == 200:
+                return resp.json()
+            return []
+    except Exception as e:
+        print(f"Governance Queue Proxy Error: {e}")
+        return []
 @app.post("/v1/auth/signup/complete", response_model=LoginResponse, tags=["auth"])
-async def complete_signup(
+def complete_signup(
     request: SignupCompleteRequest,
     db: Session = Depends(get_db)
 ):
     """
     Step 3: Complete signup with verified token.
     """
-    from .user_auth import OtpService
     otp_service = OtpService(db)
-    
+
     try:
         # Create Org, User, Project
         token, user = otp_service.complete_signup(
@@ -747,19 +1082,23 @@ async def forgot_password(
     """
     Initiate password reset.
     
-    Generates a token and 'sends' an email.
-    In this version, the link is printed to server logs.
+    Generates a token and sends a password reset email.
     """
     auth_service = UserAuthService(db)
     token = auth_service.create_reset_token(request.email)
     
     if token:
-        # In a real deployment, integration with SendGrid/SES goes here.
-        # For now, we log the link for the admin/developer.
-        print(f"============================================================")
-        print(f"PASSWORD RESET LINK for {request.email}:")
-        print(f"http://localhost:3000/reset-password?token={token}")
-        print(f"============================================================")
+        base_url = settings.frontend_url if hasattr(settings, 'frontend_url') else "http://localhost:3000"
+        reset_link = f"{base_url}/reset-password?token={token}"
+        
+        # Send password reset email (non-blocking)
+        import asyncio
+        from .mailer import send_password_reset_email
+        asyncio.create_task(send_password_reset_email(
+            to_email=request.email,
+            reset_link=reset_link,
+            expiry_time="1 hour"
+        ))
     
     # Always return success to prevent email enumeration
     return {"status": "email_sent"}
@@ -815,7 +1154,6 @@ async def demo_signup(
         db.add(org)
         
         # 3. Create User (Owner)
-        from .user_auth import hash_password
         user = UserDB(
             id=uuid4(),
             organization_id=org.id,
@@ -871,9 +1209,17 @@ async def demo_signup(
 async def create_user(
     org_id: UUID,
     request: RegisterRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
 ) -> User:
     """Create a new user in an organization."""
+    # Authorization
+    if tenant.organization_id != org_id:
+         raise HTTPException(status_code=403, detail="Access denied")
+
+    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only Admins can manage users")
+
     auth_service = UserAuthService(db)
     
     try:
@@ -890,9 +1236,13 @@ async def create_user(
 @app.get("/v1/orgs/{org_id}/users", response_model=List[User], tags=["users"])
 async def list_org_users(
     org_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
 ) -> List[User]:
     """List all users in an organization."""
+    if tenant.organization_id != org_id:
+         raise HTTPException(status_code=403, detail="Access denied")
+
     users = db.query(UserDB).filter(UserDB.organization_id == org_id).all()
     
     return [
@@ -916,15 +1266,348 @@ class RoleChangeRequest(BaseModel):
 async def change_user_role(
     user_id: UUID,
     request: RoleChangeRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
 ) -> dict:
     """Change a user's role."""
+    if tenant.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Only Owners can change roles")
+
+    # Verify target user belongs to same org
+    target_user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if target_user.organization_id != tenant.organization_id:
+        raise HTTPException(status_code=404, detail="User not found")
+
     auth_service = UserAuthService(db)
     
     if not auth_service.change_role(user_id, request.role):
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"status": "role_updated", "user_id": str(user_id), "new_role": request.role.value}
+
+
+# ============================================================
+# Invitation Endpoints
+# ============================================================
+
+@app.post("/v1/orgs/{org_id}/invitations", response_model=Invitation, tags=["users"])
+def create_invitation(
+    org_id: UUID,
+    request: InvitationCreate,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Invite a user to the organization."""
+    if tenant.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    if not has_permission(tenant.role, Permission.USERS_INVITE):
+         raise HTTPException(status_code=403, detail="Permission denied: users:invite")
+
+    # Enforce billing limits on team members
+    from .billing import BillingService
+    billing_status = BillingService(db).get_billing_status(org_id)
+    member_limit = billing_status.get("plan", {}).get("limit_members", 2)
+    
+    user_count = db.query(UserDB).filter(UserDB.organization_id == org_id).count()
+    invite_count = db.query(InvitationDB).filter(
+        InvitationDB.organization_id == org_id,
+        InvitationDB.accepted_at == None
+    ).count()
+    
+    if (user_count + invite_count) >= member_limit:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Team member limit reached. Your plan allows up to {member_limit} members."
+        )
+
+    service = InvitationService(db)
+    try:
+        invite, token = service.create_invitation(org_id, request.email, request.role, tenant.user_id)
+        
+        # Determine Invite URL
+        base_url = settings.frontend_url if hasattr(settings, 'frontend_url') else "http://localhost:3000"
+        invite_link = f"{base_url}/accept-invite?token={token}"
+        
+        # Fetch inviter name and org name for the email
+        inviter_user = db.query(UserDB).filter(UserDB.id == tenant.user_id).first()
+        org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+        
+        inviter_name = inviter_user.email if inviter_user else "A team member"
+        org_name = org.name if org else "your organization"
+        role_display = request.role.value if hasattr(request.role, 'value') else str(request.role)
+        expiry_date = invite.expires_at.strftime("%B %d, %Y") if invite.expires_at else "7 days from now"
+        
+        # Send invitation email (non-blocking)
+        import asyncio
+        from .mailer import send_invitation_email
+        asyncio.create_task(send_invitation_email(
+            to_email=request.email,
+            inviter_name=inviter_name,
+            org_name=org_name,
+            role=role_display,
+            invite_link=invite_link,
+            expiry_date=expiry_date
+        ))
+        
+        return invite
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/v1/orgs/{org_id}/invitations", response_model=List[Invitation], tags=["users"])
+def list_invitations(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """List pending invitations."""
+    if tenant.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    invites = db.query(InvitationDB).filter(
+        InvitationDB.organization_id == org_id,
+        InvitationDB.accepted_at == None
+    ).all()
+    
+    return [
+        Invitation(
+            id=i.id,
+            organization_id=i.organization_id,
+            email=i.email,
+            role=i.role,
+            inviter_id=i.inviter_id,
+            expires_at=i.expires_at,
+            created_at=i.created_at
+        ) for i in invites
+    ]
+
+
+@app.delete("/v1/orgs/{org_id}/invitations/{invite_id}", tags=["users"])
+def revoke_invitation(
+    org_id: UUID,
+    invite_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """Revoke an invitation."""
+    if tenant.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if not has_permission(tenant.role, Permission.USERS_INVITE):
+         raise HTTPException(status_code=403, detail="Permission denied: users:invite")
+
+
+    service = InvitationService(db)
+    if service.revoke_invitation(invite_id):
+        return {"status": "revoked"}
+    else:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+
+
+@app.get("/v1/auth/invitations/{token}", tags=["auth"])
+async def validate_invitation(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Validate invitation token and return info (Public)."""
+
+    service = InvitationService(db)
+    invite = service.get_invitation(token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invalid or expired invitation")
+        
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == invite.organization_id).first()
+    
+    return {
+        "email": invite.email,
+        "role": invite.role,
+        "orgName": org.name if org else "Unknown Organization",
+        "orgId": str(invite.organization_id)
+    }
+
+
+@app.post("/v1/auth/invitations/accept", response_model=LoginResponse, tags=["auth"])
+def accept_invitation(
+    request: InvitationAccept,
+    db: Session = Depends(get_db)
+):
+    """Accept invitation and set password (Public)."""
+
+    service = InvitationService(db)
+    try:
+        token, user = service.accept_invitation(request.token, request.password)
+        
+        # Populate UserWithOrg
+        org = db.query(OrganizationDB).filter(OrganizationDB.id == user.organization_id).first()
+        
+        user_with_org = UserWithOrg(
+            **user.dict(), # User model logic might need .from_orm or similar if it was Pydantic, but here user is DB model?
+            # UserDB is SQLAlchmey model, not Pydantic. user_auth.login returns (token, UserDB) or (token, User) Pydantic?
+            # Checking Login: returns (token, User(Pydantic))
+            # Checks user_auth.py: accept_invitation returns auth.create_session(user) which returns (token, User(Pydantic))
+            # So `user` here is Pydantic `User`. Good.
+            org=Organization(
+                id=org.id,
+                name=org.name,
+                status=org.status,
+                is_demo=org.is_demo,
+                environment=org.environment,
+                created_at=org.created_at
+            )
+        )
+        return LoginResponse(token=token, user=user_with_org)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============================================================
+# Account Deletion (Owner-Only, OTP-Verified)
+# ============================================================
+
+class DeleteOtpRequest(BaseModel):
+    """Empty body — token comes from session."""
+    pass
+
+class DeleteConfirmRequest(BaseModel):
+    code: str
+
+@app.post("/v1/orgs/{org_id}/delete/request-otp", tags=["organizations"])
+async def request_delete_otp(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """
+    Request an OTP to confirm account deletion.
+    Owner-only. Sends a 6-digit code to the owner's email.
+    """
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if tenant.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Only the organization owner can delete the account")
+
+    # Generate 6-digit OTP
+    import hashlib, secrets
+    code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    code_hash = hashlib.sha256(code.encode()).hexdigest()
+
+    # Store in OTP table (reuse the existing OtpCodeDB)
+    otp_record = OtpCodeDB(
+        id=uuid4(),
+        email=tenant.email,
+        code_hash=code_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+        verified=False
+    )
+    db.add(otp_record)
+    db.commit()
+
+    # Send the deletion OTP email
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+    org_name = org.name if org else "your organization"
+
+    import asyncio
+    from .mailer import send_account_deletion_otp_email
+    asyncio.create_task(send_account_deletion_otp_email(
+        to_email=tenant.email,
+        otp_code=code,
+        org_name=org_name
+    ))
+
+    return {"status": "otp_sent", "email": tenant.email}
+
+
+@app.post("/v1/orgs/{org_id}/delete/confirm", tags=["organizations"])
+async def confirm_delete_org(
+    org_id: UUID,
+    request: DeleteConfirmRequest,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """
+    Confirm account deletion with OTP code.
+    Permanently deletes the organization and ALL associated data.
+    """
+    if org_id != tenant.organization_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if tenant.role != UserRole.OWNER:
+        raise HTTPException(status_code=403, detail="Only the organization owner can delete the account")
+
+    # Verify OTP
+    import hashlib
+    code_hash = hashlib.sha256(request.code.encode()).hexdigest()
+
+    otp_record = db.query(OtpCodeDB).filter(
+        OtpCodeDB.email == tenant.email,
+        OtpCodeDB.code_hash == code_hash,
+        OtpCodeDB.expires_at > datetime.now(timezone.utc),
+        OtpCodeDB.verified == False
+    ).order_by(OtpCodeDB.created_at.desc()).first()
+
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+
+    # Mark OTP as used
+    otp_record.verified = True
+    db.commit()
+
+    try:
+        # ---- CASCADE DELETE (dependency order) ----
+
+        # 1. Get all user IDs and project IDs for this org
+        user_ids = [u.id for u in db.query(UserDB).filter(UserDB.organization_id == org_id).all()]
+        project_ids = [p.id for p in db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()]
+
+        # 2. Delete audit logs
+        db.query(AuditLogDB).filter(AuditLogDB.organization_id == org_id).delete()
+
+        # 3. Delete sessions for all org users
+        if user_ids:
+            db.query(SessionDB).filter(SessionDB.user_id.in_(user_ids)).delete(synchronize_session='fetch')
+
+        # 4. Delete password reset tokens for all org users
+        db.query(PasswordResetTokenDB).filter(PasswordResetTokenDB.user_id.in_(user_ids)).delete(synchronize_session='fetch') if user_ids else None
+
+        # 5. Delete OTP codes for all org user emails
+        user_emails = [u.email for u in db.query(UserDB).filter(UserDB.organization_id == org_id).all()]
+        if user_emails:
+            db.query(OtpCodeDB).filter(OtpCodeDB.email.in_(user_emails)).delete(synchronize_session='fetch')
+
+        # 6. Delete invitations
+        db.query(InvitationDB).filter(InvitationDB.organization_id == org_id).delete()
+
+        # 7. Delete API keys (via projects)
+        if project_ids:
+            db.query(ApiKeyDB).filter(ApiKeyDB.project_id.in_(project_ids)).delete(synchronize_session='fetch')
+
+        # 8. Delete usage events and meters (via projects)
+        if project_ids:
+            db.query(UsageEventDB).filter(UsageEventDB.project_id.in_(project_ids)).delete(synchronize_session='fetch')
+            db.query(UsageMeterDB).filter(UsageMeterDB.project_id.in_(project_ids)).delete(synchronize_session='fetch')
+
+        # 9. Delete projects
+        db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).delete()
+
+        # 10. Delete users
+        db.query(UserDB).filter(UserDB.organization_id == org_id).delete()
+
+        # 11. Delete the organization
+        org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+        if org:
+            db.delete(org)
+
+        db.commit()
+
+        return {"status": "deleted", "message": "Organization and all data permanently deleted."}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Deletion failed: {str(e)}")
 
 
 # ============================================================
@@ -940,7 +1623,7 @@ class UsageStats(BaseModel):
 
 
 @app.get("/v1/usage/orgs/{org_id}", response_model=UsageStats, tags=["usage"])
-async def get_org_usage(
+def get_org_usage(
     org_id: UUID,
     db: Session = Depends(get_db),
     tenant: TenantContext = Depends(require_tenant_context)
@@ -952,18 +1635,27 @@ async def get_org_usage(
     # Authorization
     if tenant.organization_id != org_id:
          raise HTTPException(status_code=403, detail="Access denied")
+    
+    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN]:
+         raise HTTPException(status_code=403, detail="Access denied")
 
     # 1. Get all projects for Org
     projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
     project_ids = [str(p.id) for p in projects]
     
     if not project_ids:
+        # Get plan limit from billing
+        from .billing import BillingService
+        billing = BillingService(db)
+        billing_status = billing.get_billing_status(org_id)
+        plan_limit = billing_status.get("plan", {}).get("limit_decisions", 1000)
+
         return UsageStats(
             period_start=datetime.now(timezone.utc),
             period_end=datetime.now(timezone.utc),
             decision_count=0,
             used=0,
-            limit=100000
+            limit=plan_limit
         )
 
     # 2. Call Recorder Internal API
@@ -977,9 +1669,9 @@ async def get_org_usage(
     total_usage = 0
     
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(
-                f"{recorder_url}/internal/usage",
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get(
+                f"{recorder_url}/v1/internal/usage",
                 params={"project_ids": ",".join(project_ids)}
             )
             
@@ -994,14 +1686,63 @@ async def get_org_usage(
          print(f"Usage fetch error: {e}")
          # Fail graceful
          
+    # Get plan limit from billing service
+    from .billing import BillingService
+    billing = BillingService(db)
+    billing_status = billing.get_billing_status(org_id)
+    plan_limit = billing_status.get("plan", {}).get("limit_decisions", 1000)
+
     return UsageStats(
         period_start=datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0),
         period_end=datetime.now(timezone.utc),
         decision_count=total_usage,
         used=total_usage,
-        limit=100000 # Hardcoded Trial Limit
+        limit=plan_limit
     )
 
+
+@app.get("/v1/usage/orgs/{org_id}/daily", tags=["usage"])
+async def get_org_daily_usage(
+    org_id: UUID,
+    days: int = 30,
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """
+    Get daily usage breakdown for an organization.
+    Returns an array of {date, count} for the last N days.
+    """
+    # Authorization
+    if tenant.organization_id != org_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Get all projects for Org
+    projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
+    project_ids = [str(p.id) for p in projects]
+
+    if not project_ids:
+        return []
+
+    # Call Recorder Internal API
+    import httpx
+    recorder_url = settings.recorder_url if hasattr(settings, 'recorder_url') else "http://recorder:8000"
+    recorder_url = recorder_url.rstrip("/")
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"{recorder_url}/v1/internal/daily-usage",
+                params={"project_ids": ",".join(project_ids), "days": days}
+            )
+
+            if resp.status_code == 200:
+                return resp.json()
+            else:
+                print(f"Failed to fetch daily usage: {resp.status_code} {resp.text}")
+                return []
+    except Exception as e:
+        print(f"Daily usage fetch error: {e}")
+        return []
 
 # ============================================================
 # RBAC Endpoints
@@ -1043,7 +1784,7 @@ class UsageResponse(BaseModel):
 
 
 @app.get("/v1/usage/projects/{project_id}", response_model=UsageResponse, tags=["usage"])
-async def get_project_usage(
+def get_project_usage(
     project_id: UUID,
     period_start: Optional[date] = None,
     period_end: Optional[date] = None,
@@ -1072,8 +1813,8 @@ async def get_project_usage(
     )
 
 
-@app.get("/v1/usage/orgs/{org_id}", response_model=List[UsageResponse], tags=["usage"])
-async def get_org_usage(
+@app.get("/v1/usage/orgs/{org_id}/breakdown", response_model=List[UsageResponse], tags=["usage"])
+def get_org_usage(
     org_id: UUID,
     period_start: Optional[date] = None,
     period_end: Optional[date] = None,
@@ -1124,62 +1865,73 @@ class BillingStatus(BaseModel):
 class SubscriptionUpdate(BaseModel):
     plan_id: str
 
-STUB_PLANS = {
-    "free": Plan(id="free", name="Free Tier", price="$0", features=["10k Decisions/mo", "Community Support"], limit_decisions=10000),
-    "pro": Plan(id="pro", name="Pro", price="$99/mo", features=["100k Decisions/mo", "Email Support", "Advanced Reports"], limit_decisions=100000),
-    "enterprise": Plan(id="enterprise", name="Enterprise", price="Custom", features=["Unlimited", "SLA", "Audit Logs"], limit_decisions=1000000),
-}
-
 @app.get("/v1/plans", tags=["billing"])
-async def list_plans() -> List[Plan]:
+def list_plans() -> List[Plan]:
     """List available subscription plans."""
-    return list(STUB_PLANS.values())
+    return [
+        Plan(id="free", name="Developer", price="$0", features=["1k Decisions/mo", "Community Support"], limit_decisions=1000),
+        Plan(id="pro", name="Pro", price="$99/mo", features=["250k Decisions/mo", "Email Support", "Advanced Reports"], limit_decisions=250000),
+        Plan(id="enterprise", name="Enterprise", price="Custom", features=["Unlimited", "SLA", "Audit Logs"], limit_decisions=1000000),
+    ]
 
 @app.get("/v1/orgs/{org_id}/billing", response_model=BillingStatus, tags=["billing"])
-async def get_billing_status(
+def get_billing_status(
     org_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
 ) -> BillingStatus:
     """Get billing status for organization."""
-    # In a real app, query Stripe/Billing DB
-    # Here we mock based on Org Status or simple logic
-    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Org not found")
+    if tenant.organization_id != org_id:
+         raise HTTPException(status_code=403, detail="Access denied")
+         
+    billing_service = BillingService(db)
+    try:
+        data = billing_service.get_billing_status(org_id)
         
-    # Default to Free if not specified (we don't have plan column yet, assume Free)
-    # If org is suspended, status is 'frozen'
-    status = "active"
-    if org.status == OrgStatus.SUSPENDED:
-        status = "frozen"
-        
-    return BillingStatus(
-        plan=STUB_PLANS["free"],
-        status=status,
-        current_period_end=date.today().replace(day=28),
-        invoices=[
-            {"id": "inv_stub_001", "date": "2025-01-01", "amount": "$0.00", "status": "paid"}
-        ]
-    )
+        # Convert timestamps to dates for response model
+        period_end = date.today()
+        if data.get("current_period_end"):
+            # Handle timestamp conversion safely
+            ts = data["current_period_end"]
+            if isinstance(ts, int):
+                period_end = datetime.fromtimestamp(ts).date()
+            else:
+                period_end = ts
+                
+        # Convert invoices
+        invoices = []
+        for inv in data.get("invoices", []):
+            inv_date = inv["date"]
+            if isinstance(inv_date, int):
+                 inv_date = datetime.fromtimestamp(inv_date).strftime("%Y-%m-%d")
+            invoices.append({
+                "id": inv["id"],
+                "date": str(inv_date),
+                "amount": inv["amount"],
+                "status": inv["status"]
+            })
+
+        return BillingStatus(
+            plan=Plan(**data["plan"]),
+            status=data["status"],
+            current_period_end=period_end,
+            invoices=invoices
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @app.post("/v1/orgs/{org_id}/billing/subscription", tags=["billing"])
-async def update_subscription(
+def update_subscription(
     org_id: UUID,
     update: SubscriptionUpdate,
-    db: Session = Depends(get_db)
-) -> BillingStatus:
-    """Upgrade/Downgrade plan (Stub)."""
-    if update.plan_id not in STUB_PLANS:
-        raise HTTPException(status_code=400, detail="Invalid plan ID")
-        
-    # In real app: Call Stripe to update subscription
-    # Here: Just return success with new plan mocked
-    return BillingStatus(
-        plan=STUB_PLANS[update.plan_id],
-        status="active",
-        current_period_end=date.today().replace(day=28),
-        invoices=[]
-    )
+    db: Session = Depends(get_db),
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    """
+    Upgrade/Downgrade plan.
+    DEPRECATED: Use /v1/billing/checkout or /v1/billing/portal for real flows.
+    """
+    raise HTTPException(status_code=400, detail="Please use Checkout or Portal for subscription changes.")
 
 
 @app.get("/health", tags=["system"])
@@ -1197,9 +1949,16 @@ async def get_audit_logs(
     org_id: UUID,
     limit: int = 50,
     offset: int = 0,
-    audit: AuditService = Depends(get_audit_service)
+    audit: AuditService = Depends(get_audit_service),
+    tenant: TenantContext = Depends(require_tenant_context)
 ) -> List[AuditLog]:
     """Get audit logs for an organization."""
+    if tenant.organization_id != org_id:
+         raise HTTPException(status_code=403, detail="Access denied")
+         
+    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN]:
+         raise HTTPException(status_code=403, detail="Access denied")
+
     return audit.get_logs(org_id, limit, offset)
 
 
@@ -1249,3 +2008,18 @@ async def create_portal_session(
         return {"url": url}
     except ValueError as e:
          raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============================================================
+# Governance Proxy (Secure Access)
+# ============================================================
+
+from .governance_proxy import router as governance_router
+from .decisions_proxy import router as decisions_router
+from .reports_api import router as reports_router
+from .policy_proxy import router as policy_router
+
+app.include_router(reports_router)
+app.include_router(governance_router)
+app.include_router(decisions_router)
+app.include_router(policy_router)

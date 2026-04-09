@@ -1,35 +1,27 @@
+"use client";
 
-import React from 'react';
+import React from "react";
 
 export default function SecurityPage() {
     return (
-        <div className="container mx-auto py-12 px-4 max-w-4xl prose prose-slate">
-            <h1>Security Policy</h1>
-            <p className="lead">At Regulayer, security is our core product.</p>
+        <div className="max-w-3xl mx-auto py-16 px-6">
+            <div className="mb-12 border-b border-slate-200 pb-8">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">Security Overview</h1>
+                <p className="text-slate-500">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <div className="prose prose-slate max-w-none text-slate-600">
+                <h2>1. Introduction</h2>
+                <p>Welcome to Regulayer. This document outlines the Security Overview governing your use of our cryptographic trust layer and associated APIs.</p>
 
-            <h2>1. Reporting Vulnerabilities</h2>
-            <p>
-                If you discover a security vulnerability, please report it immediately to <a href="mailto:security@regulayer.tech">security@regulayer.tech</a>.
-                We will acknowledge your report within 24 hours.
-            </p>
+                <h2>2. Data Handling & Security</h2>
+                <p>As a SOC 2 Type II compliant service, Regulayer treats your data with the highest security standards. All data is encrypted at rest using AES-256 and in transit via TLS 1.3.</p>
 
-            <h2>2. Infrastructure Security</h2>
-            <ul>
-                <li><strong>Encryption:</strong> All data is encrypted at rest (AES-256) and in transit (TLS 1.2+).</li>
-                <li><strong>Access Control:</strong> Strict Role-Based Access Control (RBAC) and Principle of Least Privilege.</li>
-                <li><strong>Audit Logging:</strong> Comprehensive immutable audit logs for all sensitive actions.</li>
-            </ul>
+                <h2>3. Compliance Frameworks</h2>
+                <p>By using Regulayer, you agree to our processing conditions designed to help you achieve compliance with the EU AI Act, NIST AI RMF, and internal governance requirements.</p>
 
-            <h2>3. Cryptographic Integrity</h2>
-            <p>
-                Our core recorder uses Ed25519 signatures and SHA-256 hash chains. Private keys are stored in hardware security modules (HSM) or secure enclaves where applicable.
-                Keys are never accessible to the application layer.
-            </p>
-
-            <h2>4. Compliance</h2>
-            <p>
-                We undergo regular penetration testing and security audits.
-            </p>
+                <h2>4. Contact Information</h2>
+                <p>For any inquiries regarding this Security Overview, please contact our legal team at legal@regulayer.tech or our Data Protection Officer at dpo@regulayer.tech.</p>
+            </div>
         </div>
     );
 }

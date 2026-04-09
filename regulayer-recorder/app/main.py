@@ -10,49 +10,27 @@ from app.models import HealthStatus
 from app.storage import get_last_record, get_total_records, AsyncSessionLocal, init_db
 
 # Fail-Fast Environment Check
-REQUIRED_ENV_VARS = ["DATABASE_URL", "SIGNING_KEY_PATH"]
+REQUIRED_ENV_VARS = ["DATABASE_URL"]
+# SIGNING_KEY_PATH is handled via settings now
+
 for var in REQUIRED_ENV_VARS:
-    if not os.getenv(var) and not getattr(settings, var.lower(), None):
-        # Allow pydantic settings to have picked it up too, but explicit check is safer for criticals
-        # Actually checking os.environ is safest for 'Fail Fast' before app boot
-        if not os.getenv(var):
-            sys.stderr.write(f"CRITICAL: Missing required environment variable: {var}\n")
-            sys.exit(1)
+    # Check both os.environ AND settings
+    # Note: DATABASE_URL is mapped in settings.__init__
+    val_in_env = os.getenv(var)
+    val_in_settings = getattr(settings, var.lower(), None)
+    
+    if not val_in_env and not val_in_settings:
+        sys.stderr.write(f"CRITICAL: Missing required environment variable: {var}\n")
+        sys.exit(1)
 
-app = FastAPI(title="Regulayer Recorder", version="1.0.0")
+from contextlib import asynccontextmanager
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Global Key Manager
-key_manager = KeyManager(os.getenv("SIGNING_KEY_PATH"))
-
-# Basic Error Handler for Validation logging
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     import logging
-    msg = f"PYDANTIC VALIDATION ERROR: {exc.errors()}\nBody: {exc.body}"
-    print(msg, flush=True) # Force stdout
-    logging.error(msg)
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors(), "body": str(exc.body)},
-    )
-
-@app.on_event("startup")
-async def startup_event():
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
-    print("DEBUG LOGGING ENABLED", flush=True)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(level=getattr(logging, log_level, logging.INFO))
+    logging.info(f"Recorder starting with log level: {log_level}")
     
     # Bootstrap Cryptographic Identity
     key_manager.bootstrap()
@@ -82,7 +60,6 @@ async def startup_event():
                 try:
                     import httpx
                     inc_url = f"{settings.incidents_url}/internal/incidents"
-                    # We need to await this since startup_event is async
                     async with httpx.AsyncClient(timeout=2.0) as client:
                         await client.post(
                             inc_url,
@@ -115,6 +92,57 @@ async def startup_event():
     # ---------------------------------------------------------
 
     print("Recorder Service Started. Identity Loaded & DB Initialized.")
+    
+    yield
+    
+    print("Recorder Service Shutting Down.")
+
+app = FastAPI(title="Regulayer Recorder", version="1.0.0", lifespan=lifespan)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global Key Manager
+# Use settings.recorder_signing_key_path if env var is missing
+key_path = os.getenv("SIGNING_KEY_PATH") or settings.recorder_signing_key_path
+if not key_path:
+    # Fallback to a default if somehow both are missing (though settings has default)
+    key_path = "recorder_ed25519.key"
+
+key_manager = KeyManager(key_path)
+
+# Basic Error Handler for Validation logging
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    import logging
+    # Safely convert errors to serializable format
+    safe_errors = []
+    for err in exc.errors():
+        safe_err = {}
+        for k, v in err.items():
+            try:
+                import json
+                json.dumps(v)
+                safe_err[k] = v
+            except (TypeError, ValueError):
+                safe_err[k] = str(v)
+        safe_errors.append(safe_err)
+    msg = f"PYDANTIC VALIDATION ERROR: {safe_errors}\nBody: {exc.body}"
+    print(msg, flush=True) # Force stdout
+    logging.error(msg)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": safe_errors, "body": str(exc.body)},
+    )
 
 app.include_router(router, prefix="/v1")
 

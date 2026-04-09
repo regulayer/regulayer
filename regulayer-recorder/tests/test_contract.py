@@ -60,7 +60,7 @@ class TestSDKContract:
             decision_id=uuid4(),
             record_id=123,
             record_hash="aabbcc",
-            timestamp=datetime.now(timezone.utc)
+            server_timestamp=datetime.now(timezone.utc)
         )
         
         response = client.post("/v1/decisions", json=event_payload)

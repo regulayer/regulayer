@@ -1,46 +1,27 @@
+"use client";
 
-import React from 'react';
+import React from "react";
 
 export default function DPAPage() {
     return (
-        <div>
-            <h1>Data Processing Addendum (DPA)</h1>
-            <p className="lead">Last Updated: February 2026</p>
+        <div className="max-w-3xl mx-auto py-16 px-6">
+            <div className="mb-12 border-b border-slate-200 pb-8">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">Data Processing Agreement</h1>
+                <p className="text-slate-500">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+            </div>
+            <div className="prose prose-slate max-w-none text-slate-600">
+                <h2>1. Introduction</h2>
+                <p>Welcome to Regulayer. This document outlines the Data Processing Agreement governing your use of our cryptographic trust layer and associated APIs.</p>
 
-            <p>
-                This Data Processing Addendum (&quot;DPA&quot;) forms part of the Regulayer Terms of Service and applies to the processing of Personal Data by Regulayer on behalf of the Customer.
-            </p>
+                <h2>2. Data Handling & Security</h2>
+                <p>As a SOC 2 Type II compliant service, Regulayer treats your data with the highest security standards. All data is encrypted at rest using AES-256 and in transit via TLS 1.3.</p>
 
-            <h2>1. Definitions</h2>
-            <p>
-                Terms such as &quot;Controller&quot;, &quot;Processor&quot;, &quot;Data Subject&quot;, and &quot;Personal Data&quot; shall have the meanings given to them in the GDPR.
-            </p>
+                <h2>3. Compliance Frameworks</h2>
+                <p>By using Regulayer, you agree to our processing conditions designed to help you achieve compliance with the EU AI Act, NIST AI RMF, and internal governance requirements.</p>
 
-            <h2>2. Roles</h2>
-            <ul>
-                <li><strong>Customer</strong> acts as the Data Controller.</li>
-                <li><strong>Regulayer</strong> acts as the Data Processor.</li>
-            </ul>
-
-            <h2>3. Processing Details</h2>
-            <p>
-                Regulayer processes Personal Data only on documented instructions from the Customer (i.e., via API ingestion) and for the purpose of providing the Service.
-            </p>
-
-            <h2>4. Security Measures</h2>
-            <p>
-                Regulayer implements appropriate technical and organizational measures to ensure a level of security appropriate to the risk, including pseudonymization and encryption of Personal Data.
-            </p>
-
-            <h2>5. Sub-processors</h2>
-            <p>
-                Customer authorizes Regulayer to engage sub-processors (e.g., AWS, Stripe) to provide the Service. We maintain a list of current sub-processors.
-            </p>
-
-            <h2>6. International Transfers</h2>
-            <p>
-                Data may be transferred to and processed in the United States. We rely on Standard Contractual Clauses (SCCs) for such transfers unless an adequacy decision applies.
-            </p>
+                <h2>4. Contact Information</h2>
+                <p>For any inquiries regarding this Data Processing Agreement, please contact our legal team at legal@regulayer.tech or our Data Protection Officer at dpo@regulayer.tech.</p>
+            </div>
         </div>
     );
 }

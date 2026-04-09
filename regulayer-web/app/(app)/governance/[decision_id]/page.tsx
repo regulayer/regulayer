@@ -1,569 +1,280 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-    ArrowLeft,
-    MessageSquare,
-    Tag,
-    Clock,
-    CheckCircle,
-    AlertTriangle,
-    Send,
-    Plus,
-    Lock,
-    ShieldCheck,
-    FileJson
-} from 'lucide-react';
-import {
-    getDecision,
-    getGovernance,
-    getMe,
-    addGovernanceAnnotation,
-    addGovernanceTag,
-    updateReviewState,
-    Decision,
-    GovernanceMetadata,
-    GovernanceAnnotation
+import { 
+    getDecision, getGovernance, resolveGateDecision, getMe, 
+    Decision, GovernanceMetadata 
 } from '@/lib/api';
-
-// --- Components ---
+import { 
+    IconArrowLeft, IconCheck, IconX, IconEdit, IconShieldCheck, IconAlertTriangle,
+    IconClock, IconEye, IconFlagFilled, IconPlayerPause
+} from '@tabler/icons-react';
+import { GlazedCard } from '@/components/ui/glazed-card';
+import { cn } from '@/lib/utils';
 
 function StatusBadge({ status }: { status: string }) {
-    const styles = {
-        unreviewed: 'bg-slate-100 text-slate-700',
-        in_review: 'bg-blue-100 text-blue-700',
-        reviewed: 'bg-green-100 text-green-700',
-        escalated: 'bg-red-100 text-red-700',
+    const config: Record<string, { style: string; icon: React.ReactNode; label: string }> = {
+        unreviewed: { style: 'bg-secondary text-foreground border-border', icon: <IconClock size={12} />, label: 'Unreviewed' },
+        in_review: { style: 'bg-zinc-50 text-slate-900 border-zinc-200 dark:bg-zinc-500/10 dark:text-zinc-300 dark:border-zinc-500/20', icon: <IconEye size={12} />, label: 'In Review' },
+        reviewed: { style: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20', icon: <IconCheck size={12} />, label: 'Approved' },
+        approved: { style: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20', icon: <IconCheck size={12} />, label: 'Approved' },
+        rejected: { style: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20', icon: <IconX size={12} />, label: 'Rejected' },
+        escalated: { style: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20', icon: <IconAlertTriangle size={12} />, label: 'Escalated' },
+        flagged: { style: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20', icon: <IconFlagFilled size={12} />, label: 'Flagged' },
+        frozen: { style: 'bg-zinc-50 text-slate-900 border-zinc-200 dark:bg-zinc-500/10 dark:text-zinc-300 dark:border-zinc-500/20', icon: <IconPlayerPause size={12} />, label: 'Frozen' },
+        pending: { style: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20', icon: <IconClock size={12} />, label: 'Proposal' },
+        pending_review: { style: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20', icon: <IconClock size={12} />, label: 'Pending Review' },
     };
-    const s = styles[status as keyof typeof styles] || styles.unreviewed;
-
+    const c = config[status] || config.unreviewed;
     return (
-        <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${s}`}>
-            {status.replace('_', ' ')}
+        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border", c.style)}>
+            {c.icon} {c.label}
         </span>
     );
 }
 
-function CryptoBadge({ state }: { state: string }) {
-    if (state === 'pending') {
-        return (
-            <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
-                <Clock className="w-3 h-3" /> Pending Recorder
-            </span>
-        );
-    }
-    return (
-        <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-            <ShieldCheck className="w-3 h-3" /> Cryptographically Sealed
-        </span>
-    );
-}
-
-function AnnotationCard({ annotation }: { annotation: GovernanceAnnotation }) {
-    return (
-        <div className="border-l-4 border-primary-200 bg-slate-50 p-4 rounded-r-lg shadow-sm">
-            <div className="flex items-center gap-2 mb-2 text-sm text-slate-500">
-                <span className="font-medium text-slate-700 capitalize">{annotation.author_role}</span>
-                <span>•</span>
-                <Clock className="w-3 h-3" />
-                <span>{new Date(annotation.created_at).toLocaleString()}</span>
-            </div>
-            <p className="text-slate-800 whitespace-pre-wrap">{annotation.note}</p>
-        </div>
-    );
-}
-
-function ReadOnlyBanner({ reason }: { reason: string }) {
-    return (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg flex items-center gap-3 mb-6">
-            <Lock className="w-5 h-5 text-amber-600" />
-            <div>
-                <p className="font-semibold text-sm">Read-Only Mode Enabled</p>
-                <p className="text-sm opacity-90">{reason}</p>
-            </div>
-        </div>
-    );
-}
-
-function GovernanceUnavailableBanner() {
-    return (
-        <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg flex items-center gap-3 mb-6">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
-            <div>
-                <p className="font-semibold text-sm">Governance Service Unavailable</p>
-                <p className="text-sm opacity-90">Cryptographic proof remains valid. Metadata annotations are temporarily inaccessible.</p>
-            </div>
-        </div>
-    );
-}
-
-// --- Main Page ---
-
-export default function GovernanceDetailPage() {
-    const params = useParams();
-    const decisionId = params.decision_id as string;
-
+export default function DecisionReviewPage({ params }: { params: { decision_id: string } }) {
+    const router = useRouter();
     const [decision, setDecision] = useState<Decision | null>(null);
     const [governance, setGovernance] = useState<GovernanceMetadata | null>(null);
-    const [orgStatus, setOrgStatus] = useState<string>('active');
-    const [userRole, setUserRole] = useState<string>('member');
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [govUnavailable, setGovUnavailable] = useState(false);
-
-    // Form States
-    const [newNote, setNewNote] = useState('');
+    
+    // Review State for Gate Mode
+    const [declineMessage, setDeclineMessage] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedOutput, setEditedOutput] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [newTagName, setNewTagName] = useState('');
-    const [newTagCategory, setNewTagCategory] = useState('compliance');
-    const [showTagInput, setShowTagInput] = useState(false);
+    const [userRole, setUserRole] = useState<string>('');
 
-    // --- Data Loading ---
     useEffect(() => {
-        async function load() {
-            try {
-                // 1. Fetch Core Data (Parallel)
-                const [decRes, govRes, meRes] = await Promise.all([
-                    getDecision(decisionId),
-                    getGovernance(decisionId).catch(() => ({ error: 'unavailable', data: null })), // Fail-safe
-                    getMe().catch(() => ({ data: { role: 'member', org: { status: 'active' } } })) // Fallback
-                ]);
-
-                // 2. Handle Decision Error (Critical)
-                if (decRes.error) throw new Error(decRes.error);
-                getDecision(decisionId).then(res => {
-                    if (res.error) throw new Error(res.error);
-                });
-
-                setDecision(decRes.data || null);
-
-                // 3. Handle Governance (Overlay)
-                if (govRes.error || !govRes.data) {
-                    setGovUnavailable(true);
-                    // Mock empty governance for UI stability if unavailable
-                    setGovernance({
-                        decision_id: decisionId,
-                        review_state: 'unreviewed',
-                        tags: [],
-                        annotations: [],
-                        last_updated: new Date().toISOString()
-                    });
-                } else {
-                    setGovernance(govRes.data);
-                }
-
-                // 4. Handle Context (Org/User)
-                const userData = meRes.data || { role: 'member' };
-                const orgData = meRes.data?.org || { status: 'active' };
-
-                setUserRole(userData.role || 'member');
-                setOrgStatus(orgData.status || 'active');
-
-            } catch (err: unknown) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError('An unknown error occurred');
-                }
-            } finally {
-                setLoading(false);
+        getMe().then(res => setUserRole(res.data?.role || 'member')).catch(() => {});
+        
+        Promise.all([
+            getDecision(params.decision_id),
+            getGovernance(params.decision_id)
+        ]).then(([decisionRes, govRes]) => {
+            setDecision(decisionRes.data);
+            setGovernance(govRes.data);
+            
+            // Pre-populate edited output with original AI output
+            if (decisionRes.data.canonical_payload?.output) {
+                setEditedOutput(JSON.stringify(decisionRes.data.canonical_payload.output, null, 2));
             }
-        }
-        load();
-    }, [decisionId]);
-
-    // --- Hardening Checks ---
-
-    const isFrozen = orgStatus === 'frozen' || orgStatus === 'trial_ended';
-    const isGovReadOnly = isFrozen || govUnavailable;
-
-    const canReview = ['owner', 'admin', 'compliance'].includes(userRole) && !isGovReadOnly;
-    const canAnnotate = !isGovReadOnly; // Members can annotate if active
-    const canEditTags = !isGovReadOnly;
-
-    const readOnlyReason = isFrozen
-        ? "Organization is Frozen. Governance actions are disabled."
-        : govUnavailable
-            ? "Governance service unavailable."
-            : "";
-
-    // --- Actions ---
-
-    const handleAddNote = async () => {
-        if (!newNote.trim() || !canAnnotate) return;
-        setSubmitting(true);
-        try {
-            const res = await addGovernanceAnnotation(decisionId, newNote);
-            if (res.data && governance) {
-                setGovernance({
-                    ...governance,
-                    annotations: [res.data, ...governance.annotations]
-                });
-                setNewNote('');
-            }
-        } catch (err) {
+        }).catch(err => {
             console.error(err);
-            alert('Failed to add annotation'); // Better toast in production
-        } finally {
-            setSubmitting(false);
-        }
-    };
+            setError('Failed to load decision details.');
+        }).finally(() => {
+            setLoading(false);
+        });
+    }, [params.decision_id]);
 
-    const handleAddTag = async () => {
-        if (!newTagName.trim() || !canEditTags) return;
+    const handleResolve = async (status: 'approved' | 'declined') => {
+        if (!declineMessage.trim() && status === 'declined') {
+            alert('A decline message is required to reject a decision.');
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const res = await addGovernanceTag(decisionId, newTagName, newTagCategory);
-            if (res.data && governance) {
-                setGovernance({
-                    ...governance,
-                    tags: [...governance.tags, res.data]
-                });
-                setNewTagName('');
-                setShowTagInput(false);
+            let editedPayload = undefined;
+            
+            if (isEditing && status === 'approved') {
+                try {
+                    editedPayload = JSON.parse(editedOutput);
+                } catch (e) {
+                    alert('Invalid JSON in edited output. Please fix before approving.');
+                    setSubmitting(false);
+                    return;
+                }
             }
-        } catch (err) {
+
+            await resolveGateDecision(params.decision_id, status, declineMessage, editedPayload);
+            router.push('/governance');
+        } catch (err: any) {
             console.error(err);
+            alert('Failed to submit resolution: ' + (err.response?.data?.detail || err.message));
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleStateChange = async (newState: string) => {
-        if (!canReview) return;
-        setSubmitting(true);
-        try {
-            const res = await updateReviewState(decisionId, newState);
-            if (res.data) {
-                setGovernance(res.data);
-            }
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                alert(err.message || 'State transition failed');
-            } else {
-                alert('State transition failed');
-            }
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    // --- Render Loading/Error ---
-
-    if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400">Loading record...</div>;
+    if (loading) {
+        return (
+            <div className="p-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-border border-t-indigo-500 animate-spin" />
+            </div>
+        );
+    }
 
     if (error || !decision || !governance) {
         return (
-            <div className="min-h-screen bg-slate-50 p-8">
-                <div className="max-w-4xl mx-auto bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg">
-                    <AlertTriangle className="w-6 h-6 mb-2" />
-                    <h2 className="text-lg font-semibold mb-1">Error Loading Decision</h2>
-                    <p>{error || 'Decision not found'}</p>
-                    <Link href="/governance" className="mt-4 inline-block text-primary-600 hover:underline">← Back to Queue</Link>
+            <div className="p-10">
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+                    {error || 'Decision not found.'}
                 </div>
+                <Link href="/governance" className="mt-4 inline-flex items-center text-sm font-medium hover:underline text-slate-800">
+                    <IconArrowLeft size={16} className="mr-1" /> Back to Queue
+                </Link>
             </div>
         );
     }
 
-    // --- Render Main UI ---
+    const payload = decision.canonical_payload || {};
+    const inputContent = payload.input || {};
+    const originalOutputContent = payload.output || {};
+    const isPendingReview = governance.review_state === 'escalated' || governance.review_state === 'unreviewed';
 
     return (
-        <div className="min-h-screen bg-slate-50 p-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="mb-6">
-                    <Link href="/governance" className="text-slate-500 hover:text-slate-700 flex items-center gap-1 text-sm mb-4">
-                        <ArrowLeft className="w-4 h-4" /> Back to Queue
+        <div className="p-6 md:p-10 pb-20 space-y-6 max-w-6xl mx-auto text-foreground">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div>
+                    <Link href="/governance" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+                        <IconArrowLeft size={14} className="mr-1" /> Back to Queue
                     </Link>
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-2xl font-bold text-slate-900 font-mono tracking-tight">
-                                    {decision.decision_id}
-                                </h1>
-                                <CryptoBadge state={decision.event_state === 'completed' ? 'recorded' : 'pending'} />
-                            </div>
-                            <p className="text-slate-500 mt-1 flex items-center gap-2">
-                                <span className="font-medium text-slate-700">{decision.system_name}</span>
-                                <span>•</span>
-                                <span>{new Date(decision.server_timestamp).toLocaleString()}</span>
-                            </p>
-                        </div>
-                        {!govUnavailable && <StatusBadge status={governance.review_state} />}
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-2xl font-bold tracking-tight">Review Blocked Decision</h1>
+                        <StatusBadge status={governance.review_state} />
                     </div>
+                    <p className="text-sm font-mono text-muted-foreground">ID: {decision.decision_id}</p>
                 </div>
+            </div>
 
-                {isFrozen && <ReadOnlyBanner reason={readOnlyReason} />}
-                {govUnavailable && <GovernanceUnavailableBanner />}
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Column */}
-                    <div className="lg:col-span-2 space-y-6">
-
-                        {/* 1. Cryptographic Record (The Truth) */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                            <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-green-600" />
-                                Cryptographic Record
-                            </h2>
-                            <dl className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                                <div>
-                                    <dt className="text-slate-500 mb-1">System Name</dt>
-                                    <dd className="font-medium text-slate-900">{decision.system_name}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-slate-500 mb-1">Risk Level</dt>
-                                    <dd className="font-medium text-slate-900 capitalize">{decision.risk_level || 'Unknown'}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-slate-500 mb-1">SDK Instance ID</dt>
-                                    <dd className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate">
-                                        {decision.sdk_instance_id}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="text-slate-500 mb-1">Event State</dt>
-                                    <dd className="font-medium text-slate-900 capitalize">{decision.event_state}</dd>
-                                </div>
-                                <div className="col-span-2">
-                                    <dt className="text-slate-500 mb-1">Verification Hash (SHA-256)</dt>
-                                    <dd className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-100 break-all">
-                                        {decision.record_hash || "Fetch Verification Proof to see Hash"}
-                                    </dd>
-                                </div>
-                            </dl>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Content Area */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Input Section */}
+                    <GlazedCard className="p-5 border-zinc-200">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                            User Input Context
+                        </h3>
+                        <div className="bg-secondary rounded-lg p-4 font-mono text-sm overflow-x-auto border border-border">
+                            <pre className="whitespace-pre-wrap break-words">{JSON.stringify(inputContent, null, 2)}</pre>
                         </div>
+                    </GlazedCard>
 
-                        {/* 2. Governance Overlay (Non-Crypto) */}
-                        <div className="bg-white border-2 border-slate-200 rounded-xl p-6 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                                        <FileJson className="w-4 h-4 text-blue-600" />
-                                        Governance Overlay <span className="text-slate-400 font-normal text-sm ml-1">(Not part of cryptographic proof)</span>
-                                    </h2>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Annotations and review states are <strong className="font-bold text-slate-600">NOT</strong> part of the cryptographic proof bundle.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Tags */}
-                            <div className="mb-8">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                        <Tag className="w-3 h-3" /> Tags
-                                    </h3>
-                                    {!isGovReadOnly && (
-                                        <button
-                                            onClick={() => setShowTagInput(!showTagInput)}
-                                            className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
-                                        >
-                                            <Plus className="w-3 h-3" /> Add Tag
-                                        </button>
-                                    )}
-                                </div>
-
-                                {showTagInput && (
-                                    <div className="flex gap-2 mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100 animate-in fade-in slide-in-from-top-2">
-                                        <input
-                                            type="text"
-                                            value={newTagName}
-                                            onChange={(e) => setNewTagName(e.target.value)}
-                                            placeholder="Tag name"
-                                            className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                                        />
-                                        <select
-                                            value={newTagCategory}
-                                            onChange={(e) => setNewTagCategory(e.target.value)}
-                                            className="px-3 py-1.5 text-sm border border-slate-300 rounded-md bg-white"
-                                        >
-                                            <option value="compliance">Compliance</option>
-                                            <option value="risk">Risk</option>
-                                            <option value="review">Review</option>
-                                            <option value="custom">Custom</option>
-                                        </select>
-                                        <button
-                                            onClick={handleAddTag}
-                                            disabled={submitting}
-                                            className="px-3 py-1.5 bg-primary-600 text-white rounded-md text-sm hover:bg-primary-700 disabled:opacity-50"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap gap-2">
-                                    {governance.tags.length > 0 ? governance.tags.map((tag) => (
-                                        <span key={`${tag.id}-${tag.name}`} className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-md text-xs text-slate-700 font-medium">
-                                            {tag.name}
-                                            <span className="text-slate-400 ml-1 font-normal">({tag.category})</span>
-                                        </span>
-                                    )) : (
-                                        <p className="text-slate-400 text-sm italic">No tags applied.</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Annotations */}
-                            <div>
-                                <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-3">
-                                    <MessageSquare className="w-3 h-3" /> Annotations
-                                </h3>
-
-                                <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-1">
-                                    {governance.annotations.length > 0 ? governance.annotations.map((a) => (
-                                        <AnnotationCard key={a.id} annotation={a} />
-                                    )) : (
-                                        <div className="text-center py-8 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
-                                            <p className="text-slate-400 text-sm">No annotations yet.</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {!isGovReadOnly ? (
-                                    <div className="flex gap-2 items-start mt-4">
-                                        <div className="flex-1 relative">
-                                            <textarea
-                                                value={newNote}
-                                                onChange={(e) => setNewNote(e.target.value)}
-                                                placeholder="Add a governance note..."
-                                                rows={2}
-                                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={handleAddNote}
-                                            disabled={submitting || !newNote.trim()}
-                                            className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <Send className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-amber-600 mt-2 bg-amber-50 p-2 rounded border border-amber-100">
-                                        Locked: {readOnlyReason}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-
-                        {/* Review Actions */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-semibold text-slate-900 mb-4">Review Actions</h3>
-
-                            {isGovReadOnly ? (
-                                <p className="text-sm text-slate-500 italic">Actions disabled (Read-Only).</p>
-                            ) : !canReview ? (
-                                <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded border border-slate-100">
-                                    <Lock className="w-3 h-3 inline mr-1" />
-                                    Requires Admin or Compliance role to change state.
-                                </p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {governance.review_state === 'unreviewed' && (
-                                        <button
-                                            onClick={() => handleStateChange('in_review')}
-                                            disabled={submitting}
-                                            className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                                        >
-                                            Start Review
-                                        </button>
-                                    )}
-                                    {governance.review_state === 'in_review' && (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => handleStateChange('reviewed')}
-                                                disabled={submitting}
-                                                className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-1"
-                                            >
-                                                <CheckCircle className="w-3 h-3" /> Approve
-                                            </button>
-                                            <button
-                                                onClick={() => handleStateChange('escalated')}
-                                                disabled={submitting}
-                                                className="px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-1"
-                                            >
-                                                <AlertTriangle className="w-3 h-3" /> Escalate
-                                            </button>
-                                        </div>
-                                    )}
-                                    {(governance.review_state === 'reviewed' || governance.review_state === 'escalated') && (
-                                        <button
-                                            onClick={() => handleStateChange('in_review')}
-                                            disabled={submitting}
-                                            className="w-full px-4 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-200 transition disabled:opacity-50 border border-slate-200"
-                                        >
-                                            Re-open Review
-                                        </button>
-                                    )}
-                                </div>
+                    {/* Output Section */}
+                    <GlazedCard className="p-5 border-zinc-200 border-l-4 border-l-indigo-500">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                AI Proposed Output
+                            </h3>
+                            {isPendingReview && (
+                                <button 
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    className="text-xs flex items-center gap-1 font-medium bg-secondary hover:bg-slate-200 border border-border px-2 py-1 rounded transition-colors"
+                                >
+                                    <IconEdit size={14} /> {isEditing ? 'Cancel Edit' : 'Edit Output'}
+                                </button>
                             )}
                         </div>
 
-                        {/* Forensic Export */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                            <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-slate-600" />
-                                Forensic Export
-                            </h3>
-                            <p className="text-xs text-slate-500 mb-4">
-                                Download the cryptographically verified proof bundle (JSON). Contains strict hash chain and original decision data.
-                            </p>
-                            <a
-                                // Correct Export Link: Recorder via Gateway
-                                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/v1/decisions/${decisionId}/export`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full px-4 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg text-center hover:bg-slate-50 hover:border-slate-400 transition shadow-sm"
-                            >
-                                <FileJson className="w-4 h-4 inline mr-2 text-slate-500" />
-                                Download Evidence Bundle
-                            </a>
-                        </div>
-
-                        {/* Trust Report */}
-                        <div className="bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 rounded-xl p-6">
-                            <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                                <FileJson className="w-4 h-4 text-primary-600" />
-                                Trust Report
-                            </h3>
-                            <p className="text-xs text-slate-500 mb-4">
-                                Generate a regulator-ready trust report for this decision with cryptographic proof and integrity status.
-                            </p>
-                            <a
-                                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/v1/reports/decision/${decisionId}?format=json`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg text-center hover:bg-primary-700 transition shadow-sm"
-                            >
-                                <FileJson className="w-4 h-4 inline mr-2" />
-                                Generate Trust Report
-                            </a>
-                        </div>
-
-                        {/* Metadata */}
-                        <div className="p-4 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-                            <div className="flex justify-between mb-1">
-                                <span>Last Updated:</span>
-                                <span>{new Date(governance.last_updated).toLocaleDateString()}</span>
+                        {isEditing ? (
+                            <div className="space-y-2">
+                                <textarea 
+                                    value={editedOutput}
+                                    onChange={(e) => setEditedOutput(e.target.value)}
+                                    className="w-full h-64 font-mono text-sm p-4 bg-slate-900 text-emerald-400 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <p className="text-xs text-muted-foreground">Modify the JSON above to alter the decision before approving. The modified payload will be recorded and released to the SDK.</p>
                             </div>
-                            <div className="flex justify-between">
-                                <span>Record ID:</span>
-                                <span className="font-mono">{decision.record_id || '?'}</span>
+                        ) : (
+                            <div className="bg-secondary rounded-lg p-4 font-mono text-sm overflow-x-auto border border-border">
+                                <pre className="whitespace-pre-wrap break-words">{JSON.stringify(originalOutputContent, null, 2)}</pre>
+                            </div>
+                        )}
+                        
+                    </GlazedCard>
+                </div>
+
+                {/* Sidebar (Context & Actions) */}
+                <div className="space-y-6">
+                    {/* Resolution Actions */}
+                    {isPendingReview && (
+                        <GlazedCard className="p-5 border-zinc-200 shadow-sm sticky top-6">
+                            <h3 className="text-sm font-semibold mb-4 text-foreground">Human-in-the-Loop Resolution</h3>
+                            <p className="text-xs text-muted-foreground mb-4">
+                                This decision was blocked by Gate Mode policies. 
+                                Resolve it by approving (with optional edits) or declining.
+                            </p>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Custom Decline Message</label>
+                                    <textarea 
+                                        value={declineMessage}
+                                        onChange={(e) => setDeclineMessage(e.target.value)}
+                                        placeholder="Reason for declining. The SDK will receive this message."
+                                        className="w-full bg-secondary border border-border rounded-lg p-3 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button 
+                                        onClick={() => handleResolve('declined')}
+                                        disabled={submitting}
+                                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        <IconX size={16} /> Decline
+                                    </button>
+                                    <button 
+                                        onClick={() => handleResolve('approved')}
+                                        disabled={submitting}
+                                        className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium border border-transparent bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        <IconCheck size={16} /> {isEditing ? 'Approve Edited' : 'Approve'}
+                                    </button>
+                                </div>
+                                {(userRole !== 'admin' && userRole !== 'owner') && (
+                                    <div className="mt-2 text-[10px] text-amber-600 flex items-start gap-1 bg-amber-50 p-2 rounded">
+                                        <IconAlertTriangle size={14} className="flex-shrink-0" />
+                                        <p>Warning: Restrictions apply. Make sure you have approval permissions.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </GlazedCard>
+                    )}
+
+                    {/* Metadata Context */}
+                    <GlazedCard className="p-5 border-zinc-200">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                            Trace Context
+                        </h3>
+                        <div className="space-y-3 text-sm">
+                            <div>
+                                <p className="text-xs text-muted-foreground">System Name</p>
+                                <p className="font-medium text-foreground">{decision.system_name || 'Unknown'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Risk Level</p>
+                                <p className={cn("font-medium capitalize", 
+                                    decision.risk_level === 'high' ? "text-red-600" : 
+                                    decision.risk_level === 'medium' ? "text-amber-600" : "text-emerald-600"
+                                )}>
+                                    {decision.risk_level || 'N/A'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Tags</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {governance.tags?.map((t) => (
+                                        <span key={t.id} className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-100 text-slate-700 rounded block">
+                                            {t.name}
+                                        </span>
+                                    ))}
+                                    {(!governance.tags || governance.tags.length === 0) && (
+                                        <span className="text-slate-400 italic text-xs">No tags</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Captured At</p>
+                                <p className="font-medium text-foreground text-xs font-mono">{new Date(decision.server_timestamp).toLocaleString()}</p>
                             </div>
                         </div>
-
-                    </div>
+                    </GlazedCard>
                 </div>
             </div>
         </div>

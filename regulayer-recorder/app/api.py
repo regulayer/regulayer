@@ -12,7 +12,7 @@ Contract:
     - 422 Unprocessable Entity → semantic inconsistency
 """
 
-from fastapi import APIRouter, Header, HTTPException, Depends, status
+from fastapi import APIRouter, Header, HTTPException, Depends, status, BackgroundTasks
 from typing import Optional, Union, List, Literal
 from pydantic import BaseModel
 from uuid import UUID
@@ -56,6 +56,147 @@ router = APIRouter()
 # ============================================================
 # Internal API (No Auth / Internal Only)
 # ============================================================
+
+import httpx
+
+async def evaluate_gate_policies_sync(decision_id: str, org_id: str, project_id: str, environment: str, payload_dict: dict) -> list[dict]:
+    """
+    Synchronous call to the Policy Engine specifically for GATE mode.
+    Evaluates rules (including llm_evaluate if required by the rule) to determine blocking actions.
+    """
+    import json
+    
+    def _default_serializer(obj):
+        if hasattr(obj, 'hex'): return str(obj)
+        if hasattr(obj, 'isoformat'): return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        
+    actions = []
+    policy_url = getattr(settings, 'policy_engine_url', "http://policy-engine:8000")
+    
+    body = {
+        "event": "DECISION_RECORDED",
+        "decision_id": str(decision_id),
+        "org_id": str(org_id),
+        "project_id": str(project_id),
+        "environment": environment,
+        "payload": payload_dict
+    }
+    safe_body = json.loads(json.dumps(body, default=_default_serializer))
+    
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            logger.info(f"[GATE-MODE] Calling policy engine at {policy_url}/v1/intake for {decision_id}")
+            resp = await client.post(
+                f"{policy_url}/v1/intake",
+                json=safe_body,
+                timeout=15.0
+            )
+            resp_json = resp.json() if resp.status_code in (200, 201, 202) else {}
+            logger.info(f"[GATE-MODE] Policy engine response for {decision_id}: status={resp.status_code}, body={resp_json}")
+            if resp.status_code in (200, 201, 202):
+                actions = resp_json.get("actions", [])
+                logger.info(f"[GATE-MODE] Actions extracted for {decision_id}: {actions}, requires_block={any(a.get('type','').lower() in ('require_approval','block') for a in actions)}")
+    except Exception as pe:
+        logger.warning(f"[GATE-MODE] Policy engine unreachable for {decision_id}: {pe}")
+        
+    return actions
+
+
+async def process_governance_background(decision_id: str, org_id: str, project_id: str, environment: str, payload_dict: dict, call_policy_engine: bool):
+    """
+    Fire-and-forget background task to notify Governance of a new decision without blocking the client.
+    """
+    import json
+    
+    def _default_serializer(obj):
+        if hasattr(obj, 'hex'): return str(obj)
+        if hasattr(obj, 'isoformat'): return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        
+    try:
+        gov_url = settings.governance_url
+        secret = settings.governance_internal_secret
+        policy_url = getattr(settings, 'policy_engine_url', "http://policy-engine:8000")
+        
+        body = {
+            "event": "DECISION_RECORDED",
+            "decision_id": str(decision_id),
+            "org_id": str(org_id),
+            "project_id": str(project_id),
+            "environment": environment,
+            "payload": payload_dict
+        }
+        safe_body = json.loads(json.dumps(body, default=_default_serializer))
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # 1. Ask Policy Engine to process (Only if we didn't already check it during Gate mode)
+            if call_policy_engine:
+                try:
+                    await client.post(
+                        f"{policy_url}/v1/intake",
+                        json=safe_body,
+                        timeout=15.0
+                    )
+                    logger.info(f"Background policy engine processed for {decision_id}")
+                except Exception as pe:
+                    logger.warning(f"Background policy engine unreachable for {decision_id}: {pe}")
+            
+            # 2. Send to Governance Service (AI risk analysis queue)
+            try:
+                await client.post(
+                    f"{gov_url}/v1/governance/intake",
+                    json=safe_body,
+                    headers={"X-Internal-Auth": secret}
+                )
+                logger.info(f"Successfully emitted DECISION_RECORDED for {decision_id} to Governance AI queue")
+            except Exception as ge:
+                logger.warning(f"Governance AI service unreachable for {decision_id}: {ge}")
+
+            # 3. Trigger generic webhook (Control Plane internal endpoint)
+            try:
+                await client.post(
+                    "http://control-plane:8000/internal/webhooks/dispatch",
+                    json={
+                        "project_id": str(project_id),
+                        "event_type": "decision.recorded",
+                        "data": {
+                            "decision_id": str(decision_id),
+                            "environment": environment,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                    },
+                    timeout=3.0
+                )
+                logger.info(f"Successfully triggered webhook dispatch for {decision_id}")
+            except Exception as we:
+                logger.warning(f"Failed to trigger webhook dispatch for {decision_id}: {we}")
+
+    except Exception as e:
+        logger.warning(f"Failed background emission for {decision_id}: {e}")
+        
+async def emit_governance_action(decision_id: str, actions: list[dict]):
+    """Emit actions to the Governance service to immediately escalate."""
+    try:
+        gov_url = settings.governance_url
+        secret = settings.governance_internal_secret
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for action in actions:
+                if action.get("type", "").lower() in ("require_approval", "block"):
+                    await client.post(
+                        f"{gov_url}/v1/governance/intake/action",
+                        json={
+                            "decision_id": decision_id,
+                            "action_type": action.get("type", "").lower(),
+                            "parameters": action.get("parameters", {})
+                        },
+                        headers={"X-Internal-Auth": secret}
+                    )
+                    logger.info(f"Emitted action {action.get('type')} for {decision_id} to Governance")
+    except Exception as e:
+        logger.warning(f"Failed to emit governance action for {decision_id}: {e}")
+
 @router.get("/internal/usage")
 async def get_internal_usage(
     project_ids: str,  # Comma separated
@@ -77,6 +218,35 @@ async def get_internal_usage(
     return results
 
 
+@router.get("/internal/daily-usage")
+async def get_internal_daily_usage(
+    project_ids: str,  # Comma separated
+    days: int = 30,
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Get daily usage breakdown for projects.
+    Internal only (called by Control Plane).
+    Returns aggregated daily counts across all given projects.
+    """
+    from .storage import get_daily_record_counts
+    from collections import defaultdict
+    
+    ids = project_ids.split(",")
+    aggregated: dict = defaultdict(int)
+    
+    for pid in ids:
+        daily = await get_daily_record_counts(session, pid, days)
+        for entry in daily:
+            aggregated[entry["date"]] += entry["count"]
+    
+    # Return sorted by date
+    return [
+        {"date": d, "count": c}
+        for d, c in sorted(aggregated.items())
+    ]
+
+
 @router.post(
     "/decisions",
     response_model=RecordConfirmation,
@@ -89,12 +259,15 @@ async def get_internal_usage(
     }
 )
 async def ingest_decision(
-    body: DecisionEvent,
+    body: Union[DecisionEvent, IngestRequest],
     x_regulayer_signature: Optional[str] = Header(None, alias="X-Regulayer-Signature"),
     x_regulayer_algorithm: Optional[str] = Header(None, alias="X-Regulayer-Algorithm"),
     x_regulayer_sdk_version: Optional[str] = Header(None, alias="X-Regulayer-SDK-Version"),
     x_regulayer_project_id: Optional[str] = Header(None, alias="X-Regulayer-Project-Id"),
+    x_regulayer_org_id: Optional[str] = Header(None, alias="X-Regulayer-Org-Id"),
     x_regulayer_environment: Optional[str] = Header("prod", alias="X-Regulayer-Environment"),
+    x_regulayer_gov_mode: Optional[str] = Header("observe", alias="X-Regulayer-Gov-Mode"),
+    background_tasks: BackgroundTasks = None,
     session: AsyncSession = Depends(get_db_session)
 ) -> RecordConfirmation:
     """
@@ -122,7 +295,7 @@ async def ingest_decision(
         if request_env == "production":
             request_env = "prod"
             
-        if request_env != settings.recorder_environment:
+        if settings.recorder_environment != "*" and request_env != settings.recorder_environment:
              raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
@@ -151,6 +324,29 @@ async def ingest_decision(
         # 3. Semantic validation
         validate_decision_event(event)
 
+        # Pre-evaluation for Gate Mode
+        org_id = x_regulayer_org_id or "default_org"
+        gov_mode = x_regulayer_gov_mode.lower() if x_regulayer_gov_mode else "observe"
+        
+        requires_approval = False
+        actions = []
+        
+        if gov_mode == "gate":
+            # 1. Fast Synchronous Policy Check BEFORE RECORDING
+            actions = await evaluate_gate_policies_sync(
+                decision_id=str(event.decision_id),
+                org_id=str(org_id),
+                project_id=str(project_id),
+                environment=x_regulayer_environment or "prod",
+                payload_dict=event.model_dump(mode="json")
+            )
+            # Check for blocking actions
+            requires_approval = any(a.get("type", "").lower() in ("require_approval", "block") for a in actions)
+            if requires_approval:
+                # Override the DB state so it's not "completed" if it's blocked by policy
+                # DecisionEvent is frozen, so we use model_copy
+                event = event.model_copy(update={"event_state": "pending"})
+
         # 4. Record decision
         confirmation = await record_decision(
             session, 
@@ -162,11 +358,61 @@ async def ingest_decision(
         
         logger.info(f"Decision recorded: {confirmation.decision_id}, record_id={confirmation.record_id}, project_id={project_id}")
         
+        if gov_mode == "gate":
+            if requires_approval:
+                # Still push to background queue for webhooks/analysis even if blocked
+                if background_tasks:
+                    # Emit Action specifically to create the manual review task
+                    background_tasks.add_task(
+                        emit_governance_action,
+                        str(confirmation.decision_id), actions
+                    )
+                    
+                    background_tasks.add_task(
+                        process_governance_background,
+                        str(confirmation.decision_id), str(org_id), str(project_id),
+                        x_regulayer_environment or "prod", event.model_dump(mode="json"),
+                        False # Skip policy engine because we just called it synchronously
+                    )
+                # Instead of 403, we return 202 Pending Review for human-in-the-loop
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=status.HTTP_202_ACCEPTED,
+                    content={
+                        "status": "pending_review",
+                        "decision_id": str(confirmation.decision_id),
+                        "message": "Decision pending governance approval.",
+                        "actions": actions
+                    }
+                )
+            
+            # If not blocked, push the rest to background
+            if background_tasks:
+                background_tasks.add_task(
+                    process_governance_background,
+                    str(confirmation.decision_id), str(org_id), str(project_id),
+                    x_regulayer_environment or "prod", event.model_dump(mode="json"),
+                    False # Skip policy engine because we just called it synchronously
+                )
+        else:
+            # OBSERVE MODE (Zero Latency path)
+            # Push EVERYTHING to background including Policy Engine
+            if background_tasks:
+                background_tasks.add_task(
+                    process_governance_background,
+                    str(confirmation.decision_id), str(org_id), str(project_id),
+                    x_regulayer_environment or "prod", event.model_dump(mode="json"),
+                    True # Call policy engine in background for passive alerts
+                )
+
         return confirmation
-    
+        
+    except HTTPException:
+        raise
+
     except (SchemaValidationError, LegacyIngestionDisabledError, InvalidAttestationError, SignatureVerificationError) as e:
-        logger.error(f"SCHEMA VALIDATION FAILED: {str(e)}")
-        # Map Attestation errors to 401/400 appropriately
+        logger.error(f"SCHEMA/AUTH VALIDATION FAILED: {str(e)}")
+        # Map Attestation errors to 401, schema errors to 400
         status_code = status.HTTP_400_BAD_REQUEST
         if isinstance(e, (LegacyIngestionDisabledError, InvalidAttestationError, SignatureVerificationError)):
              status_code = status.HTTP_401_UNAUTHORIZED
@@ -202,7 +448,7 @@ async def ingest_decision(
             }
         )
     
-    # 5. Handle Ordering Violations -> 409 Conflict (Client needs to resync/retry)
+    # Handle Ordering Violations -> 409 Conflict (Client needs to resync/retry)
     except OrderingViolationError as e:
         logger.error(f"ORDERING VIOLATION: {e.message}")
         raise HTTPException(
@@ -224,17 +470,20 @@ async def ingest_decision(
                 "decision_id": e.decision_id
             }
         )
-    
+
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail={"error": "ValidationError", "message": str(ve)})
+        
     except Exception as e:
         import traceback
-        trace = traceback.format_exc()
-        print(f"CRITICAL CRASH:\n{trace}", flush=True) 
+        tb = traceback.format_exc()
+        print(f"CRITICAL CRASH:\n{tb}", flush=True) 
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error": "InternalServerError",
-                "message": "An unexpected error occurred"
+                "message": "Failed to process decision payload"
             }
         )
 
@@ -258,12 +507,15 @@ async def list_decisions(
     try:
         from .storage import get_latest_records
         
-        # If no project ID (e.g. global view), use "global" or require it?
-        # SaaS model requires project_id usually.
-        # But for now, we default to "global" if not present to match recording logic.
-        chain_id = x_regulayer_project_id or "global"
+        # Parse comma-separated project IDs
+        chain_ids = []
+        if x_regulayer_project_id:
+            chain_ids = [pid.strip() for pid in x_regulayer_project_id.split(",") if pid.strip()]
         
-        records = await get_latest_records(session, chain_id, limit, offset)
+        if not chain_ids:
+            chain_ids = ["global"]
+            
+        records = await get_latest_records(session, chain_ids, limit, offset)
         
         return [
             DecisionRecord(
@@ -658,3 +910,79 @@ async def verify_chain_full(session: AsyncSession = Depends(get_db_session)):
         legacy_records_count=legacy_count,
         revoked_records_count=revoked_count
     )
+
+
+class MerkleAnchorResponse(BaseModel):
+    project_id: str
+    merkle_root: str
+    record_count: int
+    timestamp: datetime
+
+
+@router.get("/anchors/latest", response_model=MerkleAnchorResponse)
+async def get_latest_anchor(
+    project_id: str = "global",
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Generate a cryptographic Merkle Root representing the absolute state of the entire chain.
+    External CRON jobs can call this to anchor Regulayer's local state to public ledgers (Ethereum/Bitcoin).
+    """
+    from .storage import get_all_record_hashes
+    from .crypto import generate_merkle_anchor
+    
+    # Fast path: stream all hashes
+    record_hashes = await get_all_record_hashes(session, project_id)
+    
+    if not record_hashes:
+        # Generate an empty anchor
+        root = generate_merkle_anchor([])
+        count = 0
+    else:
+        root = generate_merkle_anchor(record_hashes)
+        count = len(record_hashes)
+        
+    return MerkleAnchorResponse(
+        project_id=project_id,
+        merkle_root=root,
+        record_count=count,
+        timestamp=datetime.now(timezone.utc)
+    )
+
+@router.get("/decisions/{decision_id}/review-status")
+async def get_review_status(decision_id: str):
+    """
+    Polling endpoint for the SDK to check the status of a gate-mode decision.
+    """
+    try:
+        uuid_id = UUID(decision_id)
+        
+        gov_url = settings.governance_url
+        secret = settings.governance_internal_secret
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"{gov_url}/v1/governance/resolutions/{str(uuid_id)}",
+                headers={"X-Internal-Auth": secret}
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                return {
+                    "status": data.get("status"), # 'approved' or 'declined'
+                    "edited_output": data.get("edited_output"),
+                    "decline_message": data.get("decline_message")
+                }
+            elif resp.status_code == 404:
+                return {"status": "pending_review"}
+            else:
+                logger.warning(f"Failed to fetch review status for {decision_id}: {resp.status_code}")
+                return {"status": "pending_review"} # Default to pending if governance is unreachable
+                
+    except ValueError:
+        raise HTTPException(status_code=400, detail={"error": "BadRequest", "message": "Invalid UUID"})
+    except Exception as e:
+        logger.error(f"Error checking review status for {decision_id}: {str(e)}")
+        # Fail open or closed here? Let's just say pending_review to keep SDK waiting, 
+        # or error to abort. Pending review means SDK will Eventually timeout on its own.
+        return {"status": "pending_review"}

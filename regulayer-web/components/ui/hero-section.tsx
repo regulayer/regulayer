@@ -19,7 +19,7 @@ export function HeroSection() {
                 >
                     <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-600"></span>
                     </span>
                     <span className="text-xs font-medium text-amber-100 uppercase tracking-wider">v2.4 Now Live</span>
                 </motion.div>
@@ -50,12 +50,12 @@ export function HeroSection() {
                     className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
                 >
                     <Link href="/signup">
-                        <button className="px-8 py-3 rounded-full bg-amber-500 text-black font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20">
+                        <button className="px-8 py-3 rounded-full bg-brand-600 text-black font-bold hover:bg-amber-400 transition-colors shadow-lg shadow-brand-600/20">
                             Start Building Trust
                         </button>
                     </Link>
                     <Link href="/docs">
-                        <button className="px-8 py-3 rounded-full bg-neutral-800 text-white border border-neutral-700 hover:bg-neutral-700 transition-colors">
+                        <button className="px-8 py-3 rounded-full bg-neutral-800 text-slate-900 border border-neutral-700 hover:bg-neutral-700 transition-colors">
                             Read the Docs
                         </button>
                     </Link>
@@ -69,19 +69,19 @@ export function HeroSection() {
                     className="mt-20 w-full max-w-5xl"
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <GlazedCard className="border-amber-500/20 bg-amber-500/5">
+                        <GlazedCard className="border-amber-500/20 bg-brand-600/5">
                             <IconShieldCheck className="w-10 h-10 text-amber-500 mb-4" />
-                            <h3 className="text-lg font-bold text-white mb-2">Cryptographic Proof</h3>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Cryptographic Proof</h3>
                             <p className="text-sm text-neutral-400">Every decision recorded on an immutable ledger.</p>
                         </GlazedCard>
                         <GlazedCard className="border-cyan-500/20 bg-cyan-500/5">
                             <IconBolt className="w-10 h-10 text-cyan-500 mb-4" />
-                            <h3 className="text-lg font-bold text-white mb-2">Real-time Guardrails</h3>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Real-time Guardrails</h3>
                             <p className="text-sm text-neutral-400">Enforce policy before models act.</p>
                         </GlazedCard>
-                        <GlazedCard className="border-zinc-500/20 bg-zinc-500/5">
-                            <IconLock className="w-10 h-10 text-zinc-500 mb-4" />
-                            <h3 className="text-lg font-bold text-white mb-2">Enterprise Security</h3>
+                        <GlazedCard className="border-slate-400/20 bg-slate-500/5">
+                            <IconLock className="w-10 h-10 text-slate-500 mb-4" />
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Enterprise Security</h3>
                             <p className="text-sm text-neutral-400">SOC2 compliant infrastructure.</p>
                         </GlazedCard>
                     </div>

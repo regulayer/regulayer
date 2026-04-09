@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Service
     host: str = "0.0.0.0"
     port: int = 8400
+    cors_origins: str = "*"
     
     # Control Plane
     control_plane_url: str = "http://localhost:8100"
@@ -28,6 +29,9 @@ class Settings(BaseSettings):
     # Incidents (internal only)
     incidents_url: str = "http://incidents:8000"
     
+    # Policy Engine (internal only)
+    policy_url: str = "http://policy-engine:8000"
+    
     # Redis (for Queue)
     redis_url: str = "redis://localhost:6379"
     redis_stream_prefix: str = "ingestion"
@@ -37,17 +41,19 @@ class Settings(BaseSettings):
     burst_limit: int = 20          # burst allowance
     
     # Quotas
-    default_daily_quota: int = 10000  # decisions per day
+    default_daily_quota: int = 1000  # decisions per day
     
     # Timeouts
     forward_timeout_seconds: int = 30
-    auth_timeout_seconds: int = 5
+    auth_timeout_seconds: int = 30
     
     # Demo/Prod Mode
-    gateway_mode: str = "prod"  # "demo" or "prod"
+    gateway_mode: str = "mixed"  # "demo", "prod", or "mixed" (accepts both)
     
     # Internal Auth
     governance_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
+    incidents_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
+    reports_internal_secret: str = "regulayer_internal_secret_value_change_in_prod"
     
     class Config:
         env_prefix = "GATEWAY_"
@@ -59,17 +65,19 @@ class Settings(BaseSettings):
         # Override with standard names if present
         import os
         if os.getenv("CONTROL_PLANE_URL"):
-            self.control_plane_url = os.getenv("CONTROL_PLANE_URL")
+            self.control_plane_url = os.getenv("CONTROL_PLANE_URL", "")
         if os.getenv("RECORDER_URL"):
-            self.recorder_url = os.getenv("RECORDER_URL")
+            self.recorder_url = os.getenv("RECORDER_URL", "")
         if os.getenv("GOVERNANCE_URL"):
-            self.governance_url = os.getenv("GOVERNANCE_URL")
+            self.governance_url = os.getenv("GOVERNANCE_URL", "")
         if os.getenv("REPORTS_URL"):
-            self.reports_url = os.getenv("REPORTS_URL")
+            self.reports_url = os.getenv("REPORTS_URL", "")
         if os.getenv("INCIDENTS_URL"):
-            self.incidents_url = os.getenv("INCIDENTS_URL")
+            self.incidents_url = os.getenv("INCIDENTS_URL", "")
+        if os.getenv("POLICY_URL") or os.getenv("GATEWAY_POLICY_URL"):
+            self.policy_url = os.getenv("POLICY_URL", os.getenv("GATEWAY_POLICY_URL", self.policy_url))
         if os.getenv("REDIS_URL"):
-            self.redis_url = os.getenv("REDIS_URL")
+            self.redis_url = os.getenv("REDIS_URL", "")
 
         # Enforce Prod Checks
         if os.getenv("ENV") == "prod":

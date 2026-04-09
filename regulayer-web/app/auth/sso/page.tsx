@@ -83,7 +83,7 @@ export default function SSOLoginPage() {
                         <button
                             type="submit"
                             disabled={loading || !email}
-                            className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full bg-primary-600 text-slate-900 py-3 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 'Looking up your organization...'

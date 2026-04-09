@@ -1,0 +1,11 @@
+# Regulayer Caddyfile - Automatic HTTPS & Reverse Proxy
+
+# Route API Gateway Traffic
+api.{$REGULAYER_DOMAIN} {
+    reverse_proxy gateway:8080
+}
+
+# Route Frontend Web Traffic
+{$REGULAYER_DOMAIN} {
+    reverse_proxy web:3000
+}

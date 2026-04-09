@@ -40,14 +40,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
+from .config import settings
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # Allow GET for read APIs
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
+
+from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(StructuredLoggerMiddleware)
+app.add_middleware(RequestIdMiddleware)
 
 
 # ============================================================
@@ -106,7 +114,8 @@ async def ingest_decision(request: Request, response: Response):
             )
         
         # 4. Check rate limits (per API key)
-        check_rate_limit(str(tenant_context.key_id))
+        # 4. Check rate limits (per API key)
+        await check_rate_limit(str(tenant_context.key_id))
         
         # 4. Check quotas (per project)
         remaining = await consume_quota(str(tenant_context.project_id))
@@ -119,8 +128,14 @@ async def ingest_decision(request: Request, response: Response):
         forward_response = await forward_decision(body, tenant_context, headers)
         
         # 7. Return response with quota info
-        # Strict 202 Accepted
-        response.status_code = status.HTTP_202_ACCEPTED
+        if tenant_context.governance_mode == "gate":
+            # If the recorder indicated pending human review, return 202 Accepted
+            if forward_response.get("status") == "pending_review":
+                response.status_code = status.HTTP_202_ACCEPTED
+            else:
+                response.status_code = status.HTTP_201_CREATED
+        else:
+            response.status_code = status.HTTP_202_ACCEPTED
         
         return {
             **forward_response,

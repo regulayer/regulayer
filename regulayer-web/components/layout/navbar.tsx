@@ -2,116 +2,125 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { RegulayerLogo } from "@/components/ui/regulayer-logo";
 
-const navLinks = [
-    { label: "Features", href: "#features" },
-    { label: "Docs", href: "/docs" },
+const links = [
+    { label: "Product", href: "/#features" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Docs", href: "/docs" },
+    { label: "Blog", href: "/blog" },
     { label: "About", href: "/about" },
 ];
 
 export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", onScroll);
-        return () => window.removeEventListener("scroll", onScroll);
+        const handler = () => setScrolled(window.scrollY > 30);
+        window.addEventListener("scroll", handler, { passive: true });
+        return () => window.removeEventListener("scroll", handler);
     }, []);
 
     return (
-        <header
-            className={cn(
-                "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-                scrolled
-                    ? "bg-black/60 backdrop-blur-xl border-b border-white/[0.06]"
-                    : "bg-transparent"
-            )}
-        >
-            <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2.5 group">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
-                        <span className="text-white font-bold text-sm">R</span>
+        <header className="fixed top-0 left-0 right-0 z-50">
+            <motion.nav
+                initial={{ y: -100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+                className={`transition-all duration-500 ease-out ${scrolled
+                        ? "warm-glass border-b shadow-[0_1px_24px_-8px_hsla(25,20%,40%,0.06)]"
+                        : "bg-transparent border-b border-transparent"
+                    }`}
+                style={{ borderColor: scrolled ? "hsla(30, 25%, 88%, 0.5)" : "transparent" }}
+            >
+                <div className="max-w-7xl mx-auto flex items-center justify-between h-[4.25rem] px-6 lg:px-10">
+                    {/* Logo */}
+                    <Link href="/" className="flex items-center gap-2.5 group">
+                        <RegulayerLogo className="w-7 h-7 transition-transform duration-300 group-hover:scale-105" color="hsl(15,85%,58%)" />
+                        <span style={{ fontFamily: "var(--font-space-grotesk)" }} className="text-[19px] font-bold tracking-[-0.04em] text-[hsl(15,45%,15%)]">
+                            Regulayer
+                        </span>
+                    </Link>
+
+                    {/* Desktop Nav */}
+                    <div className="hidden md:flex items-center gap-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        {links.map((link) => (
+                            <Link key={link.href} href={link.href}
+                                className={`relative px-4 py-2 text-[13px] font-medium rounded-full transition-all duration-300 ${pathname === link.href ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                                    }`}>
+                                {pathname === link.href && (
+                                    <motion.div
+                                        layoutId="activeNav"
+                                        className="absolute inset-0 rounded-full"
+                                        style={{ background: "hsla(14, 60%, 55%, 0.06)" }}
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                                    />
+                                )}
+                                <span className="relative z-10">{link.label}</span>
+                            </Link>
+                        ))}
                     </div>
-                    <span className="text-white font-bold text-lg tracking-tight">
-                        Regulayer
-                    </span>
-                </Link>
 
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-1">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.label}
-                            href={link.href}
-                            className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.04]"
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                </div>
-
-                {/* CTA */}
-                <div className="hidden md:flex items-center gap-3">
-                    <Link
-                        href="/login"
-                        className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
-                    >
-                        Log in
-                    </Link>
-                    <Link
-                        href="/signup"
-                        className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40"
-                    >
-                        Get Started
-                    </Link>
-                </div>
-
-                {/* Mobile Toggle */}
-                <button
-                    className="md:hidden text-zinc-400 hover:text-white p-2"
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    aria-label="Toggle menu"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                        {mobileOpen ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        )}
-                    </svg>
-                </button>
-            </nav>
-
-            {/* Mobile Menu */}
-            {mobileOpen && (
-                <div className="md:hidden bg-black/90 backdrop-blur-xl border-t border-white/[0.06] px-6 py-4 space-y-1">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.label}
-                            href={link.href}
-                            onClick={() => setMobileOpen(false)}
-                            className="block px-4 py-3 text-sm text-zinc-400 hover:text-white rounded-lg hover:bg-white/[0.04] transition-colors"
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                    <div className="pt-3 border-t border-white/[0.06] mt-2 space-y-2">
-                        <Link href="/login" className="block px-4 py-3 text-sm text-zinc-400 hover:text-white">
+                    {/* Desktop CTA */}
+                    <div className="hidden md:flex items-center gap-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <Link href="/login" className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors duration-300 px-3 py-2">
                             Log in
                         </Link>
-                        <Link
-                            href="/signup"
-                            className="block px-4 py-3 text-sm font-medium text-center text-white bg-indigo-600 rounded-lg"
-                        >
-                            Get Started
+                        <Link href="/signup">
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                className="px-5 py-2 text-[13px] font-semibold rounded-full transition-all duration-300"
+                                style={{ background: "hsl(14, 60%, 55%)", color: "hsl(34, 90%, 98%)", boxShadow: "0 3px 14px -3px hsla(14,60%,45%,0.25)" }}
+                            >
+                                Get Started
+                            </motion.button>
                         </Link>
                     </div>
+
+                    {/* Mobile */}
+                    <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 md:hidden text-muted-foreground hover:text-foreground rounded-full hover:bg-foreground/5 transition-colors">
+                        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
                 </div>
-            )}
+
+                <AnimatePresence>
+                    {mobileOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                            className="overflow-hidden md:hidden warm-glass"
+                            style={{ borderTop: "1px solid hsla(30, 25%, 88%, 0.5)" }}
+                        >
+                            <div className="px-6 py-5 space-y-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                                {links.map((link, i) => (
+                                    <motion.div key={link.href} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                                        <Link href={link.href} onClick={() => setMobileOpen(false)}
+                                            className="block px-4 py-2.5 text-sm font-medium rounded-xl text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors">
+                                            {link.label}
+                                        </Link>
+                                    </motion.div>
+                                ))}
+                                <div className="pt-4 mt-4 space-y-2" style={{ borderTop: "1px solid hsla(30, 25%, 88%, 0.5)" }}>
+                                    <Link href="/login" onClick={() => setMobileOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-muted-foreground">Log in</Link>
+                                    <Link href="/signup" onClick={() => setMobileOpen(false)}
+                                        className="block px-4 py-2.5 text-sm font-bold text-center rounded-full"
+                                        style={{ background: "hsl(14, 60%, 55%)", color: "hsl(34, 90%, 98%)" }}>
+                                        Get Started →
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.nav>
         </header>
     );
 }

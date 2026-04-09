@@ -49,7 +49,7 @@ class TestEventStateConsistency:
         now = datetime.now(timezone.utc)
         
         # completed but no output_hash
-        with pytest.raises(SemanticValidationError, match="completed.*output_hash is null"):
+        with pytest.raises(SemanticValidationError, match="completed.*output_hash and output are null"):
             event = DecisionEvent(
                 event_version="1.0",
                 event_state="completed",  # Says completed
@@ -77,7 +77,7 @@ class TestEventStateConsistency:
         now = datetime.now(timezone.utc)
         
         # failed but has output_hash
-        with pytest.raises(SemanticValidationError, match="failed.*output_hash is present"):
+        with pytest.raises(SemanticValidationError, match="failed.*output data is present"):
             event = DecisionEvent(
                 event_version="1.0",
                 event_state="failed",  # Says failed

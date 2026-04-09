@@ -64,7 +64,7 @@ export default function ContinuityPage() {
                 <li>We will release a Docker container capable of hosting the Verification API in a read-only mode for self-hosting.</li>
             </ol>
 
-            <div className="mt-12 p-6 bg-slate-900 text-white rounded-xl not-prose">
+            <div className="mt-12 p-6 bg-slate-900 text-slate-900 rounded-xl not-prose">
                 <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
                     <Download className="w-5 h-5" />
                     Download Verification Kit

@@ -23,7 +23,7 @@ export const CardSpotlight = ({
         clientX,
         clientY,
     }: ReactMouseEvent<HTMLDivElement>) {
-        let { left, top } = currentTarget.getBoundingClientRect();
+        const { left, top } = currentTarget.getBoundingClientRect();
 
         mouseX.set(clientX - left);
         mouseY.set(clientY - top);
@@ -36,7 +36,7 @@ export const CardSpotlight = ({
     return (
         <div
             className={cn(
-                "group/spotlight p-10 rounded-xl relative border border-neutral-800 bg-black dark:border-neutral-800",
+                "group/spotlight p-10 rounded-xl relative border border-border bg-card",
                 className
             )}
             onMouseMove={handleMouseMove}

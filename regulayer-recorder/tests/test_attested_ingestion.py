@@ -7,19 +7,20 @@ from fastapi.testclient import TestClient
 from app.models import DecisionEvent
 from datetime import datetime, timezone
 
-app = FastAPI()
-app.include_router(router)
+import pytest
+from app.api import get_db_session
 
-# Mock DB dependency
-async def override_get_db_session():
-    return AsyncMock()
-
-app.dependency_overrides["app.api.get_db_session"] = override_get_db_session
-
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def mock_db_session(client):
+    async def override_get_db_session():
+        yield AsyncMock()
+    
+    client.app.dependency_overrides[get_db_session] = override_get_db_session
+    yield
+    client.app.dependency_overrides = {}
 
 @patch("app.api.record_decision")
-def test_valid_attested_ingestion(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_valid_attested_ingestion(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     # Setup registry to return identity
     mock_registry.get_identity.return_value = identity
     
@@ -51,7 +52,7 @@ def test_valid_attested_ingestion(mock_record, signer, identity, sample_event, o
     assert kwargs['attestation'].identity_id == str(identity.id)
 
 @patch("app.api.record_decision")
-def test_invalid_signature_rejection(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_invalid_signature_rejection(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     mock_registry.get_identity.return_value = identity
     
     # Tamper with signature
@@ -70,7 +71,7 @@ def test_invalid_signature_rejection(mock_record, signer, identity, sample_event
     assert not mock_record.called
 
 @patch("app.api.record_decision")
-def test_unknown_identity_rejection(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_unknown_identity_rejection(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     # Registry returns None
     mock_registry.get_identity.return_value = None
     

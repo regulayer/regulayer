@@ -1,67 +1,62 @@
 """
 Regulayer Ingestion Gateway - Rate Limiting
 
-Token bucket rate limiter for per-key limits.
+Distributed token bucket rate limiter using Redis and Lua.
 """
 
 import time
-from typing import Dict, Optional
-from dataclasses import dataclass, field
-from threading import Lock
+from typing import Optional
+from dataclasses import dataclass
+import redis.asyncio as redis
 
 from .config import settings
 from .errors import RateLimitError
 
 
-@dataclass
-class TokenBucket:
-    """Token bucket for rate limiting."""
-    capacity: int             # Max tokens
-    refill_rate: float        # Tokens per second
-    tokens: float = field(default=0.0, init=False)
-    last_refill: float = field(default_factory=time.time, init=False)
-    
-    def __post_init__(self):
-        self.tokens = float(self.capacity)
-    
-    def consume(self, tokens: int = 1) -> bool:
-        """Try to consume tokens. Returns True if successful."""
-        self._refill()
-        
-        if self.tokens >= tokens:
-            self.tokens -= tokens
-            return True
-        return False
-    
-    def _refill(self) -> None:
-        """Refill tokens based on time elapsed."""
-        now = time.time()
-        elapsed = now - self.last_refill
-        
-        # Add tokens based on elapsed time
-        self.tokens = min(
-            self.capacity,
-            self.tokens + (elapsed * self.refill_rate)
-        )
-        
-        self.last_refill = now
-    
-    def time_until_available(self, tokens: int = 1) -> float:
-        """Get seconds until tokens are available."""
-        self._refill()
-        
-        if self.tokens >= tokens:
-            return 0.0
-        
-        needed = tokens - self.tokens
-        return needed / self.refill_rate
+# Lua script for atomic token bucket
+# Keys: [rate_limit_key]
+# Args: [capacity, refill_rate, now_timestamp, requested_tokens]
+# Returns: [allowed (1/0), retry_after (seconds)]
+TOKEN_BUCKET_SCRIPT = """
+local key = KEYS[1]
+local capacity = tonumber(ARGV[1])
+local refill_rate = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+local requested = tonumber(ARGV[4])
+
+-- Get current state
+local last_refill = tonumber(redis.call('HGET', key, 'last_refill') or now)
+local tokens = tonumber(redis.call('HGET', key, 'tokens') or capacity)
+
+-- Refill tokens
+local elapsed = now - last_refill
+local new_tokens = math.min(capacity, tokens + (elapsed * refill_rate))
+
+-- Consume tokens
+local allowed = 0
+local retry_after = 0
+
+if new_tokens >= requested then
+    allowed = 1
+    new_tokens = new_tokens - requested
+    -- Update state
+    redis.call('HSET', key, 'last_refill', now, 'tokens', new_tokens)
+    -- Expire key after idle time (e.g., time to full refill + buffer)
+    redis.call('EXPIRE', key, math.ceil(capacity / refill_rate) + 60)
+else
+    allowed = 0
+    retry_after = (requested - new_tokens) / refill_rate
+    -- Update last_refill to avoid calculating excessive elapsed time next run 
+    -- (Strictly, standard alg doesn't update on reject, but we expire anyway)
+end
+
+return {allowed, retry_after}
+"""
 
 
 class RateLimiter:
     """
-    Rate limiter using token buckets.
-    
-    Maintains per-key buckets with configurable limits.
+    Distributed rate limiter using Redis.
     """
     
     def __init__(
@@ -72,55 +67,32 @@ class RateLimiter:
         self.requests_per_minute = requests_per_minute or settings.default_rate_limit
         self.burst_limit = burst_limit or settings.burst_limit
         self.refill_rate = self.requests_per_minute / 60.0
+        self.capacity = self.requests_per_minute + self.burst_limit
         
-        self._buckets: Dict[str, TokenBucket] = {}
-        self._lock = Lock()
+        self.redis = redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
+        self.script = self.redis.register_script(TOKEN_BUCKET_SCRIPT)
     
-    def _get_bucket(self, key: str) -> TokenBucket:
-        """Get or create bucket for key."""
-        with self._lock:
-            if key not in self._buckets:
-                self._buckets[key] = TokenBucket(
-                    capacity=self.requests_per_minute + self.burst_limit,
-                    refill_rate=self.refill_rate
-                )
-            return self._buckets[key]
-    
-    def check(self, key: str) -> None:
+    async def check(self, key: str, cost: int = 1) -> None:
         """
         Check if request is allowed.
         
         Raises RateLimitError if limit exceeded.
         """
-        bucket = self._get_bucket(key)
-        
-        if not bucket.consume(1):
-            retry_after = bucket.time_until_available(1)
-            raise RateLimitError(
-                f"Rate limit exceeded. Retry after {retry_after:.1f}s"
-            )
-    
-    def is_allowed(self, key: str) -> bool:
-        """Check if request is allowed (without consuming)."""
-        bucket = self._get_bucket(key)
-        return bucket.tokens >= 1
-    
-    def cleanup_old_buckets(self, max_age_seconds: int = 3600) -> int:
-        """Remove buckets that haven't been used recently."""
+        redis_key = f"{settings.redis_stream_prefix}:ratelimit:{key}"
         now = time.time()
-        removed = 0
         
-        with self._lock:
-            keys_to_remove = [
-                key for key, bucket in self._buckets.items()
-                if now - bucket.last_refill > max_age_seconds
-            ]
-            
-            for key in keys_to_remove:
-                del self._buckets[key]
-                removed += 1
+        # Atomically check and consume
+        result = await self.script(
+            keys=[redis_key],
+            args=[self.capacity, self.refill_rate, now, cost]
+        )
         
-        return removed
+        allowed, retry_after = result
+        
+        if not allowed:
+             raise RateLimitError(
+                f"Rate limit exceeded. Retry after {float(retry_after):.1f}s"
+            )
 
 
 # ============================================================
@@ -140,6 +112,6 @@ def get_rate_limiter() -> RateLimiter:
     return _rate_limiter
 
 
-def check_rate_limit(api_key_id: str) -> None:
+async def check_rate_limit(api_key_id: str) -> None:
     """Check rate limit for an API key."""
-    get_rate_limiter().check(api_key_id)
+    await get_rate_limiter().check(api_key_id)

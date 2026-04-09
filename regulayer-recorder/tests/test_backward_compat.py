@@ -5,18 +5,26 @@ from app.config import settings
 from fastapi import FastAPI
 from datetime import datetime, timezone
 
-app = FastAPI()
-app.include_router(router)
+from app.storage import get_db_session
+import pytest
 
-async def override_get_db_session():
-    return AsyncMock()
-
-app.dependency_overrides["app.api.get_db_session"] = override_get_db_session
-
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def mock_db_session(client):
+    async def override_get_db_session():
+        yield AsyncMock()
+    
+    client.app.dependency_overrides["app.api.get_db_session"] = override_get_db_session
+    # Also override storage.get_db_session if used? 
+    # The code imports app.api.router, which imports get_db_session from storage.
+    # dependency_overrides works by function object or dependency value.
+    # If app.api imports get_db_session, we should override that function object.
+    
+    client.app.dependency_overrides[get_db_session] = override_get_db_session
+    yield
+    client.app.dependency_overrides = {}
 
 @patch("app.api.record_decision")
-def test_legacy_ingestion_allowed(mock_record, sample_event, override_guard):
+def test_legacy_ingestion_allowed(mock_record, sample_event, override_guard, client):
     # settings.allow_legacy_ingestion is True by default in config
     # We also need to patch the legacy verification in AttestationGuard
     # But since we use override_guard with mocks, we might need to be careful
@@ -56,7 +64,7 @@ def test_legacy_ingestion_allowed(mock_record, sample_event, override_guard):
         assert mock_record.called
 
 @patch("app.api.record_decision")
-def test_legacy_ingestion_disabled(mock_record, sample_event, override_guard):
+def test_legacy_ingestion_disabled(mock_record, sample_event, override_guard, client):
     # Disable legacy
     settings.allow_legacy_ingestion = False
     

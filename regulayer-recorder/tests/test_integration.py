@@ -11,14 +11,18 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 # Add SDK to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../regulayer'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../regulayer-sdk'))
 pytest.importorskip("regulayer")
 
 from regulayer import trace
-from regulayer.hasher import hash_data
+from app.hasher import compute_canonical_hash as hash_data
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    os.environ.get("RUN_INTEGRATION_TESTS", "0") != "1",
+    reason="Integration test requires isolated DB. Set RUN_INTEGRATION_TESTS=1 to run."
+)
 async def test_sdk_to_recorder_integration():
     """
     END-TO-END INTEGRATION TEST

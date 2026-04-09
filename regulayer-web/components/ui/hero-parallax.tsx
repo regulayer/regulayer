@@ -104,10 +104,10 @@ export const HeroParallax = ({
 export const Header = () => {
     return (
         <div className="max-w-7xl relative mx-auto px-4 w-full  left-0 top-0">
-            <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
+            <h1 className="text-2xl md:text-7xl font-bold text-foreground">
                 The Ultimate <br /> development studio
             </h1>
-            <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
+            <p className="max-w-2xl text-base md:text-xl mt-8 text-muted-foreground">
                 We build beautiful products with the latest technologies and frameworks.
                 We are a team of passionate developers and designers that love to build
                 amazing products.
@@ -150,8 +150,8 @@ export const ProductCard = ({
                     alt={product.title}
                 />
             </Link>
-            <div className="absolute inset-0 h-full w-full opacity-0 group-hover/product:opacity-80 bg-black pointer-events-none"></div>
-            <h2 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-white">
+            <div className="absolute inset-0 h-full w-full opacity-0 group-hover/product:opacity-80 bg-background/80 pointer-events-none"></div>
+            <h2 className="absolute bottom-4 left-4 opacity-0 group-hover/product:opacity-100 text-slate-900">
                 {product.title}
             </h2>
         </motion.div>

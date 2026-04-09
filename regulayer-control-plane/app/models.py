@@ -25,6 +25,7 @@ class OrganizationCreate(BaseModel):
     """Request to create an organization."""
     name: str = Field(min_length=1, max_length=255)
     logo_url: Optional[str] = None
+    data_region: Optional[str] = Field(None, description="e.g. eu-central-1, us-east-1")
 
 
 class Organization(BaseModel):
@@ -35,6 +36,7 @@ class Organization(BaseModel):
     status: OrgStatus = OrgStatus.ACTIVE
     is_demo: bool = False
     environment: str = "prod"  # "dev", "staging", "prod"
+    data_region: Optional[str] = None
     stripe_customer_id: Optional[str] = None
     subscription_status: Optional[str] = None
     created_at: datetime
@@ -44,6 +46,7 @@ class OrganizationUpdate(BaseModel):
     """Request to update organization details."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     logo_url: Optional[str] = None
+    data_region: Optional[str] = None
 
 
 # ============================================================
@@ -54,6 +57,10 @@ class ProjectCreate(BaseModel):
     """Request to create a project."""
     name: str = Field(min_length=1, max_length=255)
     environment: ProjectEnvironment = ProjectEnvironment.DEV
+    data_region: Optional[str] = Field(None, description="Overrides organization region if set")
+    ai_act_risk_category: Optional[str] = Field(None, description="minimal, limited, high, unacceptable")
+    governance_mode: str = Field("observe", description="'observe' (Mode 1: instant response) or 'gate' (Mode 2: hold until approval)")
+    gate_decline_message: str = Field("Decision declined by governance.", description="Custom message returned when a reviewer declines a queued gate decision.")
 
 
 class Project(BaseModel):
@@ -62,12 +69,20 @@ class Project(BaseModel):
     organization_id: UUID
     name: str
     environment: ProjectEnvironment
+    data_region: Optional[str] = None
+    ai_act_risk_category: Optional[str] = None
+    governance_mode: str = "observe"
+    gate_decline_message: str = "Decision declined by governance."
     created_at: datetime
     updated_at: Optional[datetime] = None
 
 class ProjectUpdate(BaseModel):
     """Request to update project details."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    data_region: Optional[str] = None
+    ai_act_risk_category: Optional[str] = None
+    governance_mode: Optional[str] = Field(None, description="'observe' or 'gate'")
+    gate_decline_message: Optional[str] = Field(None, description="Custom message returned when a reviewer declines a queued gate decision.")
 
 
 class CheckoutSessionRequest(BaseModel):
@@ -140,6 +155,33 @@ class UserWithOrg(User):
 
 
 # ============================================================
+# Invitations
+# ============================================================
+
+class InvitationCreate(BaseModel):
+    """Request to invite a user."""
+    email: EmailStr
+    role: UserRole = UserRole.MEMBER
+
+
+class Invitation(BaseModel):
+    """Pending invitation details."""
+    id: UUID
+    organization_id: UUID
+    email: EmailStr
+    role: UserRole
+    inviter_id: UUID
+    expires_at: datetime
+    created_at: datetime
+
+
+class InvitationAccept(BaseModel):
+    """Request to accept an invitation."""
+    token: str
+    password: str = Field(min_length=8)
+
+
+# ============================================================
 # Tenant Context (Runtime)
 # ============================================================
 
@@ -177,6 +219,7 @@ class KeyValidationResult(BaseModel):
     project_id: Optional[UUID] = None
     environment: Optional[str] = None
     org_status: Optional[OrgStatus] = None
+    governance_mode: str = "observe"
     is_demo_key: bool = False
     scopes: List[ApiKeyScope] = Field(default_factory=list)
     error: Optional[str] = None
@@ -212,5 +255,61 @@ class PasswordResetConfirm(BaseModel):
     """Request to complete password reset."""
     token: str
     new_password: str = Field(min_length=8)
+
+
+# ============================================================
+# Notification Preferences
+# ============================================================
+
+class NotificationPreferenceUpdate(BaseModel):
+    """Update settings for notifications."""
+    incident_alerts: Optional[bool] = None
+    governance_reviews: Optional[bool] = None
+    billing_updates: Optional[bool] = None
+    email_enabled: Optional[bool] = None
+    in_app_enabled: Optional[bool] = None
+
+class NotificationPreference(BaseModel):
+    """User notification preferences."""
+    id: UUID
+    user_id: UUID
+    organization_id: UUID
+    incident_alerts: bool
+    governance_reviews: bool
+    billing_updates: bool
+    email_enabled: bool
+    in_app_enabled: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# Webhook Destinations
+# ============================================================
+
+class WebhookDestinationCreate(BaseModel):
+    """Create a new webhook destination."""
+    name: str
+    url: str
+    events: List[str]
+
+class WebhookDestinationUpdate(BaseModel):
+    """Update an existing webhook destination."""
+    name: Optional[str] = None
+    url: Optional[str] = None
+    events: Optional[List[str]] = None
+    status: Optional[str] = None
+
+class WebhookDestination(BaseModel):
+    """Webhook destination."""
+    id: UUID
+    organization_id: UUID
+    name: str
+    url: str
+    events: List[str]
+    status: str
+    secret: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 

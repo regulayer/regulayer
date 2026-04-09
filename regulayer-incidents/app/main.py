@@ -12,8 +12,17 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    import asyncio
+    for attempt in range(10):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            break
+        except Exception as e:
+            if attempt == 9:
+                raise e
+            print(f"DB Init failed (attempt {attempt+1}/10), retrying in 3s... {e}")
+            await asyncio.sleep(3)
 
 app.include_router(router)
 

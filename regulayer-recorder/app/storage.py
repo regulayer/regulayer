@@ -67,10 +67,21 @@ class DecisionRecordDB(Base):
 
 
 # Async database session factory
+# Handle SSL mode for asyncpg
+db_url = settings.database_url.replace('postgresql://', 'postgresql+asyncpg://')
+connect_args = {}
+if "sslmode=require" in db_url:
+    connect_args["ssl"] = "require"
+    db_url = db_url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+
 async_engine = create_async_engine(
-    settings.database_url.replace('postgresql://', 'postgresql+asyncpg://'),
+    db_url,
     echo=False,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    pool_size=20,
+    max_overflow=50,
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -88,8 +99,17 @@ async def get_db_session() -> AsyncSession:
 
 async def init_db():
     """Initialize database (create tables if needed)."""
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    import asyncio
+    for attempt in range(10):
+        try:
+            async with async_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            break
+        except Exception as e:
+            if attempt == 9:
+                raise e
+            print(f"DB Init failed (attempt {attempt+1}/10), retrying in 3s... {e}")
+            await asyncio.sleep(3)
 
 
 async def check_duplicate_decision(session: AsyncSession, decision_id: UUID) -> bool:
@@ -284,16 +304,16 @@ async def get_records_in_range(
 
 async def get_latest_records(
     session: AsyncSession,
-    chain_id: str,
+    chain_ids: list[str],
     limit: int = 50,
     offset: int = 0
 ) -> List[DecisionRecordDB]:
     """
-    Get latest records for a chain (descending order).
+    Get latest records for a list of chains (descending order).
     
     Args:
         session: Database session
-        chain_id: Chain identifier (project_id)
+        chain_ids: List of Chain identifiers (project_ids)
         limit: Max records
         offset: Offset
         
@@ -304,7 +324,7 @@ async def get_latest_records(
     
     stmt = (
         select(DecisionRecordDB)
-        .where(DecisionRecordDB.chain_id == chain_id)
+        .where(DecisionRecordDB.chain_id.in_(chain_ids))
         .order_by(desc(DecisionRecordDB.server_timestamp))
         .limit(limit)
         .offset(offset)
@@ -312,3 +332,83 @@ async def get_latest_records(
     
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_all_record_hashes(
+    session: AsyncSession,
+    chain_id: str
+) -> List[str]:
+    """
+    Get all record hashes for a chain in strict append-only sequence (record_id ascending).
+    Used for computing absolute Merkle Root Anchors.
+    """
+    from sqlalchemy import select, asc
+    
+    stmt = (
+        select(DecisionRecordDB.record_hash)
+        .where(DecisionRecordDB.chain_id == chain_id)
+        .order_by(asc(DecisionRecordDB.record_id))
+    )
+    
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_chain_record_count(
+    session: AsyncSession,
+    chain_id: str
+) -> int:
+    """
+    Get the total number of records in a chain (project).
+    
+    Used by the internal usage endpoint to report real decision counts
+    back to the Control Plane for billing and usage display.
+    
+    Args:
+        session: Database session
+        chain_id: Chain identifier (project_id)
+        
+    Returns:
+        Total record count for the chain
+    """
+    from sqlalchemy import select, func
+    
+    stmt = select(func.count()).select_from(DecisionRecordDB).where(
+        DecisionRecordDB.chain_id == chain_id
+    )
+    
+    result = await session.execute(stmt)
+    return result.scalar() or 0
+
+
+async def get_daily_record_counts(
+    session: AsyncSession,
+    chain_id: str,
+    days: int = 30
+) -> list:
+    """
+    Get daily record counts for a chain over the last N days.
+    
+    Returns list of dicts with 'date' and 'count' keys.
+    """
+    from sqlalchemy import select, func, cast, Date
+    from datetime import datetime, timezone, timedelta
+    
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    stmt = (
+        select(
+            cast(DecisionRecordDB.server_timestamp, Date).label("date"),
+            func.count().label("count")
+        )
+        .where(
+            DecisionRecordDB.chain_id == chain_id,
+            DecisionRecordDB.server_timestamp >= start_date
+        )
+        .group_by(cast(DecisionRecordDB.server_timestamp, Date))
+        .order_by(cast(DecisionRecordDB.server_timestamp, Date))
+    )
+    
+    result = await session.execute(stmt)
+    rows = result.all()
+    return [{"date": str(r.date), "count": r.count} for r in rows]

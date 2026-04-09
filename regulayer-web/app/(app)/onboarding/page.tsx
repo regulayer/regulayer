@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, ArrowRight, Building2, Check, Code, Copy, Loader2, Sparkles } from 'lucide-react'; //lucide-react icons
-import { getMe, getProjects, updateProject, createProject, createApiKey, createCheckoutSession, ApiKeyWithSecret, Project } from '@/lib/api';
+import { Shield, ArrowRight, Building2, Code, Copy, Loader2, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { getMe, getProjects, updateProject, createProject, createApiKey, ApiKeyWithSecret, Project } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RegulayerLogo } from '@/components/ui/regulayer-logo';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -11,12 +13,13 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-
     const [orgId, setOrgId] = useState<string>('');
     const [project, setProject] = useState<Project | null>(null);
     const [projectName, setProjectName] = useState('');
     const [apiKey, setApiKey] = useState<ApiKeyWithSecret | null>(null);
     const [keyError, setKeyError] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [activeLang, setActiveLang] = useState<'python' | 'node' | 'go'>('python');
 
     useEffect(() => {
         loadInitialData();
@@ -25,16 +28,12 @@ export default function OnboardingPage() {
     const loadInitialData = async () => {
         try {
             const me = await getMe();
-            // Backend returns flat UserWithOrg: { id, email, ..., org: { id, name, ... } }
-            // me.data IS the user (not me.data.user)
-            if (me.data?.id) {
-                if (me.data.org) {
-                    setOrgId(me.data.org.id);
-                    const projectsRes = await getProjects(me.data.org.id);
-                    if (projectsRes.data && projectsRes.data.length > 0) {
-                        setProject(projectsRes.data[0]);
-                        setProjectName(projectsRes.data[0].name);
-                    }
+            if (me.data?.id && me.data.org) {
+                setOrgId(me.data.org.id);
+                const projectsRes = await getProjects(me.data.org.id);
+                if (projectsRes.data && projectsRes.data.length > 0) {
+                    setProject(projectsRes.data[0]);
+                    setProjectName(projectsRes.data[0].name);
                 }
             }
         } catch (e) {
@@ -51,16 +50,14 @@ export default function OnboardingPage() {
         setSaving(true);
         try {
             if (project) {
-                // Update existing project
-                await updateProject(project.id, projectName);
+                await updateProject(project.id, { name: projectName });
             } else if (orgId) {
-                // Create new project for organizations that don't have one yet
-                const createRes = await createProject(orgId, projectName);
+                const createRes = await createProject(orgId, { name: projectName });
                 if (createRes.data) {
                     setProject(createRes.data);
                 }
             }
-            setStep(3); // Go to Billing
+            setStep(2); // Go directly to integration/keys
         } catch {
             alert("Failed to save project");
         } finally {
@@ -68,159 +65,133 @@ export default function OnboardingPage() {
         }
     };
 
-    const handlePlanSelect = async (plan: 'free' | 'pro') => {
-        if (plan === 'free') {
-            setStep(4); // Go to Integration
-        } else {
-            // Redirect to Stripe Checkout for Pro plan
-            setSaving(true);
-            try {
-                const res = await createCheckoutSession(
-                    'pro',
-                    `${window.location.origin}/dashboard?upgraded=true`,
-                    `${window.location.origin}/onboarding`
-                );
-                if (res.data?.url) {
-                    window.location.href = res.data.url;
-                } else {
-                    // Fallback: if mock mode, just proceed
-                    console.warn('No checkout URL returned, proceeding to integration step');
-                    setStep(4);
-                }
-            } catch {
-                console.error('Checkout session failed');
-                // Graceful fallback - continue onboarding
-                setStep(4);
-            } finally {
-                setSaving(false);
-            }
-        }
-    };
-
-    // Key generation logic
     const attemptKeyGeneration = async () => {
-        if (apiKey) return; // Already have a key
+        if (apiKey) return;
         setSaving(true);
         setKeyError(false);
         try {
             let projectId = project?.id;
             if (!projectId && orgId) {
-                console.log('[Onboarding] Creating project for org:', orgId);
-                const createRes = await createProject(orgId, projectName || 'My AI Agent');
-                console.log('[Onboarding] createProject result:', JSON.stringify(createRes));
+                const createRes = await createProject(orgId, { name: projectName || 'Production' });
                 if (createRes.data) {
                     setProject(createRes.data);
                     projectId = createRes.data.id;
-                } else {
-                    console.error('[Onboarding] createProject failed:', createRes.error);
                 }
             }
 
             if (!projectId) {
-                console.error('[Onboarding] No projectId available. project:', project, 'orgId:', orgId);
                 setKeyError(true);
                 return;
             }
 
-            console.log('[Onboarding] Creating API key for project:', projectId);
             const res = await createApiKey(projectId, {
-                name: "Onboarding Key",
+                name: "Production Default Key",
                 scopes: ["ingest"]
             });
-            console.log('[Onboarding] createApiKey result:', JSON.stringify(res));
+
             if (res.data) {
                 setApiKey(res.data);
             } else {
-                console.error('[Onboarding] createApiKey failed:', res.error);
                 setKeyError(true);
             }
         } catch (err) {
-            console.error('[Onboarding] attemptKeyGeneration exception:', err);
+            console.error('[Onboarding] KeyError:', err);
             setKeyError(true);
         } finally {
             setSaving(false);
         }
     };
 
-    // Trigger key generation when entering step 4
     useEffect(() => {
-        if (step === 4 && !apiKey) {
+        if (step === 2 && !apiKey) {
             attemptKeyGeneration();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step]);
 
     const finishOnboarding = () => {
         router.push('/dashboard');
     };
 
+    const copyToClipboard = () => {
+        if (apiKey?.key_secret) {
+            navigator.clipboard.writeText(apiKey.key_secret);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 bg-slate-700 animate-spin" />
             </div>
         );
     }
 
+    const currentKey = apiKey?.key_secret || 'YOUR_API_KEY';
+
+    const snippets = {
+        python: `import os\nfrom regulayer import Regulayer\n\n# Initialize the secure client\nclient = Regulayer(\n    api_key="` + currentKey + `"\n)\n\n# Wrap your critical LLM call\n@client.trace(model="gpt-4", tags=["auth"])\ndef generate_response(prompt):\n    return llm.predict(prompt)\n`,
+        node: `import { Regulayer } from '@regulayer/sdk';\n\nconst regulayer = new Regulayer(\n    '` + currentKey + `'\n);\n\nconst record = await regulayer.record({\n    input: "Analyze transaction...",\n    output: "Approved.",\n    model: "gpt-4"\n});\n`,
+        go: `import "github.com/regulayer/regulayer-go"\n\nclient := regulayer.NewClient("` + currentKey + `")\n\nres, err := client.Evaluate(regulayer.PolicyCheck{\n    Prompt: "User input...",\n    Target: "gpt-4",\n})`
+    };
+
     return (
-        <div className="min-h-screen bg-slate-900 text-white flex flex-col">
-            {/* Header */}
-            <div className="border-b border-slate-800 p-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Shield className="w-8 h-8 text-primary-500" />
-                    <span className="font-bold text-xl">Regulayer</span>
+        <div className="min-h-screen bg-background text-foreground font-sans selection:bg-secondary flex flex-col">
+            {/* Header / Progress bar */}
+            <div className="border-b border-border bg-slate-50 p-6 flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center shadow-lg">
+                        <RegulayerLogo className="w-5 h-5" color="hsl(15,85%,58%)" />
+                    </div>
+                    <span className="font-semibold tracking-tight text-foreground">Setup Project</span>
                 </div>
-                <div className="text-sm text-slate-400">
-                    Step {step} of 4
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        {/* Step Indicators */}
+                        <div className={`w-2.5 h-2.5 rounded-full ${step >= 1 ? 'bg-slate-700 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'bg-secondary'}`} />
+                        <div className={`w-8 h-px ${step >= 2 ? 'bg-slate-700' : 'bg-secondary'}`} />
+                        <div className={`w-2.5 h-2.5 rounded-full ${step >= 2 ? 'bg-slate-700 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'bg-secondary'}`} />
+                    </div>
+                    {step < 2 && (
+                        <button
+                            onClick={finishOnboarding}
+                            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Skip Setup
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 flex items-start justify-center pt-20 px-4">
-                <div className="w-full max-w-2xl">
+            {/* Content Body */}
+            <div className="flex-1 flex items-start justify-center pt-16 px-6">
+                <div className="w-full max-w-[600px]">
 
-                    {/* Step 1: Welcome */}
+                    {/* Step 1: Project Setup */}
                     {step === 1 && (
-                        <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="bg-primary-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-1 ring-primary-500/50">
-                                <Sparkles className="w-10 h-10 text-primary-400" />
-                            </div>
-                            <div>
-                                <h1 className="text-4xl font-bold mb-4">Welcome to Regulayer</h1>
-                                <p className="text-xl text-slate-400 max-w-lg mx-auto">
-                                    You&apos;re minutes away from cryptographic proof for your AI agents.
-                                    Let&apos;s get you set up.
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                            className="space-y-8"
+                        >
+                            <div className="mb-10 text-center">
+                                <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">Create your first vault</h1>
+                                <p className="text-muted-foreground">
+                                    A project isolates your cryptographic records, API keys, and governance policies.
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setStep(2)}
-                                className="bg-primary-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-primary-500 transition flex items-center gap-2 mx-auto"
-                            >
-                                Get Started
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    )}
 
-                    {/* Step 2: Project Setup */}
-                    {step === 2 && (
-                        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 animate-in fade-in slide-in-from-right-8 duration-500">
-                            <h2 className="text-2xl font-bold mb-2">Name your Project</h2>
-                            <p className="text-slate-400 mb-8">
-                                Projects organize your agents and decisions. You can add more later.
-                            </p>
-
-                            <form onSubmit={handleProjectSubmit}>
+                            <form onSubmit={handleProjectSubmit} className="bg-white border border-border rounded-xl p-8 shadow-2xl">
                                 <div className="mb-6">
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Project Name</label>
+                                    <label className="block text-sm font-semibold text-foreground mb-3">Project Environment Name</label>
                                     <div className="relative">
-                                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                         <input
                                             type="text"
                                             value={projectName}
                                             onChange={(e) => setProjectName(e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                                            placeholder="My AI Agent"
+                                            className="w-full bg-white border border-border rounded-lg py-3.5 pl-12 pr-4 text-foreground placeholder-slate-800 focus:bg-slate-700 focus:ring-1 focus:bg-slate-700 hover:border-slate-400 transition-all outline-none font-medium"
+                                            placeholder="e.g. Production Vault"
                                             required
                                             autoFocus
                                         />
@@ -229,159 +200,100 @@ export default function OnboardingPage() {
                                 <button
                                     type="submit"
                                     disabled={saving || !projectName}
-                                    className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full bg-secondary text-foreground py-3.5 rounded-lg font-bold hover:bg-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(255,255,255,0.1)] hover:shadow-[0_6px_20px_rgba(255,255,255,0.15)] flex justify-center items-center gap-2"
                                 >
-                                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue'}
-                                    {!saving && <ArrowRight className="w-5 h-5" />}
+                                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue to Integration'}
+                                    {!saving && <ArrowRight className="w-4 h-4" />}
                                 </button>
                             </form>
-                        </div>
+                        </motion.div>
                     )}
 
-                    {/* Step 3: Billing */}
-                    {step === 3 && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
-                            <div className="text-center">
-                                <h2 className="text-2xl font-bold mb-2">Choose your plan</h2>
-                                <p className="text-slate-400">
-                                    Start free, upgrade when you scale.
-                                </p>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                {/* Free Plan */}
-                                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 hover:border-slate-500 transition cursor-pointer relative group" onClick={() => handlePlanSelect('free')}>
-                                    <div className="absolute top-0 right-0 p-4">
-                                        <div className="w-6 h-6 rounded-full border-2 border-slate-600 group-hover:border-primary-500 flex items-center justify-center">
-                                            {/* Radio circle */}
-                                        </div>
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2">Developer</h3>
-                                    <div className="text-3xl font-bold mb-4">$0 <span className="text-sm font-normal text-slate-400">/mo</span></div>
-                                    <ul className="space-y-3 mb-6">
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> 1,000 Decisions/mo
-                                        </li>
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> 30-day Retention
-                                        </li>
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> Community Support
-                                        </li>
-                                    </ul>
-                                    <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg font-medium transition">
-                                        Select Free
-                                    </button>
-                                </div>
-
-                                {/* Pro Plan */}
-                                <div className="bg-slate-800 border-2 border-primary-900/50 rounded-2xl p-6 hover:border-primary-500 transition cursor-pointer relative group" onClick={() => handlePlanSelect('pro')}>
-                                    <div className="absolute top-0 right-0 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg">
-                                        RECOMMENDED
-                                    </div>
-                                    <h3 className="text-xl font-bold mb-2">Startup</h3>
-                                    <div className="text-3xl font-bold mb-4">$49 <span className="text-sm font-normal text-slate-400">/mo</span></div>
-                                    <ul className="space-y-3 mb-6">
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> 100,000 Decisions/mo
-                                        </li>
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> 1-year Retention
-                                        </li>
-                                        <li className="flex items-center gap-2 text-slate-300">
-                                            <Check className="w-4 h-4 text-primary-400" /> Priority Support
-                                        </li>
-                                    </ul>
-                                    <button className="w-full bg-primary-600 hover:bg-primary-500 text-white py-2 rounded-lg font-medium transition">
-                                        Select Startup
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 4: Integration */}
-                    {step === 4 && (
-                        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 animate-in fade-in slide-in-from-right-8 duration-500">
+                    {/* Step 2: Integration & Keys */}
+                    {step === 2 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                            className="space-y-8"
+                        >
                             <div className="text-center mb-8">
-                                <div className="bg-green-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto ring-1 ring-green-500/50 mb-4">
-                                    <Code className="w-8 h-8 text-green-400" />
-                                </div>
-                                <h2 className="text-2xl font-bold mb-2">You&apos;re ready to integrate</h2>
-                                <p className="text-slate-400">
-                                    Use this key to record decisions from your AI agent.
+                                <h2 className="text-3xl font-bold tracking-tight text-foreground mb-3">Secure your integration</h2>
+                                <p className="text-muted-foreground">
+                                    Use this production key to start cryptographically recording your LLM decisions.
                                 </p>
                             </div>
 
-                            {saving ? (
-                                <div className="flex justify-center p-8">
-                                    <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-                                </div>
-                            ) : apiKey ? (
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">Your API Key</label>
-                                        <div className="flex items-center gap-2">
-                                            <code className="flex-1 bg-slate-950 border border-slate-800 p-4 rounded-lg text-primary-400 font-mono break-all">
-                                                {apiKey.key_secret}
-                                            </code>
-                                            <button
-                                                onClick={() => navigator.clipboard.writeText(apiKey.key_secret || "")}
-                                                className="p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
-                                                title="Copy to clipboard"
-                                            >
-                                                <Copy className="w-5 h-5" />
-                                            </button>
+                            <div className="bg-white border border-border rounded-xl overflow-hidden shadow-2xl">
+
+                                {/* API Key Section */}
+                                <div className="p-8 border-b border-border bg-white">
+                                    {saving ? (
+                                        <div className="flex justify-center py-6">
+                                            <Loader2 className="w-6 h-6 bg-slate-700 animate-spin" />
                                         </div>
-                                        <p className="text-xs text-amber-500 mt-2">
-                                            Save this key now! You won&apos;t be able to see it again.
-                                        </p>
+                                    ) : apiKey ? (
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Production Key</label>
+                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-primary/10 text-amber-500 border border-amber-500/20">Store securely</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="flex-1 bg-black border border-border p-3.5 rounded-lg text-emerald-400 font-mono text-sm tracking-tight break-all shadow-inner">
+                                                    {apiKey.key_secret}
+                                                </code>
+                                                <button
+                                                    onClick={copyToClipboard}
+                                                    className={`p-3.5 rounded-lg border transition-all flex items-center justify-center shrink-0 w-12 h-12 ${copied ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white border-border text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-6">
+                                            <p className="text-red-400 text-sm mb-4">API key generation failed.</p>
+                                            <button onClick={attemptKeyGeneration} className="text-sm font-medium text-zinc-400 hover:-zinc-300">Retry</button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Code Snippets Section */}
+                                <div>
+                                    <div className="flex items-center bg-[#1a1a24] border-b border-border px-4">
+                                        {(['python', 'node', 'go'] as const).map(lang => (
+                                            <button
+                                                key={lang}
+                                                onClick={() => setActiveLang(lang)}
+                                                className={`px-4 py-3 text-xs font-mono font-medium transition-all capitalize border-b-2 ${activeLang === lang
+                                                    ? '-zinc-400 bg-slate-700 bg-[#222230]'
+                                                    : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-[#222230]/50'
+                                                    }`}
+                                            >
+                                                {lang}
+                                            </button>
+                                        ))}
                                     </div>
-
-                                    <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-                                        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Quick Start (Python)</p>
-                                        <pre className="text-sm font-mono text-slate-300 overflow-x-auto">
-                                            {`from regulayer import Regulayer
-
-sender = Regulayer(
-    api_key="${apiKey.key_secret}"
-)
-
-with sender.scan(input="Verify this"):
-    # Your agent logic
-    pass`}
+                                    <div className="p-6 bg-background">
+                                        <pre className="text-sm font-mono text-foreground overflow-x-auto selection:bg-secondary">
+                                            <code>{snippets[activeLang]}</code>
                                         </pre>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <button
-                                        onClick={finishOnboarding}
-                                        className="w-full bg-primary-600 text-white py-4 rounded-xl font-bold hover:bg-primary-500 transition flex items-center justify-center gap-2"
-                                    >
-                                        Go to Dashboard
-                                        <ArrowRight className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            ) : keyError ? (
-                                <div className="text-center space-y-4">
-                                    <p className="text-red-400">
-                                        Failed to generate API Key.
-                                    </p>
-                                    <button
-                                        onClick={attemptKeyGeneration}
-                                        className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-500 transition font-medium"
-                                    >
-                                        Retry
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex justify-center p-8">
-                                    <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-                                </div>
-                            )}
-                        </div>
+                            <button
+                                onClick={finishOnboarding}
+                                className="w-full bg-white border border-border text-foreground py-4 rounded-xl font-bold hover:bg-secondary hover:border-slate-400 transition-all flex justify-center items-center gap-2 shadow-lg"
+                            >
+                                Enter Console
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                        </motion.div>
                     )}
+
                 </div>
             </div>
         </div>
     );
 }
+

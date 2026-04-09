@@ -1,118 +1,112 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useRef, useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { TrustNetwork } from "@/components/ui/trust-network";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-const values = [
-    {
-        title: "Integrity First",
-        description: "We build systems that are mathematically impossible to tamper with. Our own infrastructure holds us to the same standard we set for our customers.",
-        icon: "🛡️",
-    },
-    {
-        title: "Radical Transparency",
-        description: "Our architecture is open for inspection. We publish our verification methodology and welcome third-party audits at any time.",
-        icon: "🔍",
-    },
-    {
-        title: "Developer Empathy",
-        description: "We remember what it's like to integrate yet another SaaS tool. That's why our SDK is three lines — not three hundred.",
-        icon: "💻",
-    },
-    {
-        title: "Accountability by Design",
-        description: "We believe AI should be accountable the same way financial transactions are. Every decision deserves a receipt.",
-        icon: "📋",
-    },
-];
-
-const team = [
-    { name: "Sancheet", role: "Founder & CEO", bio: "Building the trust layer for the AI age." },
-];
+function useReveal(t = 0.1) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [v, setV] = useState(false);
+    useEffect(() => { const el = ref.current; if (!el) return; const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); o.disconnect(); } }, { threshold: t }); o.observe(el); return () => o.disconnect(); }, [t]);
+    return { ref, v };
+}
 
 export default function AboutPage() {
+    const hero = useReveal();
+    const story = useReveal();
+    const principles = useReveal();
+    const cta = useReveal();
+
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-background text-foreground antialiased">
             <Navbar />
 
-            <section className="pt-32 pb-24 md:pb-32">
-                <div className="max-w-7xl mx-auto px-6">
-                    {/* Header */}
-                    <div className="max-w-3xl mb-20">
-                        <p className="text-sm font-medium text-indigo-400 uppercase tracking-wider mb-3">
-                            About
-                        </p>
-                        <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-                            We&apos;re building the<br />
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                                trust layer for AI
-                            </span>
-                        </h1>
-                        <p className="text-lg text-zinc-400 leading-relaxed">
-                            AI makes millions of decisions every day. Most are invisible, unaudited, and irreversible. Regulayer changes that by providing cryptographic proof of every decision — creating accountability infrastructure for the AI era.
-                        </p>
-                    </div>
+            {/* Hero */}
+            <section ref={hero.ref} className="pt-36 pb-16 lg:pt-44 lg:pb-20 relative overflow-hidden">
+                <div className="absolute inset-0 aurora-bg" />
+                <div className="absolute inset-0 opacity-30">
+                    <TrustNetwork nodeCount={25} interactive={false} />
+                </div>
+                <div className={`container relative z-10 max-w-3xl transition-all duration-500 ${hero.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+                    <p className="text-xs font-display font-semibold text-primary uppercase tracking-[0.2em] mb-4">About</p>
+                    <h1 className="font-display text-display mb-6 max-w-2xl">
+                        Accountability infrastructure for <span className="gradient-text">autonomous systems</span>.
+                    </h1>
+                    <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
+                        We build cryptographic systems of record that make AI decisions verifiable,
+                        tamper-proof, and regulation-ready — so enterprises can deploy AI with confidence.
+                    </p>
+                </div>
+            </section>
 
-                    {/* Mission */}
-                    <div className="grid md:grid-cols-2 gap-12 mb-24">
+            {/* Story */}
+            <section ref={story.ref} className="py-20 lg:py-28 dot-grid">
+                <div className={`container max-w-3xl transition-all duration-500 ${story.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+                    <div className="grid md:grid-cols-2 gap-14">
                         <div>
-                            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Our Mission</h2>
-                            <p className="text-2xl text-white font-medium leading-relaxed">
-                                Make every AI decision provable, auditable, and accountable — so that trust isn&apos;t optional, it&apos;s guaranteed.
+                            <h2 className="font-display text-headline mb-4">The gap</h2>
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                                AI systems make millions of decisions every day — credit approvals, medical triage,
+                                hiring filters, content moderation. But almost none of it is provably recorded.
+                            </p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                When regulators ask &quot;show me the evidence&quot;, most teams scramble.
+                                Logs are incomplete, tampered, or simply don&apos;t exist.
                             </p>
                         </div>
                         <div>
-                            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">The Problem</h2>
-                            <p className="text-zinc-400 leading-relaxed">
-                                As AI systems become more autonomous, the gap between what they do and what we can prove they did grows wider. Enterprises deploying AI agents face regulatory scrutiny, audit requirements, and liability risks — but lack the infrastructure to demonstrate compliance. Regulayer fills that gap with immutable, cryptographic proof.
+                            <h2 className="font-display text-headline mb-4">Our answer</h2>
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                                Regulayer is an append-only, cryptographically sealed evidence layer for AI decisions.
+                                Every model call, every input/output pair, every governance check — hashed, signed, and stored.
+                            </p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                Not just logging. Not just monitoring. <span className="text-foreground font-medium">Proof.</span>
                             </p>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    {/* Values */}
-                    <div className="mb-24">
-                        <h2 className="text-2xl font-bold text-white mb-10">Our Values</h2>
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {values.map((value) => (
-                                <div key={value.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 hover:border-white/[0.12] transition-all">
-                                    <div className="text-3xl mb-4">{value.icon}</div>
-                                    <h3 className="text-lg font-semibold text-white mb-2">{value.title}</h3>
-                                    <p className="text-sm text-zinc-400 leading-relaxed">{value.description}</p>
-                                </div>
-                            ))}
-                        </div>
+            {/* Principles */}
+            <section ref={principles.ref} className="py-20 lg:py-28 relative">
+                <div className="absolute inset-0 aurora-bg opacity-30" />
+                <div className={`container relative z-10 max-w-3xl transition-all duration-500 ${principles.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+                    <p className="text-xs font-display font-semibold text-primary uppercase tracking-[0.2em] mb-8">Engineering Principles</p>
+                    <div className="space-y-6">
+                        {[
+                            { title: "Immutability first", desc: "Write-once storage with cryptographic chain verification. No record can be modified after ingestion." },
+                            { title: "Zero trust architecture", desc: "Every tenant gets isolated encryption keys, dedicated partitions, and independent verification chains." },
+                            { title: "Compliance by construction", desc: "EU AI Act articles are mapped directly to system capabilities — not bolted on afterwards." },
+                            { title: "Invisible to models", desc: "Sub-2ms async overhead. Regulayer sits beside your pipeline, never in it." },
+                        ].map((p, i) => (
+                            <div key={i} className="glass rounded-xl p-6 hover-lift group">
+                                <h3 className="font-display text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">{p.title}</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
+                            </div>
+                        ))}
                     </div>
+                </div>
+            </section>
 
-                    {/* Team */}
-                    <div className="mb-24">
-                        <h2 className="text-2xl font-bold text-white mb-10">Team</h2>
-                        <div className="grid md:grid-cols-3 gap-6">
-                            {team.map((person) => (
-                                <div key={person.name} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8">
-                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4">
-                                        <span className="text-white font-bold text-lg">{person.name[0]}</span>
-                                    </div>
-                                    <h3 className="text-base font-semibold text-white">{person.name}</h3>
-                                    <p className="text-sm text-indigo-400 mb-2">{person.role}</p>
-                                    <p className="text-sm text-zinc-500">{person.bio}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* CTA */}
-                    <div className="text-center py-16 border-t border-white/[0.06]">
-                        <h2 className="text-3xl font-bold text-white mb-4">Join us</h2>
-                        <p className="text-zinc-400 mb-8 max-w-md mx-auto">
-                            We&apos;re looking for exceptional engineers and researchers who want to define how AI trust works.
-                        </p>
-                        <Link
-                            href="mailto:careers@regulayer.com"
-                            className="px-8 py-3.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-600/25"
-                        >
-                            View Open Positions
+            {/* CTA */}
+            <section ref={cta.ref} className="py-20 lg:py-28">
+                <div className={`container max-w-xl text-center transition-all duration-500 ${cta.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+                    <h2 className="font-display text-headline mb-4">
+                        Want to <span className="gradient-text">build with us</span>?
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-8">
+                        We&apos;re hiring engineers who care about accountability, cryptography, and shipping great infrastructure.
+                    </p>
+                    <div className="flex gap-4 justify-center">
+                        <Link href="/contact">
+                            <Button className="rounded-xl font-display shadow-glow-sm">
+                                Get in Touch <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
                         </Link>
                     </div>
                 </div>

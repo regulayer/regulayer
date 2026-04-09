@@ -13,6 +13,7 @@ class ReportsSettings(BaseSettings):
     governance_api_url: str = os.getenv("GOVERNANCE_URL", "http://governance:8002")
     report_version: str = "1.0.0"
     debug: bool = False
+    cors_origins: str = "*"
     
     class Config:
         env_prefix = "REPORTS_"

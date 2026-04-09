@@ -19,9 +19,10 @@ Usage:
     )
 """
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
-from .client import configure, get_client, RegulayerClient, RegulayerConfig
+from .config import configure, RegulayerConfig
+from .client import get_client, RegulayerClient
 from .errors import (
     RegulayerError,
     InvalidApiKeyError,
@@ -36,7 +37,7 @@ from .errors import (
     ValidationError,
     PayloadTooLargeError,
 )
-from .trace import trace
+from .trace import trace, Decision
 
 __all__ = [
     # Version
@@ -49,6 +50,7 @@ __all__ = [
     "RegulayerConfig",
     # Trace
     "trace",
+    "Decision",
     # Errors
     "RegulayerError",
     "InvalidApiKeyError",

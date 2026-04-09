@@ -30,7 +30,16 @@ class PolicyConditionOperator(str, Enum):
     EQ = "eq"
     NEQ = "neq"
     IN = "in"
+    NOT_IN = "not_in"
     CONTAINS = "contains"
+    NOT_CONTAINS = "not_contains"
+    STARTS_WITH = "starts_with"
+    REGEX = "regex"
+    LLM_EVALUATE = "llm_evaluate"
+    GT = "gt"
+    LT = "lt"
+    GTE = "gte"
+    LTE = "lte"
 
 
 class PolicyCondition(BaseModel):
@@ -39,7 +48,7 @@ class PolicyCondition(BaseModel):
     
     No arbitrary code. No scripting. No side effects.
     """
-    field: PolicyConditionField
+    field: str
     operator: PolicyConditionOperator
     value: Any = Field(..., description="Value to compare against")
 
@@ -50,6 +59,10 @@ class PolicyActionType(str, Enum):
     ADD_TAG = "add_tag"
     REQUIRE_APPROVAL = "require_approval"
     NOTIFY = "notify"
+    NOTIFY_EMAIL = "notify_email"
+    NOTIFY_WEBHOOK = "notify_webhook"
+    BLOCK = "block"
+    AUTO_APPROVE = "auto_approve"
 
 
 class PolicyAction(BaseModel):
@@ -58,14 +71,16 @@ class PolicyAction(BaseModel):
     
     Actions modify governance metadata only, never facts.
     """
-    type: PolicyActionType
+    type: str
     parameters: dict = Field(default_factory=dict)
 
 
 class GovernancePolicyCreate(BaseModel):
     """Request model for creating a policy."""
-    name: str = Field(..., max_length=100)
-    description: str = Field(..., max_length=500)
+    name: str = Field(..., max_length=200)
+    description: Optional[str] = Field(None, max_length=500)
+    org_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
     applies_to: List[str] = Field(
         default_factory=list,
         description="System names this policy applies to. Empty = all systems."
@@ -83,7 +98,9 @@ class GovernancePolicy(BaseModel):
     """
     policy_id: UUID
     name: str
-    description: str
+    description: Optional[str] = None
+    org_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
     enabled: bool = True
     applies_to: List[str]
     conditions: List[PolicyCondition]

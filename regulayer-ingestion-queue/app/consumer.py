@@ -131,30 +131,15 @@ class QueueConsumer:
         """Consume events for a specific project."""
         try:
             queue = get_queue()
-            print(f"DEBUG: Starting consumer loop for project {project_id}", flush=True)
-            
-            # Debug Group State
-            try:
-                pending = await queue.get_pending_count(project_id)
-                print(f"DEBUG: Pending count for {project_id}: {pending}", flush=True)
-            except Exception as e:
-                print(f"DEBUG: Failed to get pending count: {e}", flush=True)
-
-            print(f"DEBUG: Entering while loop for {project_id}", flush=True)
-            print(f"DEBUG: Queue type: {type(queue)}", flush=True)
-            print(f"DEBUG: Queue class: {queue.__class__.__name__}", flush=True)
             
             while self.running:
                 try:
-                    # print(f"DEBUG: Calling dequeue for {project_id}", flush=True)
                     result = await queue.dequeue(project_id)
                     
                     if result is None:
-                        # No messages, wait a bit
                         await asyncio.sleep(0.1)
                         continue
                     
-                    print(f"DEBUG: Found message for {project_id}", flush=True)
                     message_id, event = result
                     await self.process_event(message_id, event)
                 except Exception as e:

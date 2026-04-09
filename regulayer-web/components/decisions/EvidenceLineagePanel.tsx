@@ -169,8 +169,8 @@ export function EvidenceLineagePanel({ lineage }: EvidenceLineagePanelProps) {
             )}
 
             {/* Trust Banner */}
-            <div className="p-4 bg-blue-50">
-                <p className="text-blue-700 text-sm flex items-center gap-2">
+            <div className="p-4 -zinc-50">
+                <p className="-zinc-700 text-sm flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     Custody transfer does not affect cryptographic validity.
                 </p>

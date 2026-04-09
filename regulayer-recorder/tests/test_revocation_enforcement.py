@@ -6,18 +6,19 @@ from app.api import router
 from fastapi import FastAPI
 import pytest
 
-app = FastAPI()
-app.include_router(router)
+from app.api import get_db_session
 
-async def override_get_db_session():
-    return AsyncMock()
-
-app.dependency_overrides["app.api.get_db_session"] = override_get_db_session
-
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def mock_db_session(client):
+    async def override_get_db_session():
+        yield AsyncMock()
+    
+    client.app.dependency_overrides[get_db_session] = override_get_db_session
+    yield
+    client.app.dependency_overrides = {}
 
 @patch("app.api.record_decision")
-def test_revocation_blocked_at_ingestion(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_revocation_blocked_at_ingestion(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     # Setup revoked identity
     # signed_at is NOW (by default in create_attestation_envelope)
     # revoked_at = NOW - 1 hour
@@ -47,7 +48,7 @@ def test_revocation_blocked_at_ingestion(mock_record, signer, identity, sample_e
     assert not mock_record.called
 
 @patch("app.api.record_decision")
-def test_historical_revocation_accepted(mock_record, signer, identity, sample_event, override_guard, mock_registry):
+def test_historical_revocation_accepted(mock_record, signer, identity, sample_event, override_guard, mock_registry, client):
     # Setup revoked identity where revocation is in FUTURE relative to signing.
     # signed_at is NOW
     # revoked_at = NOW + 1 hour

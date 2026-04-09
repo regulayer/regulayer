@@ -1,212 +1,178 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { ChevronRight, FileCode2, TerminalSquare, Search, BookOpen, Layers } from "lucide-react";
+import PythonSDKDocComponent from "./components/PythonSDKDoc";
+import GoSDKDocComponent from "./components/GoSDKDoc";
+import NodeSDKDocComponent from "./components/NodeSDKDoc";
+import IntroDocComponent from "./components/IntroDoc";
+import QuickstartDocComponent from "./components/QuickstartDoc";
+import ArchitectureDocComponent from "./components/ArchitectureDoc";
+import AuthDocComponent from "./components/AuthDoc";
+import RecordingDocComponent from "./components/RecordingDoc";
+import PoliciesDocComponent from "./components/PoliciesDoc";
+import WebhooksDocComponent from "./components/WebhooksDoc";
+import ReportsDocComponent from "./components/ReportsDoc";
+import Soc2DocComponent from "./components/Soc2Doc";
+import EuAiDocComponent from "./components/EuAiDoc";
 
-const docsSections = [
-    {
-        title: "Getting Started",
-        items: [
-            { label: "Introduction", href: "#introduction", active: true },
-            { label: "Installation", href: "#installation" },
-            { label: "Quick Start", href: "#quickstart" },
-            { label: "Authentication", href: "#authentication" },
-        ],
-    },
-    {
-        title: "Core Concepts",
-        items: [
-            { label: "Decision Recording", href: "#recording" },
-            { label: "Hash Chains", href: "#hash-chains" },
-            { label: "Proof Verification", href: "#verification" },
-            { label: "Projects & Scoping", href: "#projects" },
-        ],
-    },
-    {
-        title: "SDK Reference",
-        items: [
-            { label: "Python SDK", href: "#python" },
-            { label: "TypeScript SDK", href: "#typescript" },
-            { label: "Go SDK", href: "#go" },
-            { label: "REST API", href: "#rest-api" },
-        ],
-    },
-    {
-        title: "Guides",
-        items: [
-            { label: "EU AI Act Compliance", href: "#eu-ai-act" },
-            { label: "SOC 2 Integration", href: "#soc2" },
-            { label: "Audit Trail Export", href: "#export" },
-            { label: "Webhook Configuration", href: "#webhooks" },
-        ],
-    },
+const docsGraph = [
+  {
+    category: "Getting Started",
+    icon: BookOpen,
+    items: [
+      { id: "intro", title: "Introduction" },
+      { id: "quickstart", title: "Quickstart Guide" },
+      { id: "architecture", title: "Architecture Overview" },
+      { id: "auth", title: "Authentication" }
+    ]
+  },
+  {
+    category: "SDK References",
+    icon: TerminalSquare,
+    items: [
+      { id: "sdk-python", title: "Python SDK" },
+      { id: "sdk-go", title: "Go SDK" },
+      { id: "sdk-node", title: "Node.js SDK" }
+    ]
+  },
+  {
+    category: "Core Features",
+    icon: Layers,
+    items: [
+      { id: "recording", title: "Cryptographic Recording" },
+      { id: "policies", title: "Policy Enforcements" },
+      { id: "governance", title: "Governance Reviews" },
+      { id: "webhooks", title: "Webhooks & Events" }
+    ]
+  },
+  {
+    category: "Compliance",
+    icon: FileCode2,
+    items: [
+      { id: "reports", title: "Compliance Reports" },
+      { id: "soc2", title: "SOC 2 Type II" },
+      { id: "euai", title: "EU AI Act Requirements" }
+    ]
+  }
 ];
 
 export default function DocsPage() {
-    return (
-        <div className="min-h-screen bg-black text-white">
-            <Navbar />
+  const [activeDoc, setActiveDoc] = useState("quickstart");
 
-            <div className="max-w-7xl mx-auto px-6 pt-24">
-                <div className="flex gap-12">
-                    {/* Sidebar */}
-                    <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pb-12">
-                        <nav className="space-y-8">
-                            {docsSections.map((section) => (
-                                <div key={section.title}>
-                                    <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-                                        {section.title}
-                                    </h4>
-                                    <ul className="space-y-1">
-                                        {section.items.map((item) => (
-                                            <li key={item.label}>
-                                                <a
-                                                    href={item.href}
-                                                    className={`block px-3 py-1.5 text-sm rounded-lg transition-colors ${item.active
-                                                            ? "text-white bg-white/[0.06] font-medium"
-                                                            : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.03]"
-                                                        }`}
-                                                >
-                                                    {item.label}
-                                                </a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </nav>
-                    </aside>
+  return (
+    <div className="min-h-screen bg-background text-slate-900 font-sans selection:bg-brand-100">
+      <Navbar />
 
-                    {/* Main Content */}
-                    <main className="flex-1 min-w-0 pb-24">
-                        {/* Breadcrumb */}
-                        <div className="flex items-center gap-2 text-sm text-zinc-600 mb-8">
-                            <Link href="/" className="hover:text-zinc-400 transition-colors">Home</Link>
-                            <span>/</span>
-                            <span className="text-zinc-400">Documentation</span>
-                        </div>
+      <div className="pt-16 max-w-[90rem] mx-auto flex">
 
-                        {/* Title */}
-                        <h1 id="introduction" className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Documentation</h1>
-                        <p className="text-lg text-zinc-400 mb-12 max-w-2xl">
-                            Learn how to integrate Regulayer into your AI stack and start recording provable decisions in minutes.
-                        </p>
+        {/* ─── SIDEBAR NAV ─── */}
+        <aside className="fixed top-16 bottom-0 w-64 border-r border-slate-200 bg-slate-50 overflow-y-auto hidden md:block">
+          <div className="p-4 border-b border-slate-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search documentation..."
+                className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm text-slate-600 placeholder-slate-400 focus:border-slate-300 outline-none transition-colors"
+              />
+            </div>
+          </div>
 
-                        {/* Overview Cards */}
-                        <div className="grid md:grid-cols-3 gap-4 mb-16">
-                            {[
-                                { title: "Quick Start", desc: "Get up and running in 5 minutes", icon: "⚡" },
-                                { title: "API Reference", desc: "Complete REST and SDK documentation", icon: "📖" },
-                                { title: "Examples", desc: "Production-ready code samples", icon: "💻" },
-                            ].map((card) => (
-                                <div key={card.title} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-6 hover:border-white/[0.12] hover:bg-white/[0.04] transition-all cursor-pointer group">
-                                    <div className="text-2xl mb-3">{card.icon}</div>
-                                    <h3 className="text-base font-semibold text-white mb-1 group-hover:text-indigo-400 transition-colors">{card.title}</h3>
-                                    <p className="text-sm text-zinc-500">{card.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Installation Section */}
-                        <section id="installation" className="mb-16">
-                            <h2 className="text-2xl font-bold text-white mb-4">Installation</h2>
-                            <p className="text-zinc-400 mb-6">Install the Regulayer SDK for your language of choice:</p>
-
-                            <div className="space-y-4">
-                                {[
-                                    { lang: "Python", cmd: "pip install regulayer" },
-                                    { lang: "TypeScript", cmd: "npm install @regulayer/sdk" },
-                                    { lang: "Go", cmd: "go get github.com/regulayer/sdk-go" },
-                                ].map((sdk) => (
-                                    <div key={sdk.lang} className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-                                        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06]">
-                                            <span className="text-xs text-zinc-500 font-medium">{sdk.lang}</span>
-                                        </div>
-                                        <pre className="p-4 font-mono text-sm text-indigo-400 overflow-x-auto">
-                                            <code>{sdk.cmd}</code>
-                                        </pre>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Quick Start Section */}
-                        <section id="quickstart" className="mb-16">
-                            <h2 className="text-2xl font-bold text-white mb-4">Quick Start</h2>
-                            <p className="text-zinc-400 mb-6">
-                                Record your first AI decision in three steps:
-                            </p>
-
-                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden mb-6">
-                                <div className="flex items-center px-4 py-2 border-b border-white/[0.06]">
-                                    <span className="text-xs text-zinc-500 font-medium">Python</span>
-                                </div>
-                                <pre className="p-6 font-mono text-sm overflow-x-auto">
-                                    <code>
-                                        <span className="text-purple-400">from</span> <span className="text-zinc-300">regulayer</span> <span className="text-purple-400">import</span> <span className="text-zinc-300">Regulayer</span>{"\n\n"}
-                                        <span className="text-zinc-500"># Initialize the client</span>{"\n"}
-                                        <span className="text-zinc-300">client</span> <span className="text-zinc-500">=</span> <span className="text-indigo-400">Regulayer</span><span className="text-zinc-500">(</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">api_key</span><span className="text-zinc-500">=</span><span className="text-amber-400">{'"sk_live_your_key_here"'}</span><span className="text-zinc-500">,</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">project</span><span className="text-zinc-500">=</span><span className="text-amber-400">{'"my-ai-agent"'}</span>{"\n"}
-                                        <span className="text-zinc-500">)</span>{"\n\n"}
-                                        <span className="text-zinc-500"># Record an AI decision with full context</span>{"\n"}
-                                        <span className="text-zinc-300">proof</span> <span className="text-zinc-500">=</span> <span className="text-zinc-300">client</span><span className="text-zinc-500">.</span><span className="text-indigo-400">record</span><span className="text-zinc-500">(</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">decision_type</span><span className="text-zinc-500">=</span><span className="text-amber-400">{'"model_inference"'}</span><span className="text-zinc-500">,</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">model</span><span className="text-zinc-500">=</span><span className="text-amber-400">{'"gpt-4o"'}</span><span className="text-zinc-500">,</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">input_hash</span><span className="text-zinc-500">=</span><span className="text-zinc-300">sha256</span><span className="text-zinc-500">(</span><span className="text-zinc-300">prompt</span><span className="text-zinc-500">),</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">output_hash</span><span className="text-zinc-500">=</span><span className="text-zinc-300">sha256</span><span className="text-zinc-500">(</span><span className="text-zinc-300">response</span><span className="text-zinc-500">),</span>{"\n"}
-                                        {"    "}<span className="text-emerald-400">metadata</span><span className="text-zinc-500">=</span><span className="text-zinc-500">{"{"}</span><span className="text-amber-400">{'"user_id"'}</span><span className="text-zinc-500">:</span> <span className="text-amber-400">{'"u_123"'}</span><span className="text-zinc-500">{"}"}</span>{"\n"}
-                                        <span className="text-zinc-500">)</span>{"\n\n"}
-                                        <span className="text-zinc-500"># Verify anytime</span>{"\n"}
-                                        <span className="text-purple-400">assert</span> <span className="text-zinc-300">client</span><span className="text-zinc-500">.</span><span className="text-indigo-400">verify</span><span className="text-zinc-500">(</span><span className="text-zinc-300">proof</span><span className="text-zinc-500">.</span><span className="text-zinc-300">hash</span><span className="text-zinc-500">)</span><span className="text-zinc-500">.</span><span className="text-zinc-300">valid</span>
-                                    </code>
-                                </pre>
-                            </div>
-
-                            {/* Info Box */}
-                            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.05] p-5">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <span className="text-indigo-400 text-xs">i</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-zinc-300 font-medium mb-1">Cryptographic Guarantee</p>
-                                        <p className="text-sm text-zinc-500">
-                                            Each recorded decision is hashed into a chain. Tampering with any entry invalidates all subsequent proofs — making it mathematically impossible to alter history without detection.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Authentication Section */}
-                        <section id="authentication" className="mb-16">
-                            <h2 className="text-2xl font-bold text-white mb-4">Authentication</h2>
-                            <p className="text-zinc-400 mb-6">
-                                All API requests require an API key. You can generate keys from the <Link href="/api-keys" className="text-indigo-400 hover:underline">API Keys page</Link> in your dashboard.
-                            </p>
-
-                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-                                <h4 className="text-sm font-medium text-zinc-300 mb-3">Key Types</h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <code className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-mono flex-shrink-0 mt-0.5">sk_live_</code>
-                                        <p className="text-sm text-zinc-400">Production keys — decisions are recorded on your live ledger.</p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <code className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 text-xs font-mono flex-shrink-0 mt-0.5">sk_test_</code>
-                                        <p className="text-sm text-zinc-400">Test keys — decisions are recorded but isolated. Perfect for development.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </main>
+          <nav className="p-4 space-y-8 pb-20">
+            {docsGraph.map((section) => (
+              <div key={section.category}>
+                <div className="flex items-center gap-2 mb-3 px-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <section.icon className="w-3.5 h-3.5" />
+                  {section.category}
                 </div>
+                <ul className="space-y-1">
+                  {section.items.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => setActiveDoc(item.id)}
+                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeDoc === item.id
+                          ? 'bg-slate-100 text-slate-900 font-medium'
+                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/50'
+                          }`}
+                      >
+                        {item.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* ─── MAIN CONTENT AREA ─── */}
+        <main className="flex-1 md:ml-64 bg-background">
+          <div className="max-w-4xl mx-auto py-12 px-6 lg:px-12">
+
+            {/* Breadcrumbs */}
+            <div className="flex items-center gap-2 text-sm text-slate-500 mb-8 font-medium">
+              <span>Docs</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-slate-600">
+                {docsGraph.flatMap(g => g.items).find(i => i.id === activeDoc)?.title}
+              </span>
             </div>
 
+            {/* dynamic active document content */}
+            <article className="prose prose-slate max-w-none">
+              {activeDoc === 'intro' && <IntroDocComponent />}
+              {activeDoc === 'quickstart' && <QuickstartDocComponent />}
+              {activeDoc === 'architecture' && <ArchitectureDocComponent />}
+              {activeDoc === 'sdk-python' && <PythonSDKDocComponent />}
+              {activeDoc === 'sdk-go' && <GoSDKDocComponent />}
+              {activeDoc === 'sdk-node' && <NodeSDKDocComponent />}
+              {activeDoc === 'auth' && <AuthDocComponent />}
+              {activeDoc === 'recording' && <RecordingDocComponent />}
+              {activeDoc === 'policies' && <PoliciesDocComponent />}
+              {activeDoc === 'governance' && <GovernanceDoc />}
+              {activeDoc === 'webhooks' && <WebhooksDocComponent />}
+              {activeDoc === 'reports' && <ReportsDocComponent />}
+              {activeDoc === 'soc2' && <Soc2DocComponent />}
+              {activeDoc === 'euai' && <EuAiDocComponent />}
+            </article>
+
+          </div>
+          <div className="border-t border-slate-200">
             <Footer />
-        </div>
-    );
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function GovernanceDoc() {
+  return (
+    <div>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Governance Reviews</h1>
+      <p className="text-lg text-slate-500 mb-6 leading-relaxed">Not all flagged AI decisions are inherently bad. The Governance Engine provides a structured workflow for compliance teams to review flagged decisions.</p>
+      <h3 className="text-2xl font-semibold mb-4 text-slate-700">The Review Flow</h3>
+      <ol className="list-decimal list-inside space-y-3 text-slate-500 mb-6 bg-white/40 p-6 rounded-xl border border-slate-200">
+        <li><strong className="text-slate-700">Flagged:</strong> An AI Output trips a rule in the Policy Engine.</li>
+        <li><strong className="text-slate-700">Queued:</strong> The decision enters the &quot;Pending Review&quot; queue on the dashboard.</li>
+        <li><strong className="text-slate-700">Audited:</strong> A human compliance officer examines the context and marks it as <strong>Approved</strong> or <strong>Rejected</strong> with a mandatory text justification.</li>
+      </ol>
+      <p className="text-slate-500 text-sm mb-6 bg-slate-50 border border-slate-200 p-4 rounded-lg">
+        This &quot;Human-in-the-Loop&quot; workflow satisfies EU AI Act requirements for high-risk AI deployments and SOC 2 incident remediation criteria.
+      </p>
+      <h3 className="text-xl font-semibold mb-3 pt-6 border-t border-slate-200">Governance Policy Engine Syntax</h3>
+      <p className="text-slate-500 mb-6">
+        Define declarative JSON rules that automatically evaluate every AI decision. We support semantic analysis via LLaMA 3, numeric thresholds, string matching, and more.
+      </p>
+      <div className="mt-4">
+        <Link href="/docs/governance" className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-lg transition font-medium text-sm">
+          📖 View Full Governance Policy Docs →
+        </Link>
+      </div>
+    </div>
+  );
 }

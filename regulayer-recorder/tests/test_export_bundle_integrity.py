@@ -10,18 +10,20 @@ from regulayer_attestation.app.models import AttestationEnvelope
 
 from app.storage import get_db_session
 
-app = FastAPI()
-app.include_router(router)
+import pytest
 
-async def override_get_db_session():
-    return AsyncMock()
-
-app.dependency_overrides[get_db_session] = override_get_db_session
-
-client = TestClient(app)
+@pytest.fixture(autouse=True)
+def mock_db_session(client):
+    async def override_get_db_session():
+        yield AsyncMock()
+    
+    # Override both session getter and direct mock if needed
+    client.app.dependency_overrides[get_db_session] = override_get_db_session
+    yield
+    client.app.dependency_overrides = {}
 
 @patch("app.storage.AsyncSession")
-def test_export_bundle_integrity(mock_session_cls):
+def test_export_bundle_integrity(mock_session_cls, client):
     """
     Verify that the export endpoint returns a bundle that:
     1. Matches the stored record fields exactly.
@@ -59,7 +61,7 @@ def test_export_bundle_integrity(mock_session_cls):
     mock_session.execute.return_value = mock_result
     
     # Setup dependency override for session
-    app.dependency_overrides[get_db_session] = lambda: mock_session
+    client.app.dependency_overrides[get_db_session] = lambda: mock_session
     
     # Setup mock identity
     mock_identity = MagicMock()

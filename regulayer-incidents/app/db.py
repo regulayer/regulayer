@@ -6,10 +6,20 @@ from sqlalchemy.orm import declarative_base
 from .config import settings
 
 # Database Setup
+# Handle SSL mode for asyncpg
+db_url = settings.database_url
+connect_args = {}
+if "sslmode=require" in db_url:
+    connect_args["ssl"] = "require"
+    db_url = db_url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+
 engine = create_async_engine(
-    settings.database_url,
+    db_url,
     echo=False,
-    future=True
+    future=True,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = sessionmaker(

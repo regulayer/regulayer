@@ -1,443 +1,300 @@
-# REGULAYER — PRODUCTION READINESS & LAUNCH SPECIFICATION
-**Canonical Master Document**
+# REGULAYER — OFFICIAL LAUNCH SPECIFICATION (v1.0)
 
-## Purpose
-This document defines the complete intended behavior of Regulayer as a production SaaS platform.
-It bridges the gap between the current demo-integrated system and a fully functional, market-ready product.
+## 1️⃣ Product Definition
+**What Regulayer Is**
+Regulayer is a cryptographic evidence infrastructure platform for AI and automated decision systems.
 
-This is the source of truth for:
-- Architecture
-- UI behavior
-- API behavior
-- Trust boundaries
-- Business readiness
-- Launch readiness
+It enables organizations to:
+- Record decisions
+- Seal them cryptographically
+- Prove later what happened
+- Export verifiable evidence
+- Survive audits and disputes
 
----
+**What Regulayer Is NOT**
+- ❌ Not an AI safety tool
+- ❌ Not a compliance certification tool
+- ❌ Not a model monitoring platform
+- ❌ Not a fairness auditor
+- ❌ Not a blockchain
 
-## 1. What Regulayer Is (At Launch)
+## 2️⃣ Core Product Pillars (Must Be True at Launch)
+- **Cryptographic truth lives ONLY in Recorder**
+- **Append-only enforcement at DB level**
+- **Offline verification works without Regulayer**
+- **Governance never affects crypto**
+- **Billing never affects proof validity**
+- **Demo environment fully isolated**
+- **Async ingestion (202) and Sync Gate Mode (201/403)**
+- **Deterministic export**
+- **Multi-DB isolation**
+- **RDS production ready**
 
-Regulayer is a forensic infrastructure SaaS that allows organizations to:
-- Record AI/automation decisions
-- Make those decisions cryptographically immutable
-- Prove later what happened, when, and by whom
-- Export evidence that remains verifiable without Regulayer
+## 3️⃣ Full Architecture (Launch Version)
 
-Regulayer:
-- ❌ Does NOT judge correctness
-- ❌ Does NOT certify compliance
-- ❌ Does NOT claim safety or fairness
-- ✅ Provides tamper-detectable evidence
-
----
-
-## 2. Core System Pillars (Non-Negotiable)
-
-| Pillar | Meaning |
-| :--- | :--- |
-| **Cryptographic Truth** | Lives ONLY in `regulayer-recorder` |
-| **Separation of Concerns** | UI, billing, governance never touch crypto |
-| **Offline Verifiability** | Proofs verify without Regulayer |
-| **Append-Only** | No deletes, no edits, no rewrites |
-| **Explicit Failure** | Rejections are visible, not silent |
-
----
-
-## 2.1. Source of Truth Precedence
-
-If systems disagree, truth is determined in this order:
-1. **Offline proof verification result** (Highest Authority)
-2. Recorder database state
-3. Export bundle contents
-4. Verifier API
-5. UI display
-6. Status page
-7. Logs / dashboards
-
-> **Rule**: If the UI or API contradicts offline verification, the UI/API is wrong.
-
----
-
-## 3. Current State vs Target State
-
-| Current (Demo) | Target (Production) |
-| :--- | :--- |
-| Demo org auto-created | Real signup → real org → real project |
-| Demo decisions pre-seeded | No data until customer ingests |
-| Dashboard populated artificially | SDK keys work immediately |
-| No real customer onboarding | All pages populated from real APIs |
-| SDK exists but not fully wired | Governance, reports, exports all functional |
-| Governance UI partially present | Billing enforced |
-| Reports exist but not connected everywhere | Demo isolated and optional |
-
----
-
-## 4. User Types & Permissions
-
-| Role | Can Do | Cannot Do |
+### Core Services
+| Service | Purpose | Database |
 | :--- | :--- | :--- |
-| **Owner** | Everything incl billing | Modify crypto |
-| **Admin** | Governance, approvals | Billing |
-| **Member** | Annotate, tag | Export proofs |
-| **Auditor** | View, export only | Annotate |
+| `regulayer-recorder` | Crypto truth | `regulayer_recorder` |
+| `regulayer-ingestion-gateway` | Ingestion + policy | none |
+| `regulayer-ingestion-queue` | Async processing | Redis |
+| `regulayer-control-plane` | Auth + orgs + billing | `regulayer_control` |
+| `regulayer-governance` | Review + tags | `regulayer_governance` |
+| `regulayer-incidents` | Trust alerts | `regulayer_incidents` |
+| `regulayer-web` | Frontend | none |
 
----
+## 4️⃣ External Services at Launch
 
-## 5. Org Lifecycle (Real World)
+### Required
 
-### Signup Flow
-1. User signs up
-2. Org created
-3. Default project created
-4. API key generated (ingest scope)
-5. Wizard starts (5-step)
+**1. AWS RDS (PostgreSQL 15+)**
+- 4 databases
+- SSL required
+- No master user access
+- Strict isolation
 
-### Org States
-| State | Ingest | Verify | Export |
-| :--- | :--- | :--- | :--- |
-| **Active** | ✅ | ✅ | ✅ |
-| **Trial Ended** | ❌ | ✅ | ✅ |
-| **Frozen** | ❌ | ✅ | ✅ |
-| **Closed** | ❌ | ❌ | ✅ |
+**2. AWS EC2 (App Hosting)**
+- Docker deployment
+- Production environment
 
----
+**3. Redis (Elasticache or self-hosted)**
+- Async queue
+- DLQ support
 
-## 5.1. Customer Lifecycle Enforcement
-
-**Formal Onboarding Lifecycle**
-`Signup` → `Trial` (14 days) → `Active` → `TrialEnded` → `Frozen` → `Closed`
-
-**Lifecycle Rules**
-
-| Behavior | Trial | Active | TrialEnded | Frozen | Closed |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ingest** | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **Verify** | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Export** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **UI Banner** | "Trial: X days left" | None | "Trial Ended" | "Account Frozen" | N/A |
-
-**Key Definitions**
-- **Quota Reset**: Monthly on billing cycle anchor date.
-- **Trial Start**: Immediately upon Signup.
-- **Billing Kick-in**: When upgrading to Active OR when Trial expires (if card on file).
-- **Multiple Projects**: Allowed, but all share the Org's billing status.
-- **API Keys**: Scoped per Project. Frozen if Org is Frozen.
-- **Export Guarantee**: User data is **ALWAYS** exportable, even if they never pay.
-
----
-
-## 6. Web Application — Required Pages (Production)
-
-**Must Exist & Be Fully Wired**
-
-**Public**
-- Landing
-- Pricing
-- Docs
-- Login
-- Signup
-
-**App (Authenticated)**
-- Dashboard
-- Projects
-- API Keys
-- Usage
+**4. Stripe**
 - Billing
-- Exports
-- Governance
-- Reports
-- Alerts
-- Team
-- Org Settings
-- Audit Log
-- Identity / SSO
-- Residency
-- Retention
-- Lineage
-- Provenance
-- Deployment Mode
+- Subscription
+- Webhooks
 
-❗ **Demo data must NOT appear in real orgs**
+**5. Cloudflare**
+- DNS
+- SSL termination
+- CDN
+- Rate limiting (optional)
 
----
+### Optional (Future)
+- AWS KMS (Key management)
+- S3 (Export archive)
+- SES (Email)
+- IPFS (Trust freeze mirror)
+- Sentry (Error tracking)
 
-## 7. Dashboard (Production Behavior)
+## 5️⃣ Landing Page (Launch Design)
 
-**What It Shows**
-- Trust status (live from Status Service)
-- Usage (from Control Plane)
-- Recent decisions (from Recorder)
-- Alerts (from Status + Incident)
-- No fake numbers
+### Hero Section
+- **Headline**: Cryptographic Proof for AI Decisions.
+- **Subtext**: Record. Seal. Prove. Survive audits.
+- **CTA**: Get Started | View Docs
 
-**What It Never Shows**
-- Hashes
-- Keys
-- Signatures
-- Chain internals
+### Problem Section
+“AI decisions are easy to change. Logs can be edited. Databases can be altered.”
 
-### Mandatory Empty States & Error UX
+### Solution Section
+- Append-only hash chain
+- Ed25519 signatures
+- Offline verification
+- Governance overlay
 
-| Scenario | UX Behavior / Text |
-| :--- | :--- |
-| **Zero Decisions** | "No decisions recorded yet. Run your first trace:" (Show Code Snippet) |
-| **Recorder Down** | **Alert Banner**: "Ingestion Latency Detected - Queueing Active" |
-| **Queue Stalled** | **Warning**: "Processing Delays - Your data is safe" |
-| **Governance Empty** | "Governance applies after recording. Waiting for data..." |
-| **Reports Empty** | "Reports become available after first decision is finalized." |
+### How It Works Section
+1. Record decision
+2. Seal cryptographically
+3. Export and verify
 
+### Trust Section
+- Open algorithms
+- Independent verification
+- No vendor lock-in
+- Offline capable
 
----
+### Pricing Section
+- Starter
+- Growth
+- Enterprise
 
-## 8. SDK Integration (Critical Gap Today)
-
-**What Must Work**
-```python
-from regulayer import trace, configure
-
-configure(api_key="rl_live_xxx")
-
-with trace(system="loan_approval") as t:
-    t.set_input(...)
-    t.set_output(...)
-```
-
-**Required Backend Wiring**
-1. SDK → Gateway
-2. Gateway → Control Plane (auth)
-3. Gateway → Queue
-4. Queue → Recorder
-5. Recorder → DB
-6. UI → Recorder read APIs
-
-
----
-
-## 8.1 SDK Contract Definition
-
-The SDK must handle failures explicitly. "First Success" means:
-
-| Condition | HTTP Status | SDK Behavior |
-| :--- | :--- | :--- |
-| **Success** | `201 Created` | Return Trace ID (Success) |
-| **Queued** | `202 Accepted` | **Warn**: "Decision queued for async processing" |
-| **Duplicate** | `409 Conflict` | Raise `DuplicateDecisionError` |
-| **Throttled** | `429 Too Many Requests` | Auto-retry w/ exp. backoff (max 3x) |
-| **Frozen** | `403 Forbidden` | Raise `OrgFrozenError` |
-| **Auth Fail** | `401 Unauthorized` | Raise `InvalidApiKeyError` |
-| **Server Fail** | `5xx` | Auto-retry w/ exp. backoff -> Raise `ServiceUnavailableError` |
-
-
-**Critical Rule**: The SDK **MUST NEVER** treat a request as successful unless it receives a `201` or `202` response from the Gateway.
-
-**Idempotency Guarantee**: Client-side (via `request_id` or similar unique trace nonce). 
-
-
----
-
-## 9. Ingestion Guarantees (Production)
-
-| Scenario | Result |
-| :--- | :--- |
-| Duplicate decision_id | 409 |
-| Out-of-order sequence | 409 |
-| Invalid signature | 401 |
-| Org frozen | 403 |
-| Rate limit | 429 |
-| Recorder down | 202 queued |
-
----
-
-## 10. Governance (Currently Incomplete)
-
-**Must Be Fully Functional**
-- Tags
-- Annotations
-- Review states
-- Policies
-- Approvals
-- Evidence export
-
-**Governance:**
-- Uses separate DB
-- Never modifies recorder data
-- Always append-only
-
-**Data Deletion Policy**
-> Regulayer does not support retroactive deletion of cryptographic records. Legal deletion requests result in redaction or access restriction, not removal of evidence.
-
----
-
-## 11. Reports & Evidence (Must Be Wired)
-
-**Report Types**
-- System Trust Report
-- Decision Trust Report
-- Chain Integrity Report
-
-**Evidence Bundles**
-- Proof bundle
-- Governance evidence
-- Incident disclosures
-
-**Export Rules**
-- Always available
-- Even if org frozen
-- Even if Regulayer offline (offline verification)
-
----
-
-## 12. Demo Mode (Current vs Intended)
-
-**Demo Mode Rules**
-- Separate org
-- Separate banner
-- Clearly labeled
-- Limited ingestion
-- Can export proofs
-
-**Demo must NEVER:**
-- Mix with real orgs
-- Imply fake crypto
-- Hide limitations
-
-**Credential Separation**
-> Demo org credentials must never generate "live" API keys, use the SDK without a demo flag, or be used to claim production capability. **Demo credentials are restricted to demo-mode gateways and are rejected by production ingestion endpoints.**
-
----
-
-## 13. Billing & Enforcement
-
-**Billing Enforces Only:**
-- Ingestion
-- Rate limits
-- Quotas
-
-**Billing NEVER Affects:**
-- Proof validity
-- Export
-- Verification
-- Stripe failure → system continues
-
----
-
-## 14. Databases (Production)
-
-| Service | DB |
-| :--- | :--- |
-| Recorder | `regulayer_recorder` |
-| Control Plane | `regulayer_control` |
-| Governance | `regulayer_governance` |
-
-- No shared tables
-- No cross-service writes
-
----
-
-## 15. Environments
-
-| Dev | Staging | Prod |
-| :--- | :--- | :--- |
-| Docker Compose | Same as prod | Managed DB |
-| Demo enabled | Stripe test | KMS-backed secrets |
-| | No demo | No demo |
-| | | Audit logs enabled |
-
-### Promotion Rules
-1. **No Demo Mode in Staging**: Staging must mirror Prod perfectly.
-2. **No Live Stripe in Dev**: Dev uses Test Mode only.
-3. **Key Isolation**: Recorder keys are generated per ENV. Never reused.
-4. **Watermarking**: Proofs generated in Staging must be marked "NON-PROD" in metadata.
-
-
----
-
-## 16. Security & Keys
-- Recorder keys persisted via volume
-- Public keys exposed read-only
-- Rotation manual only
-- History preserved forever
-
----
-
-## 17. Observability (Production)
-- Structured logs
-- Correlation IDs
-- Health endpoints
+### Footer
+- Docs
+- Security
 - Status page
-- Incident tracking
+- GitHub reference verifier
+- Privacy Policy
+- Terms
 
-### Customer-Facing Incident Workflow
-1. **Status Page**: The Source of Truth.
-2. **UI Banners**: Mandatory if Status Page != All Systems Operational.
-3. **Export Continuity**: Export button **MUST** function even during SEV-1 (via Direct Read-Replica or redundant path if possible, else Queue).
+## 6️⃣ Onboarding Flow
 
----
+### Step 1 — Signup Form
+- Full Name
+- Work Email
+- Company Name
+- Password
+- Accept Terms
+- *Optional*: Company Size, Industry
 
-## 17.1. Continuity / 'Kill Switch' Protocol
+### Step 2 — Organization Created
+*Auto-create:*
+- Org
+- Default project
+- API key
 
-If Regulayer ceases operations:
-1. **Specs**: Hosted on GitHub (Public Repo).
-2. **Reference Verifiers**: Hosted on GitHub + IPFS.
-3. **Trust Registry**: Snapshot published to IPFS.
+### Step 3 — Onboarding Wizard
+- **Page 1**: “What system are you recording?” (Dropdown: Loan Approval / Insurance / HR / Custom)
+- **Page 2**: Copy-paste SDK snippet
+- **Page 3**: Test ingestion button
+- **Page 4**: Verify first record
+- **Page 5**: Invite team members
 
-> **promise**: "If Regulayer ceases operations, customers retain full verification capability via published specs and reference tools."
+## 7️⃣ Dashboard (Launch Requirements)
 
----
+### Top Section — Trust Status
+- **Badge**: Green / Yellow / Red
+- **Text**: "System Trust Status"
+- **Shows**: Chain integrity, Incident alerts, Governance availability
 
----
+### Core Metrics
+- Total Decisions
+- Pending Decisions
+- Sealed Decisions
+- Projects Count
+- Storage Usage
 
-## 18. What Is Still Missing Today (Explicit)
+### Recent Decisions Table
+- `decision_id`
+- Project
+- System
+- Status (Pending / Sealed)
+- Created At
+- Actions (View / Export)
 
-**Must Be Completed Before Launch**
-- [ ] Remove demo data from real orgs
-- [ ] Fully wire SDK → Gateway → Recorder
-- [ ] Finish Governance UI wiring
-- [ ] Finish Reports UI wiring
-- [ ] Enforce billing gates
-- [ ] Add real onboarding flow
-- [ ] Add prod secrets handling
-- [ ] Add staging environment
-- [ ] Add monitoring & alerts
-- [ ] Add launch-safe copy review
+### Alerts Widget
+- DLQ failures
+- Integrity check failures
+- Governance unavailable
 
----
+## 8️⃣ Projects Page
+- Project Name
+- Project ID
+- Created Date
+- API Keys Count
+- Decisions Count
+- **Actions**: Create project, Delete project (soft only), View project usage
 
-## 19. Launch Readiness Checklist
-- [ ] Fresh org has zero data
-- [ ] SDK records appear in dashboard
-- [ ] Exports verify offline
-- [ ] Billing blocks ingestion only
-- [ ] Demo isolated
-- [ ] All pages reachable
-- [ ] No crypto exposed in UI
-- [ ] Legal copy correct
+## 9️⃣ API Keys Page
+- Key ID
+- Scope
+- Created
+- Last Used
+- Status
+- **Actions**: Create, Revoke, Rotate
+- **Rules**: Scoped per project. Frozen org disables ingestion.
+
+## 🔟 Governance Page
+**For each decision:**
+
+### Sections
+1. **Cryptographic Record** (Read-only): `record_hash`, `signature`, `previous_hash`, `timestamp`
+2. **Governance Overlay**: Tags, Annotations, Review State, Reviewer, Timestamp
+
+### Actions
+- **Export Button**: Download evidence bundle
+
+### Rules
+- Frozen org = read-only
+- Member role = no review
+- Overlay not part of signature
+
+## 1️⃣1️⃣ Reports Page
+**Report Types**:
+- Chain Integrity Report
+- Decision Trust Report
+- System Trust Report
+*Each downloadable as JSON.*
+
+## 1️⃣2️⃣ Alerts Page
+Lists incidents from `regulayer-incidents`:
+- Incident Type
+- Severity
+- Timestamp
+- Affected Component
+- Status (Resolved/Active)
+
+## 1️⃣3️⃣ Billing Page
+**Stripe Integration**:
+- Plan
+- Usage
+- Ingest quota
+- Overages
+- Billing history
+- Upgrade plan
+
+**Rules**:
+- Billing blocks ingestion only
+- Never blocks export
+- Stripe failure does not corrupt crypto
+
+## 1️⃣4️⃣ Documentation (Must Exist at Launch)
+- **Getting Started**: Install SDK, First trace
+- **Ingestion Semantics**: 202 vs 409 vs 429 vs 403
+- **Governance**: Concepts
+- **Export & Verification**: Offline verification guide
+- **Architecture**: Trust model
+- **FAQ**: Blockchain? Correctness? Deletion? Shutdown?
+
+## 1️⃣5️⃣ SDK Requirements
+**Language**: Python v1 at launch
+**Must support**:
+- `trace()`
+- `configure()`
+- `decision_id` generation
+- idempotency
+- retry logic
+- 202 handling
+- explicit error types
+
+## 1️⃣6️⃣ Full Technical Flow
+`SDK` → `Gateway` → `Queue` → `Recorder` → `DB` → `Dashboard`
+
+**Export**: Recorder verifies chain, signs record, attaches governance, returns JSON.
+**Offline**: Verifier validates hash, signatures, and chain.
+
+## 1️⃣7️⃣ Production Infrastructure
+- **AWS EC2**: Dockerized services
+- **AWS RDS**: 4 DBs, SSL
+- **Redis**: Queue + DLQ
+- **Cloudflare**: DNS, HTTPS
+- **Stripe**: Billing
+- **SES**: OTP emails
+
+## 1️⃣8️⃣ Security Requirements
+- JWT auth
+- Role-based governance
+- DB isolation
+- SSL enforced
+- No public governance port
+- No crypto in UI
+- No master DB usage
+- Append-only enforcement
+
+## 1️⃣9️⃣ Definition of Launch Ready
+Regulayer is launch ready when:
+- [ ] New user signs up
+- [ ] Org created
+- [ ] API key created
+- [ ] SDK records decision
+- [ ] Gateway returns 202
+- [ ] Dashboard shows Pending
+- [ ] Worker processes
+- [ ] Dashboard shows Sealed
+- [ ] Governance works
+- [ ] Export works
+- [ ] Offline verification passes
+- [ ] Billing blocks ingestion
+- [ ] Frozen blocks ingestion
+- [ ] Export always works
+- [ ] RDS production DB connected
+- [ ] SSL enforced
+- [ ] No demo leakage
+- [ ] Incident system live
 - [ ] Status page live
-- [ ] Incident workflow tested
 
-### Commercial Readiness Gate
-- [ ] Terms of Service live
-- [ ] Privacy Policy live
-- [ ] Support email active (`support@regulayer.ai`)
-- [ ] Status page public (`status.regulayer.ai`)
-- [ ] Sales language frozen
-- [ ] "Kill Switch" repo public
-
-**Support Boundaries**
-> Regulayer support may assist with verification and export mechanics but **does not interpret, judge, or opine** on the meaning of decisions or outcomes.
-
----
-
-## 20. Final Definition of “Done”
-
-Regulayer is launch-ready when:
-> A real customer can:
-> 1. Sign up
-> 2. Get an API key
-> 3. Record a real decision from their app
-> 4. See it in the dashboard
-> 5. Govern it
-> 6. Export it
-> 7. Verify it offline
->
-> **Even if Regulayer disappears**
+## 2️⃣0️⃣ Startup Positioning
+**Regulayer is positioned as**: "Forensic-grade cryptographic evidence infrastructure for AI systems."
+**Target customers**: Fintech, Insurance, Healthcare AI, HR tech, Enterprise AI deployments, Regulated industries.

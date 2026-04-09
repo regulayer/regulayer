@@ -9,25 +9,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [isDemo, setIsDemo] = useState(false);
 
     useEffect(() => {
-        // Check if current org is demo
         getMe().then(response => {
             if (response.data?.org?.is_demo) {
                 setIsDemo(true);
             }
-        }).catch(() => {
-            // Ignore errors, default to non-demo
-        });
+        }).catch(() => { });
     }, []);
 
     return (
-        <div className="h-screen w-full bg-zinc-50 dark:bg-zinc-950 flex flex-col">
-            {/* Demo Banner - Non-dismissible (Phase I.1) */}
-            {isDemo && <DemoBanner />}
+        <div className="h-screen w-full bg-background flex flex-col relative overflow-hidden">
+            {/* Ambient Backgrounds - Responsive to Light/Dark Mode */}
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/5 dark:bg-primary/10 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-secondary/20 dark:bg-accent/5 blur-[100px] pointer-events-none" />
 
-            <AppSidebar>
-                {children}
-            </AppSidebar>
+            <div className="z-10 flex flex-col h-full w-full">
+                {isDemo && <DemoBanner />}
+                <AppSidebar>
+                    {children}
+                </AppSidebar>
+            </div>
         </div>
     );
 }
-

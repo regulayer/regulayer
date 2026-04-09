@@ -17,28 +17,17 @@ from .producer import enqueue_decision_to_redis
 from .errors import ForwardingError
 
 
+import httpx
+from .config import settings
+
 async def forward_decision(
     body: bytes,
     tenant_context: TenantContext,
     headers: Dict[str, str]
 ) -> Dict[str, Any]:
     """
-    Forward decision to the Ingestion Queue.
-    
-    Args:
-        body: Raw request body (byte-for-byte)
-        tenant_context: Validated tenant context
-        headers: Original request headers
-    
-    Returns:
-        Dict with status info (e.g. {"status": "accepted", "id": "..."})
+    Forward decision to the Ingestion Queue (or directly to Recorder for Gate Mode).
     """
-    # Filter headers to forward
-    # (Actually, producer.py takes all headers and consumers might filter, 
-    # but let's filter here to save space in Redis if needed. 
-    # However, for forensic integrity, maybe keeping them all is safer?
-    # The original forwarder filtered. Let's stick to filtering.)
-    
     PRESERVE_HEADERS = {
         "content-type",
         "x-regulayer-signature",
@@ -62,27 +51,65 @@ async def forward_decision(
     # Inject Environment Header
     if tenant_context.environment:
         forward_headers["x-regulayer-environment"] = tenant_context.environment
+    
+    # Inject Governance Mode
+    forward_headers["x-regulayer-gov-mode"] = tenant_context.governance_mode
 
-    try:
-        # Enqueue to Redis
-        request_id = await enqueue_decision_to_redis(
-            body,
-            tenant_context,
-            forward_headers,
-            request_id=request_id_from_header
-        )
-        
-        # Return 202 Accepted semantics
-        return {
-            "status": "accepted", 
-            "decision_id": request_id,
-            "id": request_id, 
-            "message": "Decision accepted for processing."
-        }
+    # Inject Org ID
+    forward_headers["x-regulayer-org-id"] = str(tenant_context.org_id)
+    
+    # Inject Project ID (CRITICAL for Governance Policy Scoping)
+    forward_headers["x-regulayer-project-id"] = str(tenant_context.project_id)
+
+    # Gate Mode (Synchronous Blocking)
+    if tenant_context.governance_mode == "gate":
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{settings.recorder_url}/v1/decisions",
+                    content=body,
+                    headers=forward_headers,
+                    timeout=settings.forward_timeout_seconds
+                )
+                
+                if resp.status_code == 403:
+                    # Parse error body
+                    err = resp.json()
+                    if err.get("detail", {}).get("error") == "GovernanceBlockedError":
+                        from fastapi import HTTPException
+                        raise HTTPException(status_code=403, detail=err["detail"])
+                    resp.raise_for_status()
+                elif resp.status_code not in (200, 201, 202):
+                    try:
+                        err = resp.json()
+                        from fastapi import HTTPException
+                        raise HTTPException(status_code=resp.status_code, detail=err.get("detail", err))
+                    except ValueError:
+                        resp.raise_for_status()
+                        
+                # Success
+                return resp.json()
+        except httpx.RequestError as e:
+            raise ForwardingError(f"Recorder connection error: {e}")
             
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"DEBUG: Exception type: {type(e)}")
-        print(f"DEBUG: Exception args: {e.args}")
-        raise ForwardingError(f"Queue connection error: {e}")
+    # Observe Mode (Async Queue)
+    else:
+        try:
+            request_id = await enqueue_decision_to_redis(
+                body,
+                tenant_context,
+                forward_headers,
+                request_id=request_id_from_header
+            )
+            
+            return {
+                "status": "accepted", 
+                "decision_id": request_id,
+                "id": request_id, 
+                "message": "Decision accepted for processing."
+            }
+                
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise ForwardingError(f"Queue connection error: {e}")

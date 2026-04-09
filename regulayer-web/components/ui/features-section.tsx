@@ -6,51 +6,55 @@ import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { IconBrandYoutubeFilled } from "@tabler/icons-react";
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export function FeaturesSection() {
     const features = [
         {
-            title: "Track issues effectively",
+            title: "Zero-Latency Async Recording",
             description:
-                "Track and manage your project issues with ease using our intuitive interface.",
+                "Log LLM inputs and outputs out-of-band. Never block your critical path or degrade AI response times.",
             skeleton: <SkeletonOne />,
             className:
                 "col-span-1 lg:col-span-4 border-b lg:border-r dark:border-neutral-800",
         },
         {
-            title: "Capture pictures with AI",
+            title: "Cryptographic Ledgers",
             description:
-                "Capture stunning photos effortlessly using our advanced AI technology.",
+                "Every decision is canonicalized, hashed with SHA-256, and digitally signed for tamper-evidence.",
             skeleton: <SkeletonTwo />,
             className: "border-b col-span-1 lg:col-span-2 dark:border-neutral-800",
         },
         {
-            title: "Watch our best events",
+            title: "Real-time Governance",
             description:
-                "Stay updated with our latest events and announcements.",
+                "Evaluate requests against live org policies and flag violations instantly to hum-in-the-loop queues.",
             skeleton: <SkeletonThree />,
             className:
-                "col-span-1 lg:col-span-3 lg:border-r  dark:border-neutral-800",
+                "col-span-1 lg:col-span-3 lg:border-r dark:border-neutral-800",
         },
         {
-            title: "Deploy in seconds",
+            title: "SOC 2 & AI Act Ready",
             description:
-                "Must have cool new feautre to deploy to production in seconds.",
+                "Generate comprehensive compliance, SLA, and chain-integrity reports in a single click.",
             skeleton: <SkeletonFour />,
             className: "col-span-1 lg:col-span-3 border-b lg:border-none",
         },
     ];
     return (
         <div className="relative z-20 py-10 lg:py-40 max-w-7xl mx-auto">
-            <div className="px-8">
-                <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white">
-                    Packed with thousands of features
+            <div className="px-8 flex flex-col items-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full -zinc-500/10 border -zinc-500/20 -zinc-400 mb-6">
+                    <ShieldCheck className="w-4 h-4" />
+                    Built for the Enterprise
+                </div>
+                <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-slate-900">
+                    The infrastructure for <br /> trustworthy AI applications.
                 </h4>
 
-                <p className="text-sm lg:text-base  max-w-2xl  my-4 mx-auto text-neutral-500 text-center font-normal dark:text-neutral-300">
-                    From Image generation to video generation, Everything AI has APIs for
-                    literally everything. It can even create this website copy for you.
+                <p className="text-sm lg:text-base  max-w-2xl  my-4 mx-auto text-neutral-500 text-center font-normal dark:text-neutral-300 mb-10">
+                    Regulayer gives your engineering and security teams absolute certainty. Combine real-time policy evaluation with immutable cryptographic audit trails.
                 </p>
             </div>
 
@@ -85,7 +89,7 @@ const FeatureCard = ({
 
 const FeatureTitle = ({ children }: { children?: React.ReactNode }) => {
     return (
-        <p className=" max-w-5xl mx-auto text-left tracking-tight text-black dark:text-white text-xl md:text-2xl md:leading-snug">
+        <p className=" max-w-5xl mx-auto text-left tracking-tight text-black dark:text-slate-900 text-xl md:text-2xl md:leading-snug">
             {children}
         </p>
     );

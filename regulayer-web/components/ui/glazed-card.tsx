@@ -1,30 +1,20 @@
-"use client";
-
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import React from "react";
+import { ReactNode } from "react";
 
-export const GlazedCard = ({
-    children,
-    className,
-    hoverEffect = true,
-}: {
-    children: React.ReactNode;
+interface GlazedCardProps {
+    children: ReactNode;
     className?: string;
-    hoverEffect?: boolean;
-}) => {
+}
+
+export function GlazedCard({ children, className }: GlazedCardProps) {
     return (
         <div
             className={cn(
-                "group relative overflow-hidden rounded-3xl border border-zinc-200/50 bg-white/50 p-8 backdrop-blur-md transition-all duration-300 dark:border-zinc-800/50 dark:bg-zinc-900/50",
-                hoverEffect && "hover:border-zinc-300/80 hover:bg-white/80 dark:hover:border-zinc-700/80 dark:hover:bg-zinc-900/80 hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/50",
+                "bg-card text-card-foreground rounded-2xl border border-border shadow-card hover:shadow-glow-sm transition-all duration-300",
                 className
             )}
         >
-            {hoverEffect && (
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-shimmer dark:via-white/5" />
-            )}
-            <div className="relative z-10">{children}</div>
+            {children}
         </div>
     );
-};
+}

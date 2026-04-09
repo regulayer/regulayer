@@ -29,7 +29,7 @@ interface AuditEvent {
 function EventIcon({ type }: { type: AuditEventType }) {
     const icons: Record<AuditEventType, { icon: React.ReactNode; bg: string }> = {
         invite: { icon: <UserPlus className="w-4 h-4" />, bg: 'bg-green-100 text-green-600' },
-        role_change: { icon: <Shield className="w-4 h-4" />, bg: 'bg-blue-100 text-blue-600' },
+        role_change: { icon: <Shield className="w-4 h-4" />, bg: '-zinc-100 bg-slate-800' },
         key_revoke: { icon: <Key className="w-4 h-4" />, bg: 'bg-amber-100 text-amber-600' },
         org_freeze: { icon: <Snowflake className="w-4 h-4" />, bg: 'bg-red-100 text-red-600' },
         org_unfreeze: { icon: <RefreshCw className="w-4 h-4" />, bg: 'bg-green-100 text-green-600' },
@@ -56,7 +56,7 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
     };
 
     return (
-        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+        <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">
             {labels[type] || type}
         </span>
     );
@@ -108,36 +108,36 @@ export default function AuditLogPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="min-h-screen bg-secondary">
+            <div className="px-6 md:px-10 py-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900">Audit Log</h1>
-                    <p className="text-slate-600">View all access and administrative events</p>
+                    <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
+                    <p className="text-muted-foreground">View all access and administrative events</p>
                 </div>
 
                 {/* Important Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                        <p className="text-blue-800 text-sm font-medium">Access Events Only</p>
-                        <p className="text-blue-700 text-sm">
-                            This log tracks access events — not decisions. Decision records are stored in the cryptographic chain.
+                        <p className="-zinc-800 text-sm font-medium">Access Events Only</p>
+                        <p className="text-muted-foreground text-sm">
+                            This log tracks access events &mdash; not decisions. Decision records are stored in the cryptographic chain.
                         </p>
                     </div>
                 </div>
 
                 {/* Events List */}
-                <div className="bg-white rounded-xl border border-slate-200">
-                    <div className="p-6 border-b border-slate-200">
-                        <h3 className="font-semibold text-slate-900">Recent Events</h3>
+                <div className="bg-card rounded-xl border border-border">
+                    <div className="p-6 border-b border-border">
+                        <h3 className="font-semibold text-foreground">Recent Events</h3>
                     </div>
 
                     <div className="divide-y divide-slate-100">
                         {loading ? (
-                            <div className="px-6 py-12 text-center text-sm text-slate-500">Loading audit log...</div>
+                            <div className="px-6 py-12 text-center text-sm text-muted-foreground">Loading audit log...</div>
                         ) : events.length === 0 ? (
-                            <div className="px-6 py-12 text-center text-sm text-slate-500">No audit events recorded yet.</div>
+                            <div className="px-6 py-12 text-center text-sm text-muted-foreground">No audit events recorded yet.</div>
                         ) : events.map((event) => (
                             <div key={event.id} className="px-6 py-4 flex items-start gap-4">
                                 <EventIcon type={event.type} />
@@ -145,15 +145,15 @@ export default function AuditLogPage() {
                                     <div className="flex items-center gap-2 mb-1">
                                         <EventTypeBadge type={event.type} />
                                         {event.target && (
-                                            <span className="text-sm font-medium text-slate-900 truncate">
+                                            <span className="text-sm font-medium text-foreground truncate">
                                                 {event.target}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-slate-600">{event.details}</p>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                    <p className="text-sm text-muted-foreground">{event.details}</p>
+                                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                         <span>by {event.actor}</span>
-                                        <span>•</span>
+                                        <span>&bull;</span>
                                         <span className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {new Date(event.timestamp).toLocaleString()}
@@ -166,10 +166,11 @@ export default function AuditLogPage() {
                 </div>
 
                 {/* Footer Disclaimer */}
-                <p className="text-center text-xs text-slate-400 mt-8">
+                <p className="text-center text-xs text-muted-foreground mt-8">
                     User actions affect access, never cryptographic truth.
                 </p>
             </div>
         </div>
     );
 }
+

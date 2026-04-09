@@ -26,6 +26,8 @@ if db_url:
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+import time
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     connectable = engine_from_config(
@@ -34,12 +36,21 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+    max_retries = 10
+    for attempt in range(max_retries):
+        try:
+            with connectable.connect() as connection:
+                context.configure(
+                    connection=connection, target_metadata=target_metadata
+                )
 
-        with context.begin_transaction():
-            context.run_migrations()
+                with context.begin_transaction():
+                    context.run_migrations()
+            break
+        except Exception as e:
+            print(f"Database connection failed (attempt {attempt + 1}/{max_retries}). Retrying in 3s... Error: {e}")
+            if attempt == max_retries - 1:
+                raise e
+            time.sleep(3)
 
 run_migrations_online()

@@ -7,6 +7,10 @@ RUN npm ci --legacy-peer-deps
 
 COPY . .
 
+# Build args
+ARG DOMAIN
+ENV DOMAIN=$DOMAIN
+
 # Build Next.js app
 RUN npm run build
 

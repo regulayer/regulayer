@@ -3,345 +3,256 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { CustomCursor } from "@/components/ui/custom-cursor";
+import { Lock, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { requestOtp, verifyOtp, completeSignup } from "@/lib/api";
 import { setToken } from "@/lib/auth";
 
-type Step = "email" | "otp" | "details";
-
 export default function SignupPage() {
     const router = useRouter();
-
-    const [step, setStep] = useState<Step>("email");
+    
+    // Steps: 1 = Email, 2 = OTP, 3 = Password & Org
+    const [step, setStep] = useState<1 | 2 | 3>(1);
+    
     const [email, setEmail] = useState("");
     const [otpCode, setOtpCode] = useState("");
     const [signupToken, setSignupToken] = useState("");
     const [orgName, setOrgName] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [debugCode, setDebugCode] = useState<string | null>(null);
 
-    // Step 1: Request OTP
     const handleRequestOtp = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
-        setDebugCode(null);
-
-        const res = await requestOtp(email);
-
-        if (res.error) {
-            setError(res.error);
+        setLoading(true);
+        try {
+            await requestOtp(email);
+            setStep(2);
+        } catch (err: any) {
+            setError(err.response?.data?.detail || "Failed to send verification code");
+        } finally {
             setLoading(false);
-            return;
         }
-
-        // In dev mode, the API may return the code for convenience
-        if (res.data?.debug_code) {
-            setDebugCode(res.data.debug_code);
-        }
-
-        setStep("otp");
-        setLoading(false);
     };
 
-    // Step 2: Verify OTP
     const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
-
-        const res = await verifyOtp(email, otpCode);
-
-        if (res.error) {
-            setError(res.error);
+        setLoading(true);
+        try {
+            const res = await verifyOtp(email, otpCode);
+            // Expected to return { signup_token: "signup_token_abc123" }
+            if (res.data?.signup_token) {
+                setSignupToken(res.data.signup_token);
+                setStep(3);
+            } else {
+                setError("Invalid response from server");
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.detail || "Invalid verification code");
+        } finally {
             setLoading(false);
-            return;
         }
-
-        if (res.data?.signup_token) {
-            setSignupToken(res.data.signup_token);
-            setStep("details");
-        } else {
-            setError("Verification failed. Please try again.");
-        }
-
-        setLoading(false);
     };
 
-    // Step 3: Complete signup
     const handleCompleteSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
-            setError("Passwords do not match.");
-            return;
-        }
+        setError("");
+        
         if (password.length < 8) {
-            setError("Password must be at least 8 characters.");
+            setError("Password must be at least 8 characters");
             return;
         }
 
         setLoading(true);
-        setError("");
-
-        const res = await completeSignup(signupToken, orgName, password);
-
-        if (res.data?.token) {
-            setToken(res.data.token);
-            router.push("/dashboard");
-        } else {
-            setError(res.error || "Signup failed. Please try again.");
+        try {
+            const res = await completeSignup(signupToken, orgName, password);
+            if (res.data?.access_token || res.data?.token) {
+                setToken(res.data.access_token || res.data.token);
+                router.push("/dashboard");
+            } else {
+                setError("Account created, but failed to log in automatically");
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.detail || "Failed to complete account creation");
+        } finally {
             setLoading(false);
         }
     };
 
-    const stepNumber = step === "email" ? 1 : step === "otp" ? 2 : 3;
-
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-            {/* Background */}
-            <div className="absolute inset-0 mesh-gradient opacity-30" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]" />
+        <div className="min-h-screen bg-[hsl(30,60%,99%)] text-[hsl(15,45%,15%)] antialiased cursor-none flex flex-col items-center justify-center relative overflow-hidden">
+            <CustomCursor />
+            
+            <div className="fixed inset-0 pointer-events-none mix-blend-overlay opacity-50 z-[9999]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E\")" }} />
 
-            <div className="relative z-10 w-full max-w-md px-6">
-                {/* Logo */}
+            <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 group z-10">
+                <div className="w-8 h-8 rounded-full border border-[hsl(15,30%,85%)] bg-white flex items-center justify-center transition-colors group-hover:bg-[hsl(15,85%,58%,0.1)] group-hover:border-[hsl(15,85%,58%,0.3)]">
+                    <ArrowRight className="w-4 h-4 rotate-180 group-hover:text-[hsl(15,85%,58%)] transition-colors" />
+                </div>
+                <span className="text-[14px] font-bold text-[hsl(15,25%,45%)] group-hover:text-[hsl(15,45%,15%)] transition-colors">Return Home</span>
+            </Link>
+
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-[420px] px-6 relative z-10"
+            >
                 <div className="flex justify-center mb-8">
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <span className="text-white font-bold">R</span>
-                        </div>
-                    </Link>
+                    <div className="w-12 h-12 rounded-xl bg-white border border-[hsl(15,30%,85%)] shadow-sm flex items-center justify-center relative">
+                        {step === 3 ? (
+                            <CheckCircle2 className="w-6 h-6 text-[hsl(15,85%,58%)]" />
+                        ) : (
+                            <Lock className="w-6 h-6 text-[hsl(15,45%,15%)]" />
+                        )}
+                        {step !== 3 && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(15,85%,58%)] opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[hsl(15,85%,58%)]" />
+                            </span>
+                        )}
+                    </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-8">
-                    {/* Step Indicator */}
-                    <div className="flex items-center justify-center gap-2 mb-6">
-                        {[1, 2, 3].map((s) => (
-                            <div key={s} className="flex items-center gap-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${s < stepNumber
-                                        ? "bg-indigo-600 text-white"
-                                        : s === stepNumber
-                                            ? "bg-indigo-600/20 text-indigo-400 ring-2 ring-indigo-500/40"
-                                            : "bg-white/[0.04] text-zinc-600"
-                                    }`}>
-                                    {s < stepNumber ? (
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                        </svg>
-                                    ) : s}
-                                </div>
-                                {s < 3 && <div className={`w-8 h-px ${s < stepNumber ? "bg-indigo-500/40" : "bg-white/[0.06]"}`} />}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Error */}
-                    {error && (
-                        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-                            <p className="text-sm text-red-400">{error}</p>
-                        </div>
-                    )}
-
-                    {/* ─── STEP 1: Email ─── */}
-                    {step === "email" && (
-                        <>
-                            <h2 className="text-2xl font-bold text-white text-center mb-1">Create your account</h2>
-                            <p className="text-sm text-zinc-500 text-center mb-8">We&apos;ll send a verification code to your email</p>
-
-                            <form className="space-y-4" onSubmit={handleRequestOtp}>
-                                <div className="space-y-2">
-                                    <label htmlFor="email" className="text-sm font-medium text-zinc-400">Work Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        required
-                                        autoComplete="email"
-                                        placeholder="name@company.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        disabled={loading}
-                                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Spinner />
-                                            Sending code...
-                                        </>
-                                    ) : (
-                                        "Continue"
-                                    )}
-                                </button>
-                            </form>
-                        </>
-                    )}
-
-                    {/* ─── STEP 2: OTP Verification ─── */}
-                    {step === "otp" && (
-                        <>
-                            <h2 className="text-2xl font-bold text-white text-center mb-1">Verify your email</h2>
-                            <p className="text-sm text-zinc-500 text-center mb-2">
-                                Enter the 6-digit code sent to <span className="text-zinc-300 font-medium">{email}</span>
-                            </p>
-
-                            {debugCode && (
-                                <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                    <p className="text-xs text-amber-400">
-                                        <span className="font-semibold">Dev mode:</span> Your code is <code className="font-mono text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded">{debugCode}</code>
-                                    </p>
-                                </div>
-                            )}
-
-                            <form className="space-y-4 mt-6" onSubmit={handleVerifyOtp}>
-                                <div className="space-y-2">
-                                    <label htmlFor="otp" className="text-sm font-medium text-zinc-400">Verification Code</label>
-                                    <input
-                                        id="otp"
-                                        type="text"
-                                        required
-                                        autoComplete="one-time-code"
-                                        inputMode="numeric"
-                                        maxLength={6}
-                                        placeholder="000000"
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                        disabled={loading}
-                                        className="w-full h-12 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-lg font-mono tracking-[0.5em] text-center placeholder:text-zinc-700 placeholder:tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading || otpCode.length < 6}
-                                    className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Spinner />
-                                            Verifying...
-                                        </>
-                                    ) : (
-                                        "Verify"
-                                    )}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => { setStep("email"); setError(""); setDebugCode(null); }}
-                                    className="w-full text-center text-sm text-zinc-500 hover:text-zinc-400 transition-colors"
-                                >
-                                    Use a different email
-                                </button>
-                            </form>
-                        </>
-                    )}
-
-                    {/* ─── STEP 3: Org & Password ─── */}
-                    {step === "details" && (
-                        <>
-                            <h2 className="text-2xl font-bold text-white text-center mb-1">Set up your workspace</h2>
-                            <p className="text-sm text-zinc-500 text-center mb-8">Choose your organization name and set a password</p>
-
-                            <form className="space-y-4" onSubmit={handleCompleteSignup}>
-                                <div className="space-y-2">
-                                    <label htmlFor="orgName" className="text-sm font-medium text-zinc-400">Organization Name</label>
-                                    <input
-                                        id="orgName"
-                                        type="text"
-                                        required
-                                        placeholder="Acme Corp"
-                                        value={orgName}
-                                        onChange={(e) => setOrgName(e.target.value)}
-                                        disabled={loading}
-                                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label htmlFor="password" className="text-sm font-medium text-zinc-400">Password</label>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        required
-                                        minLength={8}
-                                        autoComplete="new-password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        disabled={loading}
-                                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                                    />
-                                    <p className="text-xs text-zinc-600">Minimum 8 characters</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label htmlFor="confirmPassword" className="text-sm font-medium text-zinc-400">Confirm Password</label>
-                                    <input
-                                        id="confirmPassword"
-                                        type="password"
-                                        required
-                                        minLength={8}
-                                        autoComplete="new-password"
-                                        placeholder="••••••••"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        disabled={loading}
-                                        className="w-full h-10 px-3 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Spinner />
-                                            Creating account...
-                                        </>
-                                    ) : (
-                                        "Create Account"
-                                    )}
-                                </button>
-                            </form>
-                        </>
-                    )}
-
-                    {/* Link to login */}
-                    <p className="text-center text-sm text-zinc-500 mt-6">
-                        Already have an account?{" "}
-                        <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
-                            Sign in
-                        </Link>
+                <div className="text-center mb-10">
+                    <h1 className="text-2xl font-bold tracking-tight mb-2" style={{ fontFamily: "var(--font-space-grotesk)" }}>
+                        {step === 1 && "Create your workspace"}
+                        {step === 2 && "Verify your email"}
+                        {step === 3 && "Complete your profile"}
+                    </h1>
+                    <p className="text-[14px] text-[hsl(15,25%,45%)] font-light">
+                        {step === 1 && "to spin up a cryptographic core engine."}
+                        {step === 2 && `We sent a code to ${email}`}
+                        {step === 3 && "Set up your workspace to continue."}
                     </p>
                 </div>
 
-                <p className="text-center text-xs text-zinc-600 mt-6">
-                    By creating an account, you agree to our{" "}
-                    <Link href="/legal/terms" className="text-zinc-500 hover:text-zinc-400 underline">Terms</Link>
-                    {" "}and{" "}
-                    <Link href="/legal/privacy" className="text-zinc-500 hover:text-zinc-400 underline">Privacy Policy</Link>.
-                </p>
-            </div>
-        </div>
-    );
-}
+                <div className="bg-white rounded-2xl border border-[hsl(15,30%,85%)] shadow-xl p-8 relative overflow-hidden">
+                    
+                    {error && (
+                        <div className="mb-6 p-3 rounded-xl bg-red-50 border border-red-100 flex items-start gap-2 text-red-600 text-[13px] font-medium leading-tight">
+                            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                            <p>{error}</p>
+                        </div>
+                    )}
 
-function Spinner() {
-    return (
-        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+                    <AnimatePresence mode="wait">
+                        {/* STEP 1: EMAIL */}
+                        {step === 1 && (
+                            <motion.form 
+                                key="step1"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                onSubmit={handleRequestOtp} 
+                                className="flex flex-col gap-5"
+                            >
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-[hsl(15,45%,15%)]">Work Email</label>
+                                    <input 
+                                        type="email" 
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="john@acme.com" 
+                                        required
+                                        disabled={loading}
+                                        className="h-12 px-4 rounded-xl border border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] focus:outline-none focus:border-[hsl(15,45%,15%)] focus:ring-1 focus:ring-[hsl(15,45%,15%)] transition-all text-[14px] disabled:opacity-50" 
+                                    />
+                                </div>
+                                <button disabled={loading} className="h-12 mt-2 w-full rounded-xl bg-[hsl(15,45%,15%)] text-white font-bold text-[14px] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg shadow-[rgba(56,30,21,0.2)] disabled:opacity-70">
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continue with Email"}
+                                </button>
+                            </motion.form>
+                        )}
+
+                        {/* STEP 2: OTP */}
+                        {step === 2 && (
+                            <motion.form 
+                                key="step2"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                onSubmit={handleVerifyOtp} 
+                                className="flex flex-col gap-5"
+                            >
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[hsl(15,45%,15%)]">Verification Code</label>
+                                        <button type="button" onClick={handleRequestOtp} className="text-[11px] text-[hsl(15,30%,50%)] hover:text-[hsl(15,85%,58%)] transition-colors">Resend Code</button>
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value)}
+                                        placeholder="000000" 
+                                        maxLength={6}
+                                        required
+                                        disabled={loading}
+                                        className="h-12 px-4 rounded-xl border border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] focus:outline-none focus:border-[hsl(15,45%,15%)] focus:ring-1 focus:ring-[hsl(15,45%,15%)] transition-all text-center tracking-[0.5em] text-[18px] font-mono font-bold text-[hsl(15,45%,15%)] disabled:opacity-50" 
+                                    />
+                                </div>
+                                <button disabled={loading} className="h-12 mt-2 w-full rounded-xl bg-[hsl(15,45%,15%)] text-white font-bold text-[14px] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg shadow-[rgba(56,30,21,0.2)] disabled:opacity-70">
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify Code"}
+                                </button>
+                            </motion.form>
+                        )}
+
+                        {/* STEP 3: ORG & PASSWORD */}
+                        {step === 3 && (
+                            <motion.form 
+                                key="step3"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                onSubmit={handleCompleteSignup} 
+                                className="flex flex-col gap-5"
+                            >
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-[hsl(15,45%,15%)]">Organization Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={orgName}
+                                        onChange={(e) => setOrgName(e.target.value)}
+                                        placeholder="Acme Corp" 
+                                        required
+                                        disabled={loading}
+                                        className="h-12 px-4 rounded-xl border border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] focus:outline-none focus:border-[hsl(15,45%,15%)] focus:ring-1 focus:ring-[hsl(15,45%,15%)] transition-all text-[14px] disabled:opacity-50" 
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-[hsl(15,45%,15%)]">Create Password</label>
+                                    <input 
+                                        type="password" 
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="At least 8 characters" 
+                                        required
+                                        minLength={8}
+                                        disabled={loading}
+                                        className="h-12 px-4 rounded-xl border border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] focus:outline-none focus:border-[hsl(15,45%,15%)] focus:ring-1 focus:ring-[hsl(15,45%,15%)] transition-all text-[14px] disabled:opacity-50" 
+                                    />
+                                </div>
+                                <button disabled={loading} className="h-12 mt-2 w-full rounded-xl bg-[hsl(15,85%,58%)] text-white font-bold text-[14px] flex items-center justify-center gap-2 hover:bg-[hsl(15,80%,53%)] transition-colors shadow-lg shadow-[hsl(15,85%,58%,0.3)] disabled:opacity-70 group">
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                        <>Finish Setup <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></>
+                                    )}
+                                </button>
+                            </motion.form>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                <p className="text-center text-[12px] text-[hsl(15,25%,45%)] mt-8">
+                    By confirming, you agree to our <Link href="/legal/terms" className="underline hover:text-[hsl(15,45%,15%)]">Terms of Service</Link> and <Link href="/legal/privacy" className="underline hover:text-[hsl(15,45%,15%)]">Privacy Policy</Link>.
+                </p>
+                <p className="text-center text-[13px] text-[hsl(15,25%,45%)] mt-4 font-bold">
+                    Already have an account? <Link href="/login" className="text-[hsl(15,85%,58%)] hover:underline">Log in</Link>
+                </p>
+            </motion.div>
+        </div>
     );
 }

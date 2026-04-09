@@ -6,7 +6,7 @@ Canonical schemas matching SDK DecisionEvent with additional record fields.
 
 from datetime import datetime
 from typing import Optional, List, Literal, Union
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from uuid import UUID
 from regulayer_attestation.app.models import AttestationEnvelope
 
@@ -19,9 +19,7 @@ class RuntimeFingerprint(BaseModel):
     sdk_version: str
     sdk_instance_id: str
     
-    class Config:
-        frozen = True
-        extra = "ignore"  # Relaxed for debugging
+    model_config = ConfigDict(frozen=True, extra="ignore")
 
 
 class DecisionEvent(BaseModel):
@@ -32,17 +30,18 @@ class DecisionEvent(BaseModel):
     """
     
     # Event metadata
-    event_version: str
-    event_state: Literal["completed", "failed"]
+    event_version: str = "2.0"
+    event_state: str = "completed"
     
     # Decision identification
     decision_id: UUID
-    system_name: str
-    risk_level: str
+    system: str = Field(alias="system_name", default="default")
+    system_name: Optional[str] = None
+    risk_level: str = "standard"
     
-    # Model information
-    model_name: str
-    model_version: str
+    # Model information (Optional, might be nested in output)
+    model_name: Optional[str] = None
+    model_version: Optional[str] = None
     
     # Data hashes
     input_hash: Optional[str] = None
@@ -51,13 +50,14 @@ class DecisionEvent(BaseModel):
     tool_calls_hashes: Optional[List[str]] = None
     
     # Timing
-    start_timestamp: datetime
-    end_timestamp: datetime
-    execution_duration_ms: float
+    start_timestamp: Optional[datetime] = None
+    end_timestamp: Optional[datetime] = None
+    execution_duration_ms: Optional[float] = None
+    runtime_fingerprint: Optional[RuntimeFingerprint] = None
     
-    # Runtime environment
-    runtime_fingerprint: RuntimeFingerprint
-    
+    # New SDK v2 fields
+    client_metadata: Optional[dict] = None
+    user_metadata: Optional[dict] = None
     # Decisions Payload (Explicitly allowed for storage)
     input: Optional[dict] = None
     output: Optional[dict] = None
@@ -88,9 +88,7 @@ class DecisionEvent(BaseModel):
                     raise ValueError("Tool call hash must be 64-character hex")
         return v
     
-    class Config:
-        frozen = True
-        extra = "ignore"  # Allow unknown fields for debugging
+    model_config = ConfigDict(frozen=True, extra="ignore")
 
 
 class IngestRequest(BaseModel):
@@ -139,9 +137,7 @@ class DecisionRecord(BaseModel):
     # Attestation (Phase 2.2+)
     attestation: Optional[AttestationSummary] = None
     
-    class Config:
-        frozen = True
-        extra = "forbid"
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
 
 class VerificationMetadata(BaseModel):
@@ -192,28 +188,6 @@ class RecordConfirmation(BaseModel):
     decision_id: UUID
     record_hash: str
     server_timestamp: datetime
-
-
-class ChainStatus(BaseModel):
-    chain_id: str
-    total_records: int
-    first_record_timestamp: Optional[datetime] = None
-    last_record_timestamp: Optional[datetime] = None
-    integrity_status: Literal["PASS", "FAIL", "UNKNOWN"]
-    failure_reason: Optional[str] = None
-
-
-class VerificationResult(BaseModel):
-    is_valid: bool
-    total_records_checked: int
-    broken_at_record_id: Optional[int] = None
-    verification_duration_ms: float
-    errors: List[str]
-    # Phase 2.3 additions
-    attested_records_count: int = 0
-    legacy_records_count: int = 0
-    revoked_records_count: int = 0
-
 
 
 class ChainStatus(BaseModel):

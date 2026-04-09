@@ -20,11 +20,13 @@ Base = declarative_base()
 
 class GovernancePolicyDB(Base):
     """Policy definition storage."""
-    __tablename__ = "governance_policies"
+    __tablename__ = "governance_rules"
     
-    policy_id = Column(PGUUID(as_uuid=True), primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
-    description = Column(String(500), nullable=False)
+    policy_id = Column("id", PGUUID(as_uuid=True), primary_key=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    org_id = Column(PGUUID(as_uuid=True), index=True, nullable=True)
+    project_id = Column(PGUUID(as_uuid=True), index=True, nullable=True)
     enabled = Column(Boolean, nullable=False, default=True)
     applies_to = Column(JSON, nullable=False, default=list)
     conditions = Column(JSON, nullable=False)
@@ -95,10 +97,18 @@ class RequiredApprovalDB(Base):
 
 
 # Async database session factory
+# Handle SSL for asyncpg which doesn't support sslmode in URL
+db_url = settings.database_url.replace('postgresql://', 'postgresql+asyncpg://')
+connect_args = {}
+if "sslmode=require" in db_url:
+    db_url = db_url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+    connect_args["ssl"] = "require"
+
 async_engine = create_async_engine(
-    settings.policy_database_url.replace('postgresql://', 'postgresql+asyncpg://'),
+    db_url,
     echo=settings.debug,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -116,5 +126,30 @@ async def get_policy_session():
 
 async def init_policy_db():
     """Initialize policy tables."""
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    from sqlalchemy import text
+    import asyncio
+    for attempt in range(10):
+        try:
+            async with async_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                # Add org_id column to governance_rules if it doesn't exist
+                await conn.execute(text(
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name = 'governance_rules' AND column_name = 'org_id'
+                        ) THEN
+                            ALTER TABLE governance_rules ADD COLUMN org_id UUID;
+                            CREATE INDEX IF NOT EXISTS ix_governance_rules_org_id ON governance_rules(org_id);
+                        END IF;
+                    END $$;
+                    """
+                ))
+            break
+        except Exception as e:
+            if attempt == 9:
+                raise e
+            print(f"DB Init failed (attempt {attempt+1}/10), retrying in 3s... {e}")
+            await asyncio.sleep(3)

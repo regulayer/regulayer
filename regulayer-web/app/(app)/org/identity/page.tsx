@@ -41,7 +41,7 @@ interface IdentityProviderConfig {
 function StatusBadge({ status }: { status: ProviderStatus }) {
     const configs: Record<ProviderStatus, { bg: string; text: string }> = {
         active: { bg: 'bg-green-100', text: 'text-green-700' },
-        disabled: { bg: 'bg-slate-100', text: 'text-slate-600' },
+        disabled: { bg: 'bg-secondary', text: 'text-muted-foreground' },
         pending: { bg: 'bg-amber-100', text: 'text-amber-700' },
         failed: { bg: 'bg-red-100', text: 'text-red-700' },
     };
@@ -72,25 +72,25 @@ function ConfigureProviderModal({
     const [domains, setDomains] = useState('');
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold text-slate-900 mb-4">Configure Identity Provider</h2>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-card rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <h2 className="text-xl font-bold text-foreground mb-4">Configure Identity Provider</h2>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Provider Name</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Provider Name</label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="e.g., Okta Production"
                     />
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Protocol</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Protocol</label>
                     <div className="flex gap-4">
-                        <label className={`flex-1 p-4 rounded-lg border cursor-pointer ${type === 'SAML' ? 'border-primary-500 bg-primary-50' : 'border-slate-200'}`}>
+                        <label className={`flex-1 p-4 rounded-lg border cursor-pointer ${type === 'SAML' ? 'border-primary-500 bg-primary-50' : 'border-border'}`}>
                             <input
                                 type="radio"
                                 name="type"
@@ -101,7 +101,7 @@ function ConfigureProviderModal({
                             />
                             <span className="font-medium">SAML 2.0</span>
                         </label>
-                        <label className={`flex-1 p-4 rounded-lg border cursor-pointer ${type === 'OIDC' ? 'border-primary-500 bg-primary-50' : 'border-slate-200'}`}>
+                        <label className={`flex-1 p-4 rounded-lg border cursor-pointer ${type === 'OIDC' ? 'border-primary-500 bg-primary-50' : 'border-border'}`}>
                             <input
                                 type="radio"
                                 name="type"
@@ -116,24 +116,24 @@ function ConfigureProviderModal({
                 </div>
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Issuer URL</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Issuer URL</label>
                     <input
                         type="url"
                         value={issuer}
                         onChange={(e) => setIssuer(e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="https://company.okta.com"
                     />
                 </div>
 
                 {type === 'SAML' && (
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Metadata URL</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">Metadata URL</label>
                         <input
                             type="url"
                             value={metadataUrl}
                             onChange={(e) => setMetadataUrl(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                             placeholder="https://company.okta.com/app/xxx/sso/saml/metadata"
                         />
                     </div>
@@ -141,31 +141,31 @@ function ConfigureProviderModal({
 
                 {type === 'OIDC' && (
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Client ID</label>
+                        <label className="block text-sm font-medium text-foreground mb-2">Client ID</label>
                         <input
                             type="text"
                             value={clientId}
                             onChange={(e) => setClientId(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                             placeholder="0oa1b2c3d4e5f6g7h8i9"
                         />
                     </div>
                 )}
 
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Email Domains</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">Email Domains</label>
                     <input
                         type="text"
                         value={domains}
                         onChange={(e) => setDomains(e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="company.com, corp.company.com"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Comma-separated list of email domains</p>
+                    <p className="text-xs text-muted-foreground mt-1">Comma-separated list of email domains</p>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                    <p className="text-blue-800 text-sm">
+                <div className="-zinc-50 border text-zinc-200 rounded-lg p-3 mb-6">
+                    <p className="-zinc-800 text-sm">
                         <strong>Note:</strong> SSO controls access only. Cryptographic records remain independent.
                     </p>
                 </div>
@@ -173,14 +173,14 @@ function ConfigureProviderModal({
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50"
+                        className="flex-1 border border-border text-foreground px-4 py-2 rounded-lg hover:bg-secondary"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={() => onCreate({ name, type, issuer, metadataUrl, clientId, domains })}
                         disabled={!name.trim() || !issuer.trim()}
-                        className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                        className="flex-1 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 disabled:opacity-50"
                     >
                         Create Provider
                     </button>
@@ -204,24 +204,24 @@ function ProviderCard({
     onToggle: () => void;
 }) {
     return (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-card rounded-xl border border-border p-6">
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary-100 rounded-lg">
-                        <Shield className="w-5 h-5 text-primary-600" />
+                        <Shield className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-slate-900">{provider.name}</h3>
+                            <h3 className="font-semibold text-foreground">{provider.name}</h3>
                             <StatusBadge status={provider.status} />
                         </div>
-                        <p className="text-sm text-slate-500">{provider.type} • {provider.issuer}</p>
+                        <p className="text-sm text-muted-foreground">{provider.type} • {provider.issuer}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={onTest}
-                        className="text-sm text-slate-600 hover:text-slate-800 flex items-center gap-1"
+                        className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                     >
                         <TestTube className="w-4 h-4" />
                         Test
@@ -231,15 +231,15 @@ function ProviderCard({
 
             <div className="flex flex-wrap gap-2 mb-4">
                 {provider.emailDomains.map((domain) => (
-                    <span key={domain} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded flex items-center gap-1">
+                    <span key={domain} className="text-xs bg-secondary text-muted-foreground px-2 py-1 rounded flex items-center gap-1">
                         <Globe className="w-3 h-3" />
                         {domain}
                     </span>
                 ))}
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <div className="text-sm text-slate-500">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="text-sm text-muted-foreground">
                     {provider.lastLoginAt
                         ? `Last login: ${new Date(provider.lastLoginAt).toLocaleDateString()}`
                         : 'No logins yet'}
@@ -247,8 +247,8 @@ function ProviderCard({
                 <button
                     onClick={onToggle}
                     className={`px-4 py-1.5 rounded-lg text-sm font-medium ${provider.enabled
-                        ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        : 'bg-primary-600 text-white hover:bg-primary-700'
+                        ? 'bg-secondary text-foreground hover:bg-slate-200'
+                        : 'bg-slate-800 text-white hover:bg-slate-900'
                         }`}
                 >
                     {provider.enabled ? 'Disable' : 'Enable'}
@@ -304,20 +304,20 @@ export default function IdentitySettingsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="min-h-screen bg-secondary">
+            <div className="px-6 md:px-10 py-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
-                        <Lock className="w-6 h-6 text-slate-600" />
+                        <Lock className="w-6 h-6 text-muted-foreground" />
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900">Identity & SSO</h1>
-                            <p className="text-slate-600">Enterprise single sign-on configuration</p>
+                            <h1 className="text-2xl font-bold text-foreground">Identity & SSO</h1>
+                            <p className="text-muted-foreground">Enterprise single sign-on configuration</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setShowConfigModal(true)}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 flex items-center gap-2"
+                        className="bg-slate-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-900 flex items-center gap-2"
                     >
                         <Plus className="w-4 h-4" />
                         Add Provider
@@ -325,11 +325,11 @@ export default function IdentitySettingsPage() {
                 </div>
 
                 {/* Trust Warning */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                        <p className="text-blue-800 text-sm font-medium">SSO Controls Access Only</p>
-                        <p className="text-blue-700 text-sm">
+                        <p className="-zinc-800 text-sm font-medium">SSO Controls Access Only</p>
+                        <p className="text-muted-foreground text-sm">
                             Cryptographic records remain independent. SSO failure never blocks proof export or offline verification.
                         </p>
                     </div>
@@ -338,12 +338,12 @@ export default function IdentitySettingsPage() {
                 {/* Providers List */}
                 <div className="space-y-4 mb-8">
                     {providers.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-                            <Shield className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-600">No identity providers configured</p>
+                        <div className="bg-card rounded-xl border border-border p-8 text-center">
+                            <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">No identity providers configured</p>
                             <button
                                 onClick={() => setShowConfigModal(true)}
-                                className="mt-4 text-primary-600 hover:underline"
+                                className="mt-4 bg-slate-800 hover:underline"
                             >
                                 Add your first provider →
                             </button>
@@ -370,26 +370,26 @@ export default function IdentitySettingsPage() {
                 </div>
 
                 {/* Failure Semantics */}
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
-                    <h3 className="font-semibold text-slate-900 mb-4">Failure Handling</h3>
+                <div className="bg-card rounded-xl border border-border p-6">
+                    <h3 className="font-semibold text-foreground mb-4">Failure Handling</h3>
                     <div className="space-y-3 text-sm">
                         <div className="flex items-start gap-3">
-                            <span className="text-slate-400">IdP down:</span>
-                            <span className="text-slate-700">Password login fallback (if enabled)</span>
+                            <span className="text-muted-foreground">IdP down:</span>
+                            <span className="text-foreground">Password login fallback (if enabled)</span>
                         </div>
                         <div className="flex items-start gap-3">
-                            <span className="text-slate-400">IdP compromise:</span>
-                            <span className="text-slate-700">Disable provider → access blocked</span>
+                            <span className="text-muted-foreground">IdP compromise:</span>
+                            <span className="text-foreground">Disable provider → access blocked</span>
                         </div>
                         <div className="flex items-start gap-3">
-                            <span className="text-slate-400">Regulayer down:</span>
-                            <span className="text-slate-700">Offline proof verification still works</span>
+                            <span className="text-muted-foreground">Regulayer down:</span>
+                            <span className="text-foreground">Offline proof verification still works</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <p className="text-center text-xs text-slate-400 mt-8">
+                <p className="text-center text-xs text-muted-foreground mt-8">
                     Identity controls who can see or act — it never affects what is true.
                 </p>
             </div>
@@ -403,3 +403,4 @@ export default function IdentitySettingsPage() {
         </div>
     );
 }
+

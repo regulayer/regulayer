@@ -56,4 +56,54 @@ yarn-error.log
 .next/
 out/
 
+# Environment
 .env
+.env.launch
+
+# Logs & Debug Output
+*.log
+*_logs.txt
+*_logs_utf8.txt
+*_err.txt
+*_err2.txt
+*_err3.txt
+*_error.txt
+*_after.txt
+*_latest.txt
+*_debug.txt
+*_output.txt
+*_utf8.txt
+debug_*.log
+recorder_error.txt
+control-plane-logs.txt
+control_plane_logs.txt
+gateway-logs.txt
+web-logs.txt
+
+# Debug/Temp Data Dumps
+*.db
+!*.sqlite
+out.json
+payload.json
+queue_res.json
+rules_dump.json
+rec_422.json
+queue_fix_check.json
+test_err.json
+e2e_result.json
+check_policy.json
+latest_project_id.txt
+
+# Build artifacts
+**/build_log*.txt
+**/build_err*.txt
+**/build_out*.txt
+**/eslint_output.txt
+**/lint_output.txt
+**/tsc_output.txt
+**/ts-error.txt
+
+# Temp/scratch files
+favicon_io.zip
+favicon_unzipped/
+*.egg-info/

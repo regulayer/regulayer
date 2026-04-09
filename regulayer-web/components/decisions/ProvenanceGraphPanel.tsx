@@ -88,9 +88,9 @@ function RelationshipItem({
 
     return (
         <div className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
-            <div className={`p-1.5 rounded ${direction === 'outgoing' ? 'bg-blue-100' : 'bg-green-100'}`}>
+            <div className={`p-1.5 rounded ${direction === 'outgoing' ? '-zinc-100' : 'bg-green-100'}`}>
                 {direction === 'outgoing'
-                    ? <ArrowRight className="w-4 h-4 text-blue-600" />
+                    ? <ArrowRight className="w-4 h-4 -zinc-600" />
                     : <ArrowLeft className="w-4 h-4 text-green-600" />}
             </div>
             <div className="flex-1">
@@ -179,8 +179,8 @@ export function ProvenanceGraphPanel({ relationships }: ProvenanceGraphPanelProp
             )}
 
             {/* Trust Banner */}
-            <div className="p-4 bg-blue-50">
-                <p className="text-blue-700 text-sm flex items-center gap-2">
+            <div className="p-4 -zinc-50">
+                <p className="-zinc-700 text-sm flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     These links explain context. Each decision remains independently verifiable.
                 </p>

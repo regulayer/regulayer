@@ -35,7 +35,7 @@ with trace(
     model_name="credit-model-v2"
 ) as t:
     t.set_input({"income": 50000, "credit_score": 720})
-    t.set_output({"approved": True, "limit": 10000})
+    t.set_output({"approved": True, "limit": 1000})
 ```
 
 ### 4. View in Dashboard

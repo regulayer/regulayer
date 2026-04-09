@@ -29,6 +29,8 @@ class IncidentRead(BaseModel):
     severity: str
     source: str
     message: str
+    status: str
+    resolved_at: Optional[datetime] = None
     org_id: Optional[UUID4] = None
     created_at: datetime
     metadata: Optional[dict] = None
@@ -72,6 +74,34 @@ async def create_incident(
     await session.commit()
     await session.refresh(db_incident)
     
+    # Fire webhook via Control Plane
+    if incident.org_id:
+        import httpx
+        import asyncio
+        async def trigger_webhook():
+            try:
+                # Assuming control plane is accessible at 'http://control-plane:8000' in cluster
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        "http://control-plane:8000/internal/webhooks/dispatch",
+                        json={
+                            "org_id": str(incident.org_id),
+                            "event_type": "incident.declared",
+                            "data": {
+                                "incident_id": str(db_incident.id),
+                                "incident_type": db_incident.incident_type,
+                                "message": db_incident.message,
+                                "severity": db_incident.severity
+                            }
+                        },
+                        timeout=3.0
+                    )
+            except Exception as e:
+                import logging
+                logging.error(f"Failed to trigger webhook dispatch: {e}")
+                
+        asyncio.create_task(trigger_webhook())
+    
     return db_incident
 
 # --- Public API (Read) ---
@@ -94,17 +124,45 @@ async def list_incidents(
         # Filter by Org OR System-wide (Null)
         stmt = stmt.where((IncidentEventDB.org_id == org_id) | (IncidentEventDB.org_id == None))
     else:
-        # If no Org ID provided, show only System-wide? Or all?
-        # User constraint: "Must not expose internal-only metadata unless org matches"
-        # Since this is behind Gateway, Gateway injects Org ID usually.
-        # If internal/admin, might see all.
-        pass
+        # If no Org ID provided, default to SYSTEM-WIDE only to prevent data leakage.
+        # Unauthorized users should see only global platform incidents.
+        stmt = stmt.where(IncidentEventDB.org_id == None)
 
     if severity:
         stmt = stmt.where(IncidentEventDB.severity == severity)
         
     result = await session.execute(stmt)
     return result.scalars().all()
+
+@router.post("/v1/incidents/{incident_id}/resolve", response_model=IncidentRead)
+async def resolve_incident(
+    incident_id: UUID4,
+    org_id: Optional[UUID4] = Query(None, description="Optional Org ID to ensure isolation"),
+    session: AsyncSession = Depends(get_db_session)
+):
+    """
+    Resolve an open incident.
+    """
+    stmt = select(IncidentEventDB).where(IncidentEventDB.id == incident_id)
+    if org_id:
+        stmt = stmt.where(IncidentEventDB.org_id == org_id)
+        
+    result = await session.execute(stmt)
+    incident = result.scalar_one_or_none()
+    
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found or unauthorized")
+        
+    if incident.status == "resolved":
+        return incident
+        
+    incident.status = "resolved"
+    incident.resolved_at = datetime.utcnow()
+    
+    await session.commit()
+    await session.refresh(incident)
+    
+    return incident
 
 @router.get("/v1/public/status", response_model=StatusResponse)
 async def get_system_status(session: AsyncSession = Depends(get_db_session)):
