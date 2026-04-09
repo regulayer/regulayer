@@ -17,6 +17,13 @@ import {
     IconUsers,
     IconCreditCard,
     IconDownload,
+    IconCpu,
+    IconCertificate,
+    IconHeartHandshake,
+    IconFileText,
+    IconActivityHeartbeat,
+    IconUrgent,
+    IconTargetArrow,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -65,6 +72,16 @@ const complianceLinks = [
     { label: "Audit Logs", href: "/audit", icon: <IconHistory className={iconClass} /> },
 ];
 
+const euAiActLinks = [
+    { label: "AI Systems", href: "/ai-systems", icon: <IconCpu className={iconClass} /> },
+    { label: "Conformity", href: "/conformity", icon: <IconCertificate className={iconClass} /> },
+    { label: "FRIA", href: "/fria", icon: <IconHeartHandshake className={iconClass} /> },
+    { label: "Tech Docs", href: "/tech-docs", icon: <IconFileText className={iconClass} /> },
+    { label: "Monitoring", href: "/monitoring", icon: <IconActivityHeartbeat className={iconClass} /> },
+    { label: "Incident Report", href: "/incident-report", icon: <IconUrgent className={iconClass} /> },
+    { label: "Compliance", href: "/compliance", icon: <IconTargetArrow className={iconClass} /> },
+];
+
 const monitoringLinks = [
     { label: "Usage", href: "/usage", icon: <IconChartBar className={iconClass} /> },
     { label: "Alerts", href: "/alerts", icon: <IconBell className={iconClass} /> },
@@ -107,6 +124,13 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                         <SidebarSection label="Compliance" />
                         <div className="flex flex-col gap-0.5">
                             {complianceLinks.map((link, idx) => (
+                                <SidebarLink key={idx} link={link} />
+                            ))}
+                        </div>
+
+                        <SidebarSection label="EU AI Act" />
+                        <div className="flex flex-col gap-0.5">
+                            {euAiActLinks.map((link, idx) => (
                                 <SidebarLink key={idx} link={link} />
                             ))}
                         </div>
