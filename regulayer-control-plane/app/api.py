@@ -9,7 +9,7 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 import stripe
 
-from fastapi import FastAPI, HTTPException, Depends, Request, Header
+from fastapi import FastAPI, HTTPException, Depends, Request, Header, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -956,6 +956,7 @@ class SignupCompleteRequest(BaseModel):
 @app.post("/v1/auth/signup/otp-request", tags=["auth"])
 def request_otp(
     request: OtpRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -970,8 +971,7 @@ def request_otp(
         # Send via Email
         from .mailer import send_otp_email
         # Run in background to not block request
-        import asyncio
-        asyncio.create_task(send_otp_email(request.email, code))
+        background_tasks.add_task(send_otp_email, request.email, code)
         
         return {"status": "otp_sent", "message": "Check your email for the code"}
     except ValueError as e:
