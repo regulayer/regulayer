@@ -14,6 +14,8 @@ class ReportsSettings(BaseSettings):
     report_version: str = "1.0.0"
     debug: bool = False
     cors_origins: str = "*"
+    internal_secret: str = ""
+    env: str = "production"
     
     class Config:
         env_prefix = "REPORTS_"

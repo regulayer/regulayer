@@ -75,7 +75,7 @@ export default function PythonSDKDoc() {
         <tbody className="divide-y divide-zinc-800/50">
           <tr><td className="py-2 px-4 font-mono text-xs text-cyan-400">REGULAYER_API_KEY</td><td className="py-2 px-4 font-mono text-xs text-slate-600">api_key</td><td className="py-2 px-4 text-xs text-slate-500">Your project API key (required)</td></tr>
           <tr><td className="py-2 px-4 font-mono text-xs text-cyan-400">REGULAYER_PROJECT_ID</td><td className="py-2 px-4 font-mono text-xs text-slate-600">project_id</td><td className="py-2 px-4 text-xs text-slate-500">Project UUID for scoping decisions</td></tr>
-          <tr><td className="py-2 px-4 font-mono text-xs text-cyan-400">REGULAYER_ENDPOINT</td><td className="py-2 px-4 font-mono text-xs text-slate-600">endpoint</td><td className="py-2 px-4 text-xs text-slate-500">API endpoint (default: https://api.regulayer.tech)</td></tr>
+          <tr><td className="py-2 px-4 font-mono text-xs text-cyan-600">REGULAYER_ENDPOINT</td><td className="py-2 px-4 font-mono text-xs text-slate-600">endpoint</td><td className="py-2 px-4 text-xs text-slate-500">API endpoint (default: https://api.regulayer.tech)</td></tr>
           <tr><td className="py-2 px-4 font-mono text-xs text-cyan-400">REGULAYER_ENVIRONMENT</td><td className="py-2 px-4 font-mono text-xs text-slate-600">environment</td><td className="py-2 px-4 text-xs text-slate-500">Environment tag: &quot;production&quot;, &quot;staging&quot;, &quot;development&quot;</td></tr>
         </tbody>
       </table>
@@ -96,8 +96,8 @@ client = Regulayer(
 # Set REGULAYER_API_KEY and REGULAYER_PROJECT_ID in your .env
 client = Regulayer()`}</CodeBlock>
 
-      <div className="bg-brand-600/5 border border-amber-500/20 rounded-lg p-4 my-4">
-        <p className="text-xs text-amber-200/80"><strong>⚠ Security:</strong> Never hardcode API keys in source code. Use environment variables or a secrets manager in production.</p>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 my-4">
+        <p className="text-xs text-amber-800"><strong> Security:</strong> Never hardcode API keys in source code. Use environment variables or a secrets manager in production.</p>
       </div>
 
       {/* Core Methods */}
@@ -237,8 +237,8 @@ except RegulayerNetworkError:
 except RegulayerRateLimitError as e:
   print(f"Rate limited. Retry after {e.retry_after}s")`}</CodeBlock>
 
-      <div className="bg-slate-700/5 border border-slate-700/20 rounded-lg p-4 my-4">
-        <p className="text-xs text-slate-700/80"><strong>💡 Tip:</strong> In production, the SDK is designed to <strong>never block your AI system</strong>. Network errors are caught internally and decisions are buffered for retry. Your LLM response is never delayed by Regulayer.</p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
+        <p className="text-xs text-blue-800"><strong>💡 Tip:</strong> In production, the SDK is designed to <strong>never block your AI system</strong>. Network errors are caught internally and decisions are buffered for retry. Your LLM response is never delayed by Regulayer.</p>
       </div>
     </div>
   );

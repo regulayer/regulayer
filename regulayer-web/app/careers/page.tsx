@@ -18,21 +18,21 @@ export default function CareersPage() {
                             Careers
                         </span>
                         <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-bold tracking-[-0.04em] text-[hsl(15,45%,15%)] leading-[0.9] mb-8" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            Build the trust<br/>
+                            Build the governance<br/>
                             <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)]">infrastructure.</span>
                         </h1>
                         <p className="text-[18px] text-[hsl(15,30%,45%)] leading-[1.7] font-light max-w-lg mx-auto mb-12">
-                            We're a small, deeply technical team building cryptographic
-                            accountability for generative AI. No open roles right now,
-                            but we're always looking for exceptional people.
+                            We’re a small, deeply technical team building AI governance
+                            and compliance infrastructure for regulated enterprises. No open roles right now,
+                            but we’re always looking for exceptional people.
                         </p>
                         <div className="w-full max-w-md mx-auto border border-[hsl(15,30%,88%)] rounded-none p-8 bg-white">
                             <div className="flex items-center justify-center gap-2 mb-4">
                                 <Mail className="w-4 h-4 text-[hsl(15,30%,55%)]" />
                                 <p className="text-[13px] text-[hsl(15,30%,50%)]">Reach out with your work.</p>
                             </div>
-                            <a href="mailto:careers@regulayer.com" className="inline-flex items-center gap-2 text-[13px] font-bold text-[hsl(15,45%,15%)] hover:text-[hsl(15,85%,58%)] transition-colors">
-                                careers@regulayer.com <ArrowRight className="w-3.5 h-3.5" />
+                            <a href="mailto:careers@regulayer.tech" className="inline-flex items-center gap-2 text-[13px] font-bold text-[hsl(15,45%,15%)] hover:text-[hsl(15,85%,58%)] transition-colors">
+                                careers@regulayer.tech <ArrowRight className="w-3.5 h-3.5" />
                             </a>
                         </div>
                     </motion.div>

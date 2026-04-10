@@ -1,79 +1,75 @@
 "use client";
 import React from "react";
-import { Link2, Lock, ShieldAlert, CheckCircle, Search } from "lucide-react";
+
+const CodeBlock = ({ children, title }: { children: string; title?: string }) => (
+  <div className="bg-slate-900 rounded-lg overflow-hidden mb-4 border border-slate-700">
+    {title && <div className="bg-slate-800 px-4 py-2 text-xs font-mono text-slate-400 border-b border-slate-700">{title}</div>}
+    <pre className="p-4 overflow-x-auto"><code className="text-sm font-mono text-emerald-400">{children}</code></pre>
+  </div>
+);
 
 export default function RecordingDocComponent() {
   return (
     <div>
       <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Cryptographic Recording</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        The absolute core of Regulayer is the Recorder module. When a generative AI decision is made in your application, Regulayer creates an immutable, cryptographically verifiable record of the event.
+        Every AI decision processed by Regulayer is cryptographically sealed into an immutable audit vault. This page explains the hashing, signing, and chain-linking mechanisms that make Regulayer records tamper-proof.
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-        <Link2 className="text-slate-500" />
-        The Hash Chain Ledger
-      </h2>
-      <p className="text-slate-600 mb-4 leading-relaxed">
-        We do not just store AI inputs and outputs in a database. We construct a cryptographic hash chain—a lightweight blockchain-style ledger specific to your organization. This approach guarantees <strong>tamper-evident auditing</strong>.
+      <h2 className="text-2xl font-semibold mb-6">How Recording Works</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        When a decision arrives at the Decision Recorder, it undergoes a four-step cryptographic sealing process:
       </p>
 
-      <div className="bg-white/50 border border-slate-200 rounded-xl p-8 mb-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-        <h3 className="font-semibold text-slate-900 mb-4">How Hash Chaining Works</h3>
-        <ol className="space-y-6 relative border-l border-slate-300 ml-4 py-2">
-          <li className="pl-8 relative">
-            <div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-slate-100 border-2 border-slate-700" />
-            <h4 className="text-slate-700 font-medium mb-1">Payload Serialization</h4>
-            <p className="text-sm text-slate-500">The raw JSON input, output, and metadata are combined into a fixed, deterministic string representation.</p>
-          </li>
-          <li className="pl-8 relative">
-            <div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-slate-100 border-2 border-slate-700" />
-            <h4 className="text-slate-700 font-medium mb-1">Concatenation with Prior Hash</h4>
-            <p className="text-sm text-slate-500">The current payload is concatenated with the <code className="bg-slate-100 px-1 rounded text-emerald-400">record_hash</code> of the immediately preceding decision in your organization's ledger.</p>
-          </li>
-          <li className="pl-8 relative">
-            <div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-slate-100 border-2 border-slate-700" />
-            <h4 className="text-slate-700 font-medium mb-1">SHA-256 Hashing</h4>
-            <p className="text-sm text-slate-500">The concatenated string is run through the SHA-256 algorithm to produce the new <code className="bg-slate-100 px-1 rounded text-slate-500">record_hash</code>.</p>
-          </li>
-        </ol>
-      </div>
+      <ol className="list-decimal list-inside space-y-4 text-sm text-slate-600 mb-10 bg-white border border-slate-200 p-6 rounded-xl">
+        <li><strong>Canonicalization:</strong> The input, output, metadata, and timestamp are serialized into a deterministic JSON string (sorted keys, no whitespace). This ensures the same data always produces the same hash.</li>
+        <li><strong>Payload Hashing:</strong> The canonicalized string is hashed with <strong>SHA-256</strong>, producing a 64-character hex digest. This hash uniquely identifies the decision content.</li>
+        <li><strong>Chain Linking:</strong> The payload hash is concatenated with the previous record&apos;s chain hash to form: <code className="bg-slate-100 px-1 rounded">chain_hash = SHA-256(payload_hash + previous_chain_hash)</code>. This creates an immutable linked chain — modifying any historical record breaks all subsequent hashes.</li>
+        <li><strong>Digital Signing:</strong> The chain hash is signed with an <strong>Ed25519</strong> private key. This signature proves the record was created by an authorized Regulayer service and has not been tampered with.</li>
+      </ol>
 
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-        <ShieldAlert className="text-slate-500" />
-        Proving Tamper Resistance
-      </h2>
-      <p className="text-slate-600 mb-6 leading-relaxed">
-        If a developer, rogue employee, or attacker attempts to alter a historical prompt or response directly in the Regulayer database (e.g., to cover up an AI failure), the tampering is instantly mathematically exposed.
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Record Structure</h2>
+      <CodeBlock title="Example Record">{`{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "sequence_number": 12345,
+  "organization_id": "org-uuid",
+  "project_id": "project-uuid",
+  "model": "gpt-4",
+  "system_name": "customer-support-agent",
+  "input_data": { "role": "user", "content": "Approve loan for $50k" },
+  "output_data": { "decision": "approved", "amount": 50000 },
+  "metadata": { "customer_id": "C-12345", "risk_score": 0.23 },
+  "tags": ["financial", "high-value"],
+  "payload_hash": "a3f8c2d1...64 hex chars",
+  "previous_hash": "b4e9d3e2...64 hex chars",
+  "chain_hash": "c5f0e4f3...64 hex chars",
+  "signature": "Ed25519 signature bytes (base64)",
+  "status": "recorded",
+  "created_at": "2026-04-10T05:30:00.000Z"
+}`}</CodeBlock>
+
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">WORM Compliance</h2>
+      <p className="text-slate-500 mb-4 text-sm leading-relaxed">
+        The vault operates in <strong>Write-Once, Read-Many (WORM)</strong> mode:
       </p>
+      <ul className="list-disc list-inside space-y-2 text-sm text-slate-500 mb-6">
+        <li>Records can <strong>only be appended</strong> — no UPDATE or DELETE operations exist</li>
+        <li>Retention periods are enforced by plan tier (Free: 7 days, Pro: 1 year, Enterprise: unlimited)</li>
+        <li>Even Regulayer engineers cannot modify or delete records before retention expires</li>
+        <li>Architecture satisfies <strong>SEC 17a-4</strong> requirements for financial record retention</li>
+      </ul>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle className="text-emerald-500 w-5 h-5" />
-            <h4 className="font-semibold text-emerald-400">Valid State</h4>
-          </div>
-          <p className="text-sm text-emerald-200/70 mb-3">A third-party auditor downloads your dataset and recalculates the hash chain sequentially from Event #1 to Event #1,000,000.</p>
-          <code className="block w-full bg-emerald-950/50 p-2 rounded text-xs text-emerald-300 overflow-x-auto whitespace-nowrap">Calc Hash #500 == Stored Hash #500</code>
-        </div>
-
-        <div className="bg-rose-950/20 border border-rose-900/50 rounded-xl p-6 relative">
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldAlert className="text-rose-500 w-5 h-5" />
-            <h4 className="font-semibold text-rose-400">Tampered State</h4>
-          </div>
-          <p className="text-sm text-rose-200/70 mb-3">Someone alters the LLM response text in Event #500. Event #500's computed hash now changes. Since Event #501's hash strictly depends on Event #500's hash, #501 evaluates as invalid. The entire chain breaks, proving tampering occurred.</p>
-          <code className="block w-full bg-rose-950/50 p-2 rounded text-xs text-rose-300 overflow-x-auto whitespace-nowrap">Calc Hash #501 != Stored Hash #501</code>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-        <Search className="text-slate-500" />
-        Data Retention & E-Discovery
-      </h2>
-      <p className="text-slate-600 mb-4 leading-relaxed">
-        Live environment decisions (<code className="bg-slate-100 px-1 rounded text-cyan-400">environment: production</code>) are retained indefinitely. Your organization can issue precise E-Discovery queries during legal proceedings to retrieve exactly what an AI agent "saw" and "said" on a specific date, mathematically proving the output.
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Verification</h2>
+      <p className="text-slate-500 mb-4 text-sm leading-relaxed">
+        Any record can be independently verified by an auditor:
+      </p>
+      <ol className="list-decimal list-inside space-y-2 text-sm text-slate-500 mb-6">
+        <li>Recompute the SHA-256 hash from the original input/output/metadata</li>
+        <li>Verify the chain link: <code className="bg-slate-100 px-1 rounded">chain_hash == SHA-256(payload_hash + previous_chain_hash)</code></li>
+        <li>Verify the Ed25519 signature using Regulayer&apos;s published public key</li>
+      </ol>
+      <p className="text-slate-500 text-sm leading-relaxed">
+        Use the <strong>Chain Integrity Report</strong> (<code className="bg-slate-100 px-1 rounded">GET /v1/reports/chain/default</code>) to automatically verify the entire hash chain for your organization.
       </p>
     </div>
   );

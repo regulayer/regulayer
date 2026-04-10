@@ -28,9 +28,10 @@ export default function FRIADetailPage() {
     const [step, setStep] = useState(0);
 
     useEffect(() => {
-        const f = getFRIA(friaId);
-        if (!f) { router.push('/fria'); return; }
-        setFria(f);
+        getFRIA(friaId).then(f => {
+            if (!f) { router.push('/fria'); return; }
+            setFria(f);
+        }).catch(() => router.push('/fria'));
     }, [friaId, router]);
 
     if (!fria) return <div className="p-20 flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin" /></div>;

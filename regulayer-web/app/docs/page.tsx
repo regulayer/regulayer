@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { ChevronRight, FileCode2, TerminalSquare, Search, BookOpen, Layers } from "lucide-react";
+import { ChevronRight, FileCode2, TerminalSquare, Search, BookOpen, Layers, Download } from "lucide-react";
 import PythonSDKDocComponent from "./components/PythonSDKDoc";
 import GoSDKDocComponent from "./components/GoSDKDoc";
 import NodeSDKDocComponent from "./components/NodeSDKDoc";
@@ -27,7 +27,7 @@ const docsGraph = [
       { id: "intro", title: "Introduction" },
       { id: "quickstart", title: "Quickstart Guide" },
       { id: "architecture", title: "Architecture Overview" },
-      { id: "auth", title: "Authentication" }
+      { id: "auth", title: "Authentication & RBAC" }
     ]
   },
   {
@@ -43,9 +43,9 @@ const docsGraph = [
     category: "Core Features",
     icon: Layers,
     items: [
-      { id: "recording", title: "Cryptographic Recording" },
-      { id: "policies", title: "Policy Enforcements" },
-      { id: "governance", title: "Governance Reviews" },
+      { id: "recording", title: "Cryptographic Vault" },
+      { id: "policies", title: "Policy Engine" },
+      { id: "governance", title: "HITL Governance" },
       { id: "webhooks", title: "Webhooks & Events" }
     ]
   },
@@ -55,7 +55,7 @@ const docsGraph = [
     items: [
       { id: "reports", title: "Compliance Reports" },
       { id: "soc2", title: "SOC 2 Type II" },
-      { id: "euai", title: "EU AI Act Requirements" }
+      { id: "euai", title: "EU AI Act Compliance" }
     ]
   }
 ];
@@ -107,6 +107,21 @@ export default function DocsPage() {
               </div>
             ))}
           </nav>
+
+          {/* Knowledge Base Download */}
+          <div className="px-4 pb-6 mt-2">
+            <a
+              href="/regulayer-complete-knowledge-base.txt"
+              download="regulayer-complete-knowledge-base.txt"
+              className="flex items-center gap-2 px-3 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition-colors w-full"
+            >
+              <Download className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Download AI Knowledge Base</span>
+            </a>
+            <p className="text-[10px] text-slate-400 mt-1.5 px-1 leading-relaxed">
+              Complete reference file for AI assistants. Feed to any LLM for instant Regulayer expertise.
+            </p>
+          </div>
         </aside>
 
         {/* ─── MAIN CONTENT AREA ─── */}
@@ -153,25 +168,51 @@ export default function DocsPage() {
 function GovernanceDoc() {
   return (
     <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Governance Reviews</h1>
-      <p className="text-lg text-slate-500 mb-6 leading-relaxed">Not all flagged AI decisions are inherently bad. The Governance Engine provides a structured workflow for compliance teams to review flagged decisions.</p>
-      <h3 className="text-2xl font-semibold mb-4 text-slate-700">The Review Flow</h3>
-      <ol className="list-decimal list-inside space-y-3 text-slate-500 mb-6 bg-white/40 p-6 rounded-xl border border-slate-200">
-        <li><strong className="text-slate-700">Flagged:</strong> An AI Output trips a rule in the Policy Engine.</li>
-        <li><strong className="text-slate-700">Queued:</strong> The decision enters the &quot;Pending Review&quot; queue on the dashboard.</li>
-        <li><strong className="text-slate-700">Audited:</strong> A human compliance officer examines the context and marks it as <strong>Approved</strong> or <strong>Rejected</strong> with a mandatory text justification.</li>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Human-in-the-Loop Governance</h1>
+      <p className="text-lg text-slate-500 mb-6 leading-relaxed">The HITL Governance Queue ensures that high-risk AI decisions receive structured human oversight before impacting end users. This directly satisfies EU AI Act Article 14 requirements for human supervision of high-risk AI systems.</p>
+
+      <h2 className="text-2xl font-semibold mb-4 text-slate-700">The Review Workflow</h2>
+      <ol className="list-decimal list-inside space-y-4 text-slate-600 mb-8 bg-white/40 p-6 rounded-xl border border-slate-200">
+        <li><strong className="text-slate-700">Policy Trigger:</strong> An AI decision trips a policy rule configured with <code className="bg-slate-100 px-1 rounded text-xs">require_approval</code> or <code className="bg-slate-100 px-1 rounded text-xs">flag</code> action.</li>
+        <li><strong className="text-slate-700">Queue Entry:</strong> The decision enters the &quot;Pending Review&quot; queue visible on the Governance page of the dashboard. If Slack is configured, a rich notification is dispatched.</li>
+        <li><strong className="text-slate-700">Human Review:</strong> A compliance officer opens the decision and examines the full context: AI input (prompt), AI output (response), triggering policy, risk scores, and metadata.</li>
+        <li><strong className="text-slate-700">Action:</strong> The reviewer takes one of these actions:
+          <ul className="list-disc list-inside ml-6 mt-2 space-y-1 text-sm">
+            <li><strong>Approve</strong> — Decision is released. Mandatory justification text is recorded.</li>
+            <li><strong>Reject</strong> — Decision is blocked. A decline message is sent (custom or default). Justification recorded.</li>
+            <li><strong>Annotate</strong> — Add notes for other reviewers or auditors without changing status.</li>
+            <li><strong>Tag</strong> — Categorize the decision for filtering and reporting.</li>
+            <li><strong>Escalate</strong> — Flag for senior review or forward to a different team.</li>
+          </ul>
+        </li>
+        <li><strong className="text-slate-700">Audit Trail:</strong> Every action (approve, reject, annotate, tag) is cryptographically recorded with the reviewer&apos;s identity, timestamp, and justification in the immutable audit vault.</li>
       </ol>
-      <p className="text-slate-500 text-sm mb-6 bg-slate-50 border border-slate-200 p-4 rounded-lg">
-        This &quot;Human-in-the-Loop&quot; workflow satisfies EU AI Act requirements for high-risk AI deployments and SOC 2 incident remediation criteria.
-      </p>
-      <h3 className="text-xl font-semibold mb-3 pt-6 border-t border-slate-200">Governance Policy Engine Syntax</h3>
-      <p className="text-slate-500 mb-6">
-        Define declarative JSON rules that automatically evaluate every AI decision. We support semantic analysis via LLaMA 3, numeric thresholds, string matching, and more.
-      </p>
-      <div className="mt-4">
-        <Link href="/docs/governance" className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-lg transition font-medium text-sm">
-          📖 View Full Governance Policy Docs →
-        </Link>
+
+      <h3 className="text-xl font-semibold mb-3 pt-6 border-t border-slate-200">API Reference</h3>
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-6">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Endpoint</th>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Description</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">GET /v1/governance/queue</td><td className="px-4 py-2 text-slate-500">Get pending review queue</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">GET /v1/governance/&#123;id&#125;</td><td className="px-4 py-2 text-slate-500">Get decision governance details</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">POST /v1/governance/&#123;id&#125;/reviews</td><td className="px-4 py-2 text-slate-500">Submit approve/reject review</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">POST /v1/governance/&#123;id&#125;/annotations</td><td className="px-4 py-2 text-slate-500">Add annotation</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">POST /v1/governance/&#123;id&#125;/tags</td><td className="px-4 py-2 text-slate-500">Add tag</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">GET /v1/governance/&#123;id&#125;/evidence</td><td className="px-4 py-2 text-slate-500">Get evidence bundle</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-orange-500">GET /v1/governance/&#123;id&#125;/timeline</td><td className="px-4 py-2 text-slate-500">Get event timeline</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p className="text-sm text-blue-800">
+          <strong>💡 Tip:</strong> For comprehensive governance policy syntax including semantic analysis, numeric thresholds, and regex rules, see the Policy Engine documentation.
+        </p>
       </div>
     </div>
   );

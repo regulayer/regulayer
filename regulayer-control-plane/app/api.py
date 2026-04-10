@@ -107,8 +107,8 @@ app.add_middleware(StructuredLoggerMiddleware)
 app.add_middleware(RequestIdMiddleware)
 app.add_middleware(_CORSMiddleware)
 
-
-
+from .compliance_api import router as compliance_router
+app.include_router(compliance_router)
 
 
 # ============================================================
@@ -1705,6 +1705,7 @@ def get_org_usage(
 async def get_org_daily_usage(
     org_id: UUID,
     days: int = 30,
+    project_id: Optional[str] = None,
     db: Session = Depends(get_db),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
@@ -1716,9 +1717,12 @@ async def get_org_daily_usage(
     if tenant.organization_id != org_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # Get all projects for Org
-    projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
-    project_ids = [str(p.id) for p in projects]
+    # Get projects for Org
+    if project_id and project_id.lower() != 'all':
+        project_ids = [project_id]
+    else:
+        projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()
+        project_ids = [str(p.id) for p in projects]
 
     if not project_ids:
         return []

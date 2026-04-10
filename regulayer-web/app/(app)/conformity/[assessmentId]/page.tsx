@@ -22,9 +22,10 @@ export default function ConformityDetailPage() {
     const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
     useEffect(() => {
-        const a = getConformityAssessment(assessmentId);
-        if (!a) { router.push('/conformity'); return; }
-        setAssessment(a);
+        getConformityAssessment(assessmentId).then(a => {
+            if (!a) { router.push('/conformity'); return; }
+            setAssessment(a);
+        }).catch(() => router.push('/conformity'));
     }, [assessmentId, router]);
 
     if (!assessment) return <div className="p-20 flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin" /></div>;

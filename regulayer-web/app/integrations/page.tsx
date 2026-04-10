@@ -33,8 +33,8 @@ export default function IntegrationsPage() {
                             <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)]">entire stack.</span>
                         </h1>
                         <p className="text-[18px] text-[hsl(15,30%,45%)] leading-[1.7] font-light">
-                            Regulayer sits out-of-band as an asynchronous sidecar. Integrate with any LLM provider
-                            using our SDK — your prompts and responses never touch our infrastructure.
+                            Regulayer deploys as a transparent proxy gateway in front of your AI providers. Integrate with any LLM
+                            using a single proxy configuration — governance and compliance applied automatically.
                         </p>
                     </motion.div>
 

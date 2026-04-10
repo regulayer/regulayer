@@ -29,9 +29,10 @@ export default function IncidentReportDetailPage() {
     const [report, setReport] = useState<IncidentReportData | null>(null);
 
     useEffect(() => {
-        const r = getIncidentReport(reportId);
-        if (!r) { router.push('/incident-report'); return; }
-        setReport(r);
+        getIncidentReport(reportId).then(r => {
+            if (!r) { router.push('/incident-report'); return; }
+            setReport(r);
+        }).catch(() => router.push('/incident-report'));
     }, [reportId, router]);
 
     if (!report) return <div className="p-20 flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin" /></div>;

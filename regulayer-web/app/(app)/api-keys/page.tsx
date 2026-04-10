@@ -6,31 +6,73 @@ import {
     IconPlus,
     IconCopy,
     IconTrash,
-    IconAlertTriangle,
     IconLoader2,
-    IconEye,
-    IconEyeOff,
     IconCheck
 } from '@tabler/icons-react';
 import { getMe, getProjects, getApiKeys, ApiKey, Project, createApiKey, revokeApiKey } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlazedCard } from '@/components/ui/glazed-card';
-import { cn } from '@/lib/utils'; // Assuming cn utility exists
 
 export const dynamic = 'force-dynamic';
+
+function CreateKeyModal({ onClose, onCreate, projects }: { onClose: () => void; onCreate: (projectId: string, name: string) => Promise<void>; projects: Project[] }) {
+    const [name, setName] = useState('');
+    const [projectId, setProjectId] = useState(projects.length > 0 ? projects[0].id : '');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        await onCreate(projectId, name);
+        setLoading(false);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <GlazedCard className="w-full max-w-md p-6 bg-background border-border shadow-2xl">
+                <h2 className="text-xl font-bold text-foreground mb-4">Create API Key</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Key Name</label>
+                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder="e.g. Production SDK Key" autoFocus />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Project</label>
+                        <select 
+                            required
+                            value={projectId} 
+                            onChange={(e) => setProjectId(e.target.value)}
+                            className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+                        <button type="submit" disabled={loading || !name.trim() || !projectId}
+                            className="px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+                            {loading && <IconLoader2 className="animate-spin" size={16} />}
+                            Create Key
+                        </button>
+                    </div>
+                </form>
+            </GlazedCard>
+        </div>
+    );
+}
 
 export default function ApiKeysPage() {
     const [keys, setKeys] = useState<ApiKey[]>([]);
     const [loading, setLoading] = useState(true);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [creating, setCreating] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [newKeySecret, setNewKeySecret] = useState<string | null>(null);
-    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+    const [filterProjectId, setFilterProjectId] = useState<string>('all');
     const [currentUserRole, setCurrentUserRole] = useState<string>('');
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         try {
@@ -44,13 +86,10 @@ export default function ApiKeysPage() {
                     for (const project of projectsRes.data) {
                         const keysRes = await getApiKeys(project.id);
                         if (keysRes.data) {
-                            allKeys.push(...keysRes.data.map(k => ({ ...k, _projectName: project.name })));
+                            allKeys.push(...keysRes.data.map(k => ({ ...k, _projectId: project.id, _projectName: project.name })));
                         }
                     }
                     setKeys(allKeys);
-                    if (projectsRes.data.length > 0) {
-                        setSelectedProjectId(projectsRes.data[0].id);
-                    }
                 }
             }
         } catch (e) {
@@ -60,32 +99,17 @@ export default function ApiKeysPage() {
         }
     };
 
-    const handleCreateKey = async () => {
-        if (projects.length === 0) return;
-        setCreating(true);
-        setNewKeySecret(null);
-
-        if (!selectedProjectId) {
-            alert("No project selected");
-            setCreating(false);
-            return;
-        }
-
+    const handleCreateKey = async (projectId: string, name: string) => {
         try {
-            const res = await createApiKey(selectedProjectId, {
-                name: `New Key ${keys.length + 1}`,
-                scopes: ["ingest"]
-            });
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const res = await createApiKey(projectId, { name, scopes: ["ingest"] });
             if (res.data && (res.data as any).key_secret) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setNewKeySecret((res.data as any).key_secret);
-                loadData();
+                await loadData();
+                setShowCreateModal(false);
+                setFilterProjectId('all'); // Show all so they see their new key
             }
         } catch {
             alert("Failed to create key");
-        } finally {
-            setCreating(false);
         }
     };
 
@@ -99,6 +123,8 @@ export default function ApiKeysPage() {
         }
     };
 
+    const displayedKeys = keys.filter(k => filterProjectId === 'all' || (k as any)._projectId === filterProjectId);
+
     if (loading) {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
@@ -109,34 +135,31 @@ export default function ApiKeysPage() {
 
     return (
         <div className="p-6 md:p-10 pb-20 space-y-8 text-foreground">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                        API Keys
-                    </h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">API Keys</h1>
                     <p className="text-muted-foreground mt-1">
-                        Securely access the Regulayer SDK and API for a specific project.
+                        Securely access the Regulayer SDK and API.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <select
-                        value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                        disabled={projects.length === 0}
+                        value={filterProjectId}
+                        onChange={(e) => setFilterProjectId(e.target.value)}
                         className="h-10 px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:bg-slate-700/50"
                     >
+                        <option value="all">All Projects</option>
                         {projects.map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                     </select>
                     {(currentUserRole === 'owner' || currentUserRole === 'admin') && (
                         <button
-                            onClick={handleCreateKey}
-                            disabled={creating || projects.length === 0 || !selectedProjectId}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium shadow-lg bg-slate-700/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                            onClick={() => setShowCreateModal(true)}
+                            disabled={projects.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                         >
-                            {creating ? <IconLoader2 className="animate-spin" size={18} /> : <IconPlus size={18} />}
-                            Create Key
+                            <IconPlus size={18} /> Create Key
                         </button>
                     )}
                 </div>
@@ -178,7 +201,7 @@ export default function ApiKeysPage() {
             </AnimatePresence>
 
             <div className="grid gap-4">
-                {keys.length === 0 ? (
+                {displayedKeys.length === 0 ? (
                     <div className="text-center py-20 bg-background rounded-2xl border border-dashed border-border">
                         <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
                             <IconKey size={32} className="text-muted-foreground" />
@@ -186,7 +209,7 @@ export default function ApiKeysPage() {
                         <h3 className="text-lg font-medium text-foreground mb-2">No API keys found</h3>
                         <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Create a key to authenticate your SDK integration.</p>
                     </div>
-                ) : keys.map((key) => (
+                ) : displayedKeys.map((key) => (
                     <GlazedCard key={key.id} className="flex items-center justify-between p-4 group">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground">
@@ -195,7 +218,7 @@ export default function ApiKeysPage() {
                             <div>
                                 <h3 className="font-medium text-foreground">{key.name}</h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 text-zinc-50 bg-slate-800 rounded text-xs font-medium border text-zinc-200">
+                                    <span className="px-2 py-0.5 bg-slate-800 rounded text-xs font-medium border text-zinc-200">
                                         {(key as any)._projectName || 'Unknown Project'}
                                     </span>
                                     <code className="text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-mono">
@@ -228,6 +251,14 @@ export default function ApiKeysPage() {
                     </GlazedCard>
                 ))}
             </div>
+
+            {showCreateModal && (
+                <CreateKeyModal 
+                    projects={projects} 
+                    onClose={() => setShowCreateModal(false)} 
+                    onCreate={handleCreateKey} 
+                />
+            )}
         </div>
     );
 }

@@ -15,9 +15,9 @@ function useReveal(t = 0.1) {
 }
 
 const plans = [
-    { name: "Free", price: "$0", period: "/mo", desc: "For prototyping and small teams", features: ["1,000 decisions/mo", "7-day retention", "1 project", "Community support", "Basic dashboard"], cta: "Get Started", highlight: false },
-    { name: "Pro", price: "$99", period: "/mo", desc: "For teams shipping to production", features: ["50,000 decisions/mo", "1-year retention", "Unlimited projects", "Priority support", "RBAC & SSO", "Webhook integrations", "Custom rules engine", "Export API"], cta: "Get Pro", highlight: true },
-    { name: "Enterprise", price: "Custom", period: "", desc: "For regulated enterprises at scale", features: ["Unlimited decisions", "Unlimited retention", "Dedicated infrastructure", "24/7 SLA", "Custom compliance templates", "On-premise deployment", "Dedicated CSM", "SOC 2 Type II report"], cta: "Contact Sales", highlight: false },
+    { name: "Free", price: "$0", period: "/mo", desc: "For prototyping and small teams", features: ["1,000 decisions/mo", "Up to 2 team members", "7-day retention", "1 project", "Community support"], cta: "Get Started", highlight: false },
+    { name: "Pro", price: "$99", period: "/mo", desc: "For compliance teams shipping to production", features: ["50,000 decisions/mo", "Up to 20 team members", "1-year retention", "Unlimited projects", "RBAC & SSO", "HITL Governance Queue", "Conformity Assessments"], cta: "Get Pro", highlight: true },
+    { name: "Enterprise", price: "Custom", period: "", desc: "For regulated enterprises at scale", features: ["Unlimited decisions", "Unlimited team members", "Unlimited retention", "Dedicated infrastructure", "Automated FRIA Generation", "On-premise deployment", "Dedicated CSM", "SOC 2 Type II BAA"], cta: "Contact Sales", highlight: false },
 ];
 
 export default function PricingPage() {

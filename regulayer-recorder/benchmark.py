@@ -239,7 +239,7 @@ def estimate_total_ingestion_latency():
     total_p50 = sum(r['p50'] for r in results.values())
     total_p95 = sum(r['p95'] for r in results.values())
     
-    print(f"\n  📊 TOTAL ESTIMATED LATENCY:")
+    print(f"\n   TOTAL ESTIMATED LATENCY:")
     print(f"     p50: {total_p50:.2f}ms")
     print(f"     p95: {total_p95:.2f}ms")
     
@@ -263,9 +263,9 @@ def main():
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
-    print(f"✅ Event processing overhead (p50): {total_p50:.2f}ms")
-    print(f"✅ Event processing overhead (p95): {total_p95:.2f}ms")
-    print(f"\n✅ UNDER 5ms TARGET: {'YES ✓' if total_p50 < 5 else 'NO (but acceptable)'}")
+    print(f" Event processing overhead (p50): {total_p50:.2f}ms")
+    print(f" Event processing overhead (p95): {total_p95:.2f}ms")
+    print(f"\n UNDER 5ms TARGET: {'YES ✓' if total_p50 < 5 else 'NO (but acceptable)'}")
     print("\nNote: These are component-level benchmarks.")
     print("Database I/O adds additional latency (typically 1-10ms).")
     print("Network latency varies by deployment (typically 10-100ms).")

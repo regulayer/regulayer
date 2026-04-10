@@ -25,8 +25,8 @@ export default function ConformityPage() {
     const [selectedSystemId, setSelectedSystemId] = useState('');
 
     useEffect(() => {
-        setAssessments(getConformityAssessments());
-        setSystems(getAISystems());
+        getConformityAssessments().then(setAssessments).catch(console.error);
+        getAISystems().then(setSystems).catch(console.error);
     }, []);
 
     const handleCreate = () => {
@@ -44,7 +44,7 @@ export default function ConformityPage() {
             updated_at: new Date().toISOString(),
         };
         saveConformityAssessment(newAssessment);
-        setAssessments(getConformityAssessments());
+        getConformityAssessments().then(setAssessments).catch(console.error);
         setShowModal(false);
         setSelectedSystemId('');
     };

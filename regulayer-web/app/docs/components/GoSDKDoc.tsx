@@ -1,191 +1,129 @@
 "use client";
 import React from "react";
 
-const CodeBlock = ({ children }: { children: string }) => (
-  <pre className="bg-white border border-slate-200 p-4 rounded-lg overflow-x-auto"><code className="text-sm font-mono text-emerald-400">{children}</code></pre>
+const CodeBlock = ({ children, title }: { children: string; title?: string }) => (
+  <div className="bg-slate-900 rounded-lg overflow-hidden mb-4 border border-slate-700">
+    {title && <div className="bg-slate-800 px-4 py-2 text-xs font-mono text-slate-400 border-b border-slate-700">{title}</div>}
+    <pre className="p-4 overflow-x-auto"><code className="text-sm font-mono text-emerald-400">{children}</code></pre>
+  </div>
 );
 
-export default function GoSDKDoc() {
+export default function GoSDKDocComponent() {
   return (
     <div>
       <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Go SDK Reference</h1>
-      <p className="text-lg text-slate-500 mb-8">The official Go SDK for recording AI decisions with Regulayer. Designed for high-throughput, low-latency production systems.</p>
 
-      {/* Installation */}
-      <h2>Installation</h2>
-      <p>Add the SDK to your Go module:</p>
-      <CodeBlock>{`go get github.com/regulayer/regulayer-sdk-go`}</CodeBlock>
-
-      {/* Core Types */}
-      <h2 className="mt-10">Core Types</h2>
-
-      <h3>Config</h3>
-      <p>Configuration struct for initializing the client.</p>
-      <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
-        <div className="bg-white/80 px-5 py-3 border-b border-slate-200">
-          <code className="text-slate-500 font-mono text-sm font-bold">type Config struct</code>
-        </div>
-        <div className="p-5">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-slate-200">
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Field</th>
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Type</th>
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Description</th>
-            </tr></thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">APIKey</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">Your Regulayer API key (required)</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">Endpoint</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">API endpoint (default: https://api.regulayer.tech)</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">Demo</td><td className="py-2 text-xs text-slate-500 font-mono">bool</td><td className="py-2 text-xs text-slate-600">Enable demo mode (skips cryptographic persistence)</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+        <p className="text-sm text-amber-800">
+          <strong>🚧 Early Access:</strong> The Go SDK is currently in beta. The API surface is stable but may undergo minor changes before GA release. For production use, we recommend the Python SDK or direct REST API integration.
+        </p>
       </div>
 
-      <h3>Decision</h3>
-      <p>The payload struct representing a single AI decision to record.</p>
-      <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
-        <div className="bg-white/80 px-5 py-3 border-b border-slate-200">
-          <code className="text-slate-500 font-mono text-sm font-bold">type Decision struct</code>
-        </div>
-        <div className="p-5">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-slate-200">
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Field</th>
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Type</th>
-              <th className="py-2 text-left text-xs uppercase text-slate-500 font-bold">Description</th>
-            </tr></thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">DecisionID</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">Custom UUID (auto-generated if empty)</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">System</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">Name of the AI system</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">RiskLevel</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">&quot;low&quot;, &quot;standard&quot;, &quot;high&quot; (default: &quot;standard&quot;)</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">ModelName</td><td className="py-2 text-xs text-slate-500 font-mono">string</td><td className="py-2 text-xs text-slate-600">ML model identifier</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">Input</td><td className="py-2 text-xs text-slate-500 font-mono">{`map[string]interface{}`}</td><td className="py-2 text-xs text-slate-600">Input payload sent to the model</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">Output</td><td className="py-2 text-xs text-slate-500 font-mono">{`map[string]interface{}`}</td><td className="py-2 text-xs text-slate-600">Output/response from the model</td></tr>
-              <tr><td className="py-2 font-mono text-xs text-cyan-400">Metadata</td><td className="py-2 text-xs text-slate-500 font-mono">{`map[string]interface{}`}</td><td className="py-2 text-xs text-slate-600">Custom metadata (tokens, latency, etc.)</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <p className="text-lg text-slate-500 mb-8 leading-relaxed">
+        The official Go SDK for recording and governing AI decisions with Regulayer. Designed for high-performance, concurrent Go applications with zero-allocation hot paths.
+      </p>
+
+      <h2 className="text-2xl font-semibold mb-4">Installation</h2>
+      <CodeBlock title="Terminal">go get github.com/regulayer/regulayer-go@latest</CodeBlock>
+
+      <h2 className="text-2xl font-semibold mb-4 mt-10">Configuration</h2>
+      <p className="text-slate-500 text-sm mb-4 leading-relaxed">
+        The Go SDK supports configuration via functional options or environment variables.
+      </p>
+
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-6">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Env Variable</th>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Description</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            <tr><td className="px-4 py-2 font-mono text-xs text-cyan-600">REGULAYER_API_KEY</td><td className="px-4 py-2 text-xs text-slate-500">Your project API key (required)</td></tr>
+            <tr><td className="px-4 py-2 font-mono text-xs text-cyan-600">REGULAYER_ENDPOINT</td><td className="px-4 py-2 text-xs text-slate-500">API endpoint (default: https://api.regulayer.tech)</td></tr>
+          </tbody>
+        </table>
       </div>
 
-      {/* Methods */}
-      <h2 className="mt-10">Methods</h2>
-
-      <h3><code className="text-slate-500">NewClient(config Config) (*Client, error)</code></h3>
-      <p>Creates a new Regulayer client. Returns an error if the API key is missing. The client uses a pre-configured <code className="bg-slate-100 px-1 rounded text-slate-600">http.Client</code> with a 10-second timeout.</p>
-      <CodeBlock>{`client, err := regulayer.NewClient(regulayer.Config{
-  APIKey:  os.Getenv("REGULAYER_API_KEY"),
-  Endpoint: "https://api.regulayer.tech", // optional
-})
-if err != nil {
-  log.Fatal("Failed to init Regulayer:", err)
-}`}</CodeBlock>
-
-      <h3 className="mt-8"><code className="text-slate-500">client.RecordDecision(d Decision) error</code></h3>
-      <p>Sends a decision to the Regulayer gateway. The SDK automatically:</p>
-      <ul>
-        <li>Generates a UUID v4 if <code className="bg-slate-100 px-1 rounded text-slate-600">DecisionID</code> is empty</li>
-        <li>Computes SHA-256 hashes of <code className="bg-slate-100 px-1 rounded text-slate-600">Input</code> and <code className="bg-slate-100 px-1 rounded text-slate-600">Output</code></li>
-        <li>Sets <code className="bg-slate-100 px-1 rounded text-slate-600">event_version: "2.0"</code> and timestamps</li>
-        <li>Sends the payload with <code className="bg-slate-100 px-1 rounded text-slate-600">Authorization: Bearer</code> and <code className="bg-slate-100 px-1 rounded text-slate-600">X-Regulayer-Api-Key</code> headers</li>
-      </ul>
-      <CodeBlock>{`err := client.RecordDecision(regulayer.Decision{
-  System:  "fraud-detector",
-  ModelName: "gpt-4o",
-  RiskLevel: "high",
-  Input: map[string]interface{}{
-    "transaction_id": "txn_98765",
-    "amount":     2500.00,
-    "description":  "Wire transfer to unknown account",
-  },
-  Output: map[string]interface{}{
-    "risk_score": 0.92,
-    "action":   "block",
-    "explanation": "Flagged as potential fraud due to unusual pattern",
-  },
-  Metadata: map[string]interface{}{
-    "latency_ms": 45,
-    "model_temp": 0.0,
-    "token_count": 312,
-  },
-})
-if err != nil {
-  log.Printf("Warning: Failed to record decision: %v", err)
-}`}</CodeBlock>
-
-      {/* Full Example */}
-      <h2 className="mt-10">Complete Working Example</h2>
-      <CodeBlock>{`package main
+      <h2 className="text-2xl font-semibold mb-4 mt-10">Client Initialization</h2>
+      <CodeBlock title="main.go">{`package main
 
 import (
-  "fmt"
-  "log"
-  "os"
-
-  regulayer "github.com/regulayer/regulayer-sdk-go"
+    "context"
+    "log"
+    regulayer "github.com/regulayer/regulayer-go"
 )
 
 func main() {
-  // Initialize the client
-  client, err := regulayer.NewClient(regulayer.Config{
-    APIKey: os.Getenv("REGULAYER_API_KEY"),
-  })
-  if err != nil {
-    log.Fatal(err)
-  }
+    // Option 1: Auto-detect from environment
+    client, err := regulayer.NewClient()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer client.Close()
 
-  // Simulate an AI decision
-  prompt := "Summarize the quarterly earnings report"
-  aiResponse := "Revenue increased 15% YoY to $4.2B..."
+    // Option 2: Explicit configuration
+    client, err := regulayer.NewClient(
+        regulayer.WithAPIKey("rl_live_abc123..."),
+        regulayer.WithEndpoint("https://api.regulayer.tech"),
+    )
+}`}</CodeBlock>
 
-  // Record the decision
-  err = client.RecordDecision(regulayer.Decision{
-    System:  "financial-analyst-bot",
-    ModelName: "gpt-4o",
-    RiskLevel: "standard",
-    Input:   map[string]interface{}{"prompt": prompt},
-    Output:  map[string]interface{}{"response": aiResponse},
+      <h2 className="text-2xl font-semibold mb-4 mt-10">Recording Decisions</h2>
+      <CodeBlock title="Recording">{`ctx := context.Background()
+
+result, err := client.Record(ctx, &regulayer.Decision{
+    Input:      map[string]interface{}{"prompt": "Approve loan for $50k"},
+    Output:     map[string]interface{}{"decision": "approved", "amount": 50000},
+    Model:      "gpt-4",
+    SystemName: "loan-approval-agent",
     Metadata: map[string]interface{}{
-      "department": "finance",
-      "user":    "analyst_42",
+        "customer_id": "C-12345",
+        "risk_score":  0.23,
     },
-  })
-
-  if err != nil {
+    Tags: []string{"financial", "high-value"},
+})
+if err != nil {
     log.Printf("Recording failed: %v", err)
-  } else {
-    fmt.Println("✓ Decision recorded to Regulayer")
-  }
+    return
+}
+
+log.Printf("Decision ID: %s", result.DecisionID)
+log.Printf("Hash: %s", result.RecordHash)`}</CodeBlock>
+
+      <h2 className="text-2xl font-semibold mb-4 mt-10">Middleware Integration</h2>
+      <p className="text-slate-500 text-sm mb-4 leading-relaxed">
+        For HTTP servers, the Go SDK provides middleware that automatically intercepts and records AI-related request/response pairs:
+      </p>
+      <CodeBlock title="HTTP Middleware">{`import "github.com/regulayer/regulayer-go/middleware"
+
+// Wrap your AI handler with the Regulayer middleware
+mux.Handle("/api/chat", middleware.Trace(client, "gpt-4", "chat-api")(chatHandler))`}</CodeBlock>
+
+      <h2 className="text-2xl font-semibold mb-4 mt-10">Error Handling</h2>
+      <CodeBlock title="Errors">{`import "errors"
+
+result, err := client.Record(ctx, decision)
+if err != nil {
+    var authErr *regulayer.AuthError
+    var rateErr *regulayer.RateLimitError
+
+    switch {
+    case errors.As(err, &authErr):
+        log.Fatal("Invalid API key")
+    case errors.As(err, &rateErr):
+        log.Printf("Rate limited, retry after %ds", rateErr.RetryAfter)
+    default:
+        log.Printf("Recording error: %v", err)
+    }
 }`}</CodeBlock>
 
-      <div className="bg-slate-700/5 border border-slate-700/20 rounded-lg p-4 my-4">
-        <p className="text-xs text-slate-700/80"><strong>💡 Performance:</strong> The Go SDK uses a <code className="bg-slate-100 px-1 rounded">net/http</code> client with connection pooling. For high-throughput systems, you can reuse the same <code className="bg-slate-100 px-1 rounded">*Client</code> across goroutines — it is safe for concurrent use.</p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+        <p className="text-xs text-blue-800">
+          <strong>💡 Concurrency:</strong> The Go SDK client is safe for concurrent use. All internal state is protected with sync primitives. Create one client at startup and share it across goroutines.
+        </p>
       </div>
-
-      {/* HTTP Wire Protocol */}
-      <h2 className="mt-10">HTTP Wire Protocol</h2>
-      <p>Under the hood, the Go SDK sends a <code className="bg-slate-100 px-1 rounded text-slate-600">POST /v1/decisions</code> request with the following headers:</p>
-      <CodeBlock>{`POST /v1/decisions HTTP/1.1
-Host: api.regulayer.tech
-Authorization: Bearer rl_live_abc123...
-X-Regulayer-Api-Key: rl_live_abc123...
-X-Request-ID: <decision_uuid>
-Content-Type: application/json
-
-{
- "event_version": "2.0",
- "event_state": "completed",
- "decision_id": "...",
- "system_name": "...",
- "risk_level": "standard",
- "model_name": "gpt-4o",
- "input_hash": "<sha256>",
- "output_hash": "<sha256>",
- "input": { ... },
- "output": { ... },
- "metadata": { ... },
- "start_timestamp": "2026-02-23T12:00:00Z",
- "end_timestamp": "2026-02-23T12:00:00Z"
-}`}</CodeBlock>
     </div>
   );
 }

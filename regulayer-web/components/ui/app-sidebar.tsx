@@ -80,6 +80,7 @@ const euAiActLinks = [
     { label: "Monitoring", href: "/monitoring", icon: <IconActivityHeartbeat className={iconClass} /> },
     { label: "Incident Report", href: "/incident-report", icon: <IconUrgent className={iconClass} /> },
     { label: "Compliance", href: "/compliance", icon: <IconTargetArrow className={iconClass} /> },
+    { label: "Compliance Report", href: "/compliance-report", icon: <IconFileDescription className={cn(iconClass, "text-emerald-500")} /> },
 ];
 
 const monitoringLinks = [
@@ -111,8 +112,8 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
     return (
         <div className={cn("flex flex-col md:flex-row w-full flex-1 max-w-screen mx-auto overflow-hidden", "h-full")}>
             <Sidebar open={open} setOpen={setOpen}>
-                <SidebarBody className="justify-between gap-10 bg-card border-r border-border">
-                    <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                <SidebarBody className="justify-between gap-4 bg-card border-r border-border">
+                    <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {open ? <Logo /> : <LogoIcon />}
 
                         <div className="mt-5 flex flex-col gap-0.5">
@@ -190,7 +191,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 }
 
 const Logo = () => (
-    <Link href="/" className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
+    <Link href="/dashboard" className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20">
         <RegulayerLogo className="w-7 h-7 drop-shadow-sm flex-shrink-0" />
         <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-semibold text-foreground whitespace-pre text-[15px] tracking-tight">
             Regulayer
@@ -199,7 +200,7 @@ const Logo = () => (
 );
 
 const LogoIcon = () => (
-    <Link href="/" className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20 justify-center">
+    <Link href="/dashboard" className="font-normal flex space-x-2 items-center text-sm py-1 relative z-20 justify-center">
         <RegulayerLogo className="w-7 h-7 drop-shadow-sm flex-shrink-0" />
     </Link>
 );

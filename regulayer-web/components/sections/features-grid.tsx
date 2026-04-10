@@ -13,57 +13,57 @@ import { motion, useInView } from "framer-motion";
 const features = [
     {
         id: "01",
-        title: "Ed25519 Cryptographic Sealing",
-        specs: "Latency: < 0.4ms | Protocol: curve25519",
-        desc: "A natively compiled Rust engine sits transparently in your API path, cryptographically signing every generated AI inference instantaneously. This guarantees absolute non-repudiation of all model outputs."
+        title: "Proxy Interception Gateway",
+        specs: "Latency: < 0.4ms | Deployment: Edge/On-Prem",
+        desc: "A strictly defined edge node sits transparently in your API path, intercepting and evaluating every generated AI inference instantaneously against corporate policy."
     },
     {
         id: "02",
-        title: "Immutable SHA-256 Hash Chains",
-        specs: "Structure: Linked List | Hash: SHA-256",
-        desc: "Each inference hash is cryptographically bound to the previous entry. This forms an unbreakable temporal chain, mathematically proving that your AI's historical data has not been altered, deleted, or fabricated."
+        title: "Human-In-The-Loop Governance",
+        specs: "Routing: Rule-based | Action: Override/Approve",
+        desc: "Dynamically route ambiguous or high-risk model inferences to designated human compliance officers for manual review before the response is ever transmitted to the end user."
     },
     {
         id: "03",
-        title: "WORM Compliant Ledger",
-        specs: "Data Store: Append-Only | Compliance: SEC 17a-4",
-        desc: "Attestations are anchored to a strictly Write-Once, Read-Many datastore. Purpose-built for highly regulated industries requiring immutable evidence of algorithmic decision-making."
+        title: "Downloadable Compliance Reports",
+        specs: "Framework: EU AI Act | Format: Print-ready PDF",
+        desc: "Generate professional, article-by-article EU AI Act compliance reports for any registered AI system. Systems achieving ≥80% compliance receive the Regulayer Verified seal — ready for board presentations and regulatory submissions."
     },
     {
         id: "04",
-        title: "Zero-Trust Multi-Tenancy",
-        specs: "Isolation: Process-Level | Encryption: AES-256-GCM",
-        desc: "Strict cryptographic separation between organizations and active foundational models. Keys are never shared, ensuring compliance with the most rigorous enterprise data residency frameworks."
+        title: "Immutable Vault & Cryptographic Sealing",
+        specs: "Algorithm: Ed25519 | Storage: SEC 17a-4 WORM",
+        desc: "Every AI inference payload, user input, and human override action is cryptographically signed and archived into a tamper-proof write-once vault, guaranteeing absolute record non-repudiation."
     },
     {
         id: "05",
-        title: "Asynchronous Zero-Block Routing",
-        specs: "Network Overhead: < 2ms | Language: Rust",
-        desc: "Regulayer operates completely out-of-band. Your critical AI paths remain lightning fast. Telemetry is flushed asynchronously without ever blocking the primary inference request."
+        title: "Runtime FRIA Enforcement",
+        specs: "Scope: Algorithmic bias | Reporting: Real-time",
+        desc: "Deploy automated Fundamental Rights Impact Assessments (FRIA) checks during runtime to detect and halt systematic discrimination or bias in generative payloads."
     },
     {
         id: "06",
-        title: "Zero-Knowledge Commitments",
-        specs: "Privacy: Absolute | Hash: Salted SHA-256",
-        desc: "Obscure Personally Identifiable Information (PII) instantaneously within the edge SDK. Verify that AI systems followed strict enterprise policies without ever exposing the underlying patient or financial data."
+        title: "Enterprise Data Residency",
+        specs: "Isolation: Zero-Trust | Encryption: AES-256-GCM",
+        desc: "Strict logical separation between organizations, projects, and active data streams. Cryptographic separation ensures compliance with rigorous corporate data sovereignty policies."
     },
     {
         id: "07",
-        title: "Statistical ML Anomaly Freeze",
-        specs: "Response: < 5ms | Detection: Z-Score",
-        desc: "Advanced statistical ML tracks the baseline standard deviation of autonomous AI decisions. If an agent hallucinates or enters an erratic failure loop, Regulayer instantly severs the connection."
+        title: "Interactive Queue Workflows",
+        specs: "Integration: Native Dashboard & Slack",
+        desc: "When the policy engine blocks an autonomous action, rich interactive cards are immediately routed to enterprise governance queues, allowing instantaneous approvals directly from Slack."
     },
     {
         id: "08",
-        title: "Blockchain Merkle Anchoring",
-        specs: "Proof: Absolute | Ledgers: ETH, BTC",
-        desc: "Millions of asynchronous local decision hashes are mathematical compressed into a singular Merkle Root. This root is anchored to public Web3 ledgers, mathematically eliminating any possibility of internal database tampering."
+        title: "Statistical Model Anomaly Freeze",
+        specs: "Detection: Z-Score Thresholds | Response: < 5ms",
+        desc: "Advanced ML tracks the baseline operating deviation of autonomous AI decisions. If an agent loops or hallucinates outside defined risk vectors, Regulayer instantly severs the connection."
     },
     {
         id: "09",
-        title: "Slack Block-Kit Interventions",
-        specs: "Workflow: Real-time | UI: Interactive",
-        desc: "When the Policy Engine intercepts a high-risk autonomous AI action, rich interactive Governance cards are immediately routed to enterprise Slack channels. Approvers can review and intervene instantly."
+        title: "Granular RBAC & Policy Inheritance",
+        specs: "Directory: SSO/SAML | Granularity: Project-level",
+        desc: "Enforce the principle of least privilege. Define intricate governance rules, data visibility matrices, and review authorities scoped precisely to independent organizational units."
     }
 ];
 
@@ -85,8 +85,8 @@ export function FeaturesGrid() {
                     <div className="max-w-3xl">
                         <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">Target Specification</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            The Universal Proof Layer.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">Built for the autonomous age.</span>
+                            The Enterprise Governance Layer.<br />
+                            <span className="font-light text-[hsl(15,25%,45%)]">Built for absolute compliance.</span>
                         </h2>
                     </div>
                 </motion.div>

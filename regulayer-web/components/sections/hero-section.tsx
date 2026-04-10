@@ -70,11 +70,11 @@ export function HeroSection() {
                 
                 <motion.h1 
                     custom={0} variants={textVariants} initial="hidden" animate="visible"
-                    className="relative z-10 text-[clamp(4.5rem,9vw,12rem)] leading-[0.84] tracking-[-0.045em] font-bold text-[hsl(15,45%,15%)] max-w-[1400px]" 
+                    className="relative z-10 text-[clamp(4rem,7.5vw,11rem)] leading-[0.84] tracking-[-0.045em] font-bold text-[hsl(15,45%,15%)] max-w-[1400px]" 
                     style={{ fontFamily: "var(--font-space-grotesk)" }}
                 >
-                    The protocol<br/>for generative<br/>
-                    <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)] tracking-[-0.01em]">truth.</span>
+                    Enterprise AI<br/>Compliance &<br/>
+                    <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)] tracking-[-0.01em]">Governance.</span>
                 </motion.h1>
             </motion.div>
 
@@ -89,11 +89,11 @@ export function HeroSection() {
                     className="block w-full h-[30vh] md:h-auto md:col-span-4 md:row-span-2 bg-[hsl(15,45%,15%)] text-white flex flex-col justify-between p-8 md:p-12 group transition-colors hover:bg-[hsl(15,85%,58%)] cursor-pointer"
                 >
                     <div className="flex justify-between items-center w-full pb-6 border-b border-white/20">
-                        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/70">Initialize SDK</span>
+                        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-white/70">Gateway Proxy</span>
                         <ArrowRight className="w-5 h-5 -rotate-45 group-hover:rotate-0 transition-transform duration-500" />
                     </div>
                     <motion.div custom={2} variants={textVariants} initial="hidden" animate="visible" className="mt-8 md:mt-0 text-[clamp(2.5rem,3.5vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-white" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                        Deploy<br/>determinism.
+                        Integrate<br/>Gateway.
                     </motion.div>
                 </motion.a>
             </Link>
@@ -103,8 +103,8 @@ export function HeroSection() {
                 custom={2} variants={boxVariants} initial="hidden" animate="visible"
                 className="w-full h-[30vh] md:h-auto md:col-span-5 md:row-span-2 bg-[hsl(30,60%,99%)] flex items-end p-8 md:p-12 lg:p-14"
             >
-                <motion.p custom={3} variants={textVariants} initial="hidden" animate="visible" className="text-[16px] md:text-[20px] text-[hsl(15,30%,40%)] leading-[1.6] font-light max-w-[480px]">
-                    Regulayer intercepts, hashes, and ZKP-anchors every generative inference to public Web3 ledgers. Outfitted with Statistical ML Anomaly Freezes, it is the uncompromising end of opaque AI.
+                <motion.p custom={3} variants={textVariants} initial="hidden" animate="visible" className="text-[16px] md:text-[20px] text-[hsl(15,30%,40%)] leading-[1.6] font-light max-w-[500px]">
+                    Regulayer actively intercepts your AI inferences, injecting Human-in-the-Loop workflows and cryptographic audit logging to natively satisfy EU AI Act, SOC2, and proprietary organizational compliance frameworks.
                 </motion.p>
             </motion.div>
 
@@ -115,11 +115,11 @@ export function HeroSection() {
                     className="block w-full h-[30vh] md:h-auto md:col-span-3 md:row-span-2 bg-white flex flex-col justify-between p-8 md:p-12 group transition-colors hover:bg-[#F8F9FA] cursor-pointer"
                 >
                     <div className="flex justify-between items-center w-full pb-6 border-b border-[hsl(15,30%,85%)]">
-                        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-[hsl(15,30%,50%)]">Source Code</span>
+                        <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-[hsl(15,30%,50%)]">Conformity Reports</span>
                         <DownloadCloud className="w-4 h-4 text-[hsl(15,30%,50%)] group-hover:text-[hsl(15,85%,58%)] transition-colors duration-500" />
                     </div>
                     <motion.div custom={4} variants={textVariants} initial="hidden" animate="visible" className="mt-8 md:mt-0 text-[clamp(2rem,2.5vw,3rem)] font-bold tracking-tight leading-[1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                        View<br/>Registry
+                        Explore<br/>Compliance
                     </motion.div>
                 </motion.a>
             </Link>

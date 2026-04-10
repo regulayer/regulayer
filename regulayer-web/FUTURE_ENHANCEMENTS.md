@@ -63,7 +63,7 @@
 
 ---
 
-## ⚙️ Phase 3: Settings & Admin (Week 5-6)
+##  Phase 3: Settings & Admin (Week 5-6)
 
 ### Organization Settings
 - [ ] Design settings layout
@@ -159,7 +159,7 @@
 
 ---
 
-## 📊 Phase 7: Analytics & Optimization (Week 15-16)
+##  Phase 7: Analytics & Optimization (Week 15-16)
 
 ### Analytics
 - [ ] Set up Google Analytics 4

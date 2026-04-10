@@ -35,7 +35,7 @@ async def dispatch_slack_interception(
     output_str = json.dumps(decision_output, indent=2)[:500] + ("..." if len(json.dumps(decision_output)) > 500 else "") if decision_output else "{}"
     
     # A public URL to deep-link to the Regulayer Dashboard
-    # In production, this would be read from settings (e.g., https://app.regulayer.com)
+    # In production, this would be read from settings (e.g., https://app.regulayer.tech)
     dashboard_url = f"https://regulayer.app/decisions/{decision_id}"
 
     payload = {

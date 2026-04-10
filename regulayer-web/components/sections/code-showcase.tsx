@@ -18,7 +18,7 @@ const syntaxCode = [
     { text: ' "@regulayer/engine"', color: "hsl(110, 50%, 65%)" },
     { text: ";\n\n", color: "hsl(210, 20%, 80%)" },
     
-    { text: "// 1. Initialize the WORM compliance engine\n", color: "hsl(210, 20%, 45%)" },
+    { text: "// 1. Initialize the AI Governance Gateway\n", color: "hsl(210, 20%, 45%)" },
     { text: "const", color: "#FF5F56", italic: true },
     { text: " regulayer ", color: "hsl(210, 20%, 80%)" },
     { text: "= ", color: "#FF5F56" },
@@ -26,23 +26,23 @@ const syntaxCode = [
     { text: " core.Client({\n", color: "hsl(210, 20%, 80%)" },
     { text: "  telemetry: ", color: "hsl(30, 40%, 65%)" },
     { text: "true", color: "#FF5F56" },
-    { text: ",\n  cryptography: {\n", color: "hsl(210, 20%, 80%)" },
-    { text: "    signature_scheme: ", color: "hsl(30, 40%, 65%)" },
-    { text: "'ed25519'", color: "hsl(110, 50%, 65%)" },
-    { text: ",\n    hashing_algorithm: ", color: "hsl(30, 40%, 65%)" },
-    { text: "'sha-256'\n", color: "hsl(110, 50%, 65%)" },
-    { text: "  },\n  privacy: {\n", color: "hsl(210, 20%, 80%)" },
-    { text: "    zkp_hidden_fields: ", color: "hsl(30, 40%, 65%)" },
-    { text: "['patient_name', 'ssn']\n", color: "hsl(110, 50%, 65%)" },
+    { text: ",\n  compliance: {\n", color: "hsl(210, 20%, 80%)" },
+    { text: "    eu_ai_act_fria: ", color: "hsl(30, 40%, 65%)" },
+    { text: "true", color: "#FF5F56" },
+    { text: ",\n    soc2_audit_log: ", color: "hsl(30, 40%, 65%)" },
+    { text: "true\n", color: "#FF5F56" },
+    { text: "  },\n  governance: {\n", color: "hsl(210, 20%, 80%)" },
+    { text: "    hitl_threshold: ", color: "hsl(30, 40%, 65%)" },
+    { text: "0.85\n", color: "hsl(110, 50%, 65%)" },
     { text: "  }\n});\n\n", color: "hsl(210, 20%, 80%)" },
 
-    { text: "// 2. Transparent SDK wrapping (<0.4ms latency impact)\n", color: "hsl(210, 20%, 45%)" },
+    { text: "// 2. Transparent SDK wrapping (zero friction integration)\n", color: "hsl(210, 20%, 45%)" },
     { text: "const", color: "#FF5F56", italic: true },
     { text: " ai_client ", color: "hsl(210, 20%, 80%)" },
     { text: "= ", color: "#FF5F56" },
     { text: "regulayer.intercept(openai);\n\n", color: "hsl(210, 20%, 80%)" },
 
-    { text: "// 3. Inferences are automatically hashed, signed, and anchored.\n", color: "hsl(210, 20%, 45%)" },
+    { text: "// 3. Risk is evaluated in real-time. Overrides are mandated.\n", color: "hsl(210, 20%, 45%)" },
     { text: "const", color: "#FF5F56", italic: true },
     { text: " proof ", color: "hsl(210, 20%, 80%)" },
     { text: "= ", color: "#FF5F56" },
@@ -74,12 +74,12 @@ export function CodeShowcase() {
                             <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">Developer API</span>
                             <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight mb-6 leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
                                 Zero friction.<br />
-                                <span className="font-light text-[hsl(15,25%,45%)]">Infinite proofs.</span>
+                                <span className="font-light text-[hsl(15,25%,45%)]">Absolute accountability.</span>
                             </h2>
                         </div>
                         
                         <p className="text-[16px] text-[hsl(15,25%,45%)] leading-relaxed mb-10 font-light border-l border-[hsl(15,85%,58%)] pl-5">
-                            The Regulayer core engine binds directly to your primary execution vectors. No new infrastructure, no asynchronous queues, and no polling. Simply intercept your existing AI execution stream and inherit SOC-2 compliant cryptographic ledgers natively.
+                            The Regulayer core engine binds directly to your primary execution vectors. No new infrastructure. Simply intercept your existing AI execution stream and inherit SOC-2 logging, EU AI Act reporting, and HITL governance queues natively.
                         </p>
                         
                         <div className="flex items-center gap-4 text-[12px] font-mono uppercase tracking-widest text-[hsl(15,45%,15%)] font-bold">
@@ -135,9 +135,9 @@ export function CodeShowcase() {
                                         <ShieldCheck className="w-4 h-4 text-[hsl(110,50%,65%)]" />
                                     </div>
                                     <div>
-                                        <div className="text-[10px] tracking-widest uppercase text-[hsl(110,50%,65%)] font-mono font-bold mb-1">State Anchored</div>
+                                        <div className="text-[10px] tracking-widest uppercase text-[hsl(110,50%,65%)] font-mono font-bold mb-1">Queue Active</div>
                                         <div className="text-[11px] text-[hsl(210,20%,60%)] font-mono leading-relaxed">
-                                            Ed25519 hook active. All `client.chat` vectors are automatically routed to the WORM ledger.
+                                            HITL Gateway active. All `client.chat` vectors are automatically screened against organizational policy.
                                         </div>
                                     </div>
                                 </motion.div>

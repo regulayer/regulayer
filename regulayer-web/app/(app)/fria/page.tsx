@@ -19,8 +19,8 @@ export default function FRIAPage() {
     const [selectedSystemId, setSelectedSystemId] = useState('');
 
     useEffect(() => {
-        setFrias(getFRIAs());
-        setSystems(getAISystems());
+        getFRIAs().then(setFrias).catch(console.error);
+        getAISystems().then(setSystems).catch(console.error);
     }, []);
 
     const handleCreate = () => {
@@ -35,7 +35,7 @@ export default function FRIAPage() {
             created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         };
         saveFRIA(newFria);
-        setFrias(getFRIAs());
+        getFRIAs().then(setFrias).catch(console.error);
         setShowModal(false);
         setSelectedSystemId('');
     };

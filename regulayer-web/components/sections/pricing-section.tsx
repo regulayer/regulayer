@@ -15,7 +15,7 @@ import Link from "next/link";
 const tiers = [
     {
         name: "Free",
-        specs: "INF_1K // SHA-256",
+        specs: "INF_1K",
         price: "$0",
         period: "Forever",
         desc: "For prototyping and small teams.",
@@ -23,7 +23,7 @@ const tiers = [
         highlight: false,
         features: [
             "1,000 decisions / mo",
-            "Ed25519 signing",
+            "Up to 2 team members",
             "7-day retention",
             "1 project",
             "Community support"
@@ -31,25 +31,25 @@ const tiers = [
     },
     {
         name: "Pro",
-        specs: "INF_50K // WORM",
+        specs: "INF_50K",
         price: "$99",
         period: "per month",
-        desc: "For teams shipping to production.",
+        desc: "For compliance teams shipping to production.",
         cta: "Get Pro",
         highlight: true,
         features: [
             "50,000 decisions / mo",
+            "Up to 20 team members",
             "1-year retention",
             "Unlimited projects",
             "RBAC & SSO",
-            "Webhook integrations",
-            "Custom rules engine",
-            "Priority support"
+            "HITL Governance Queue",
+            "Conformity Assessments"
         ]
     },
     {
         name: "Enterprise",
-        specs: "INF_UNLIMITED // SEC-17A-4",
+        specs: "INF_UNLIMITED",
         price: "Custom",
         period: "annual contract",
         desc: "For regulated enterprises at scale.",
@@ -57,14 +57,14 @@ const tiers = [
         highlight: false,
         features: [
             "Unlimited decisions",
+            "Unlimited team members",
             "Unlimited retention",
             "Dedicated infrastructure",
             "Zero-Knowledge Privacy (ZKP)",
-            "Statistical ML Anomaly Freezes",
-            "Blockchain Merkle Anchoring",
+            "Automated FRIA Generation",
             "Interactive Slack Governance",
             "On-premise deployment",
-            "SOC 2 Type II report"
+            "SOC 2 Type II BAA"
         ]
     }
 ];

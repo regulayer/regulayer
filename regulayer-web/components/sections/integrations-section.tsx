@@ -18,8 +18,8 @@ const integrations = [
     { provider: "Google Vertex", class: "Cloud Inference", model: "Gemini 1.5 Pro", protocol: "GCP gRPC Interceptor" },
     { provider: "LangChain", class: "Orchestration", model: "Agent Callbacks", protocol: "Native Handler Registration" },
     { provider: "LlamaIndex", class: "RAG Framework", model: "Vector Retrieval", protocol: "Native Node Callback" },
-    { provider: "PostgreSQL", class: "Audit Storage", model: "pgAudit Extension", protocol: "WORM Schema Integration" },
-    { provider: "AWS S3", class: "Cold Storage", model: "Object Lock enabled", protocol: "S3 SEC 17a-4 API" },
+    { provider: "PostgreSQL", class: "Audit Storage", model: "Compliance Vault", protocol: "WORM Schema Integration" },
+    { provider: "AWS S3", class: "Cold Storage", model: "Object Lock enabled", protocol: "Immutable Archival API" },
 ];
 
 export function IntegrationsSection() {
@@ -42,7 +42,7 @@ export function IntegrationsSection() {
                         <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">Compatibility Matrix</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
                             Protocol bindings.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">Universal cryptographic coverage.</span>
+                            <span className="font-light text-[hsl(15,25%,45%)]">Universal governance coverage.</span>
                         </h2>
                     </div>
                 </motion.div>
@@ -92,7 +92,7 @@ export function IntegrationsSection() {
 
                 {/* Footer Note */}
                 <div className="mt-16 text-[12px] font-mono text-[hsl(15,25%,45%)]">
-                    [ SYSTEM NOTE ] // If your specific stack is unlisted, our infrastructure engineering team actively ships bespoke native bindings in under 48 hours for Enterprise partners.
+                    [ SYSTEM NOTE ] // If your specific model provider or orchestration framework is unlisted, our infrastructure team actively ships bespoke native bindings in under 48 hours for Enterprise partners.
                 </div>
             </div>
         </section>

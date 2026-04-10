@@ -72,11 +72,6 @@ export default function DecisionReviewPage({ params }: { params: { decision_id: 
     }, [params.decision_id]);
 
     const handleResolve = async (status: 'approved' | 'declined') => {
-        if (!declineMessage.trim() && status === 'declined') {
-            alert('A decline message is required to reject a decision.');
-            return;
-        }
-
         setSubmitting(true);
         try {
             let editedPayload = undefined;

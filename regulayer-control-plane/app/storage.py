@@ -380,3 +380,104 @@ def generate_api_key(is_demo: bool = False) -> tuple[str, str, str]:
 def hash_api_key(key: str) -> str:
     """Hash an API key for comparison."""
     return hashlib.sha256(key.encode()).hexdigest()
+
+# ============================================================
+# EU AI Act Compliance
+# ============================================================
+
+class AISystemDB(Base):
+    __tablename__ = "ai_systems"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    version = Column(String(50), nullable=False)
+    description = Column(String(1024), nullable=False)
+    intended_purpose = Column(String(1024), nullable=False)
+    provider_name = Column(String(255), nullable=False)
+    risk_tier = Column(String(50), nullable=False)
+    annex_category = Column(String(50), nullable=False)
+    lifecycle_status = Column(String(50), nullable=False)
+    classification_rationale = Column(String(1024), nullable=False)
+    member_states = Column(JSON, nullable=False, default=list)
+    deployment_date = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class ConformityAssessmentDB(Base):
+    __tablename__ = "conformity_assessments"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    system_id = Column(PGUUID(as_uuid=True), nullable=False)
+    system_name = Column(String(255), nullable=True)
+    status = Column(String(50), nullable=False)
+    assessment_type = Column(String(50), nullable=False)
+    checklist = Column(JSON, nullable=False, default=list)
+    ce_declaration_generated = Column(Boolean, default=False)
+    started_at = Column(String(50), nullable=True)
+    completed_at = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class FRIADB(Base):
+    __tablename__ = "fria_assessments"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    system_id = Column(PGUUID(as_uuid=True), nullable=False)
+    system_name = Column(String(255), nullable=True)
+    status = Column(String(50), nullable=False)
+    deployer_info = Column(JSON, nullable=False, default=dict)
+    system_description = Column(JSON, nullable=False, default=dict)
+    rights_analysis = Column(JSON, nullable=False, default=list)
+    mitigation_measures = Column(JSON, nullable=False, default=list)
+    human_oversight_plan = Column(String(2048), nullable=False)
+    monitoring_commitments = Column(String(2048), nullable=False)
+    authority_submission = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class TechDocumentationDB(Base):
+    __tablename__ = "tech_documentation"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    system_id = Column(PGUUID(as_uuid=True), nullable=False)
+    system_name = Column(String(255), nullable=True)
+    overall_completeness = Column(Integer, default=0)
+    sections = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class MonitoringPlanDB(Base):
+    __tablename__ = "monitoring_plans"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    system_id = Column(PGUUID(as_uuid=True), nullable=False)
+    system_name = Column(String(255), nullable=True)
+    review_frequency = Column(String(50), nullable=False)
+    next_review_date = Column(String(50), nullable=False)
+    alerts_enabled = Column(Boolean, default=False)
+    kpis = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class IncidentReportDB(Base):
+    __tablename__ = "incident_reports"
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id = Column(PGUUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    system_id = Column(PGUUID(as_uuid=True), nullable=False)
+    system_name = Column(String(255), nullable=True)
+    severity = Column(String(50), nullable=False)
+    deadline_days = Column(Integer, default=0)
+    deadline_date = Column(String(50), nullable=False)
+    status = Column(String(50), nullable=False)
+    authority_name = Column(String(255), nullable=False)
+    submission_date = Column(String(50), nullable=True)
+    linked_incident_ids = Column(JSON, nullable=False, default=list)
+    form_data = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -284,7 +284,7 @@ export const DecisionDetail: React.FC = () => {
 
                         {!verification.record_valid && (
                             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-                                <div className="font-bold text-red-800">⚠️ TAMPERING DETECTED</div>
+                                <div className="font-bold text-red-800">️ TAMPERING DETECTED</div>
                                 <div className="text-red-700 text-sm mt-1">
                                     This record has been tampered with or the chain is broken.
                                 </div>
@@ -292,7 +292,7 @@ export const DecisionDetail: React.FC = () => {
                         )}
                         {verification.signature_valid === false && (
                             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded">
-                                <div className="font-bold text-red-800">⚠️ INVALID SIGNATURE</div>
+                                <div className="font-bold text-red-800">️ INVALID SIGNATURE</div>
                                 <div className="text-red-700 text-sm mt-1">
                                     The cryptographic signature does not match the record content.
                                 </div>
@@ -307,7 +307,7 @@ export const DecisionDetail: React.FC = () => {
                 <div className="flex justify-between items-start mb-4">
                     <h2 className="text-xl font-bold">Governance Metadata</h2>
                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-200">
-                        ⚠️ Does not affect cryptographic validity
+                        ️ Does not affect cryptographic validity
                     </span>
                 </div>
 

@@ -93,9 +93,9 @@ export default function GovernanceDocsPage() {
  ]
 }`}</pre>
             </div>
-            <div className="flex items-start gap-2 bg-brand-600/5 border border-amber-500/20 rounded-lg p-3">
-              <AlertTriangle size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-200/80">
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-800">
                 The <code className="bg-slate-100 px-1 rounded">llm_evaluate</code> operator requires a valid <code className="bg-slate-100 px-1 rounded">GROQ_API_KEY</code> in your environment.
                 Without it, semantic rules will silently return <code className="bg-slate-100 px-1 rounded">false</code>.
               </p>
@@ -196,9 +196,9 @@ export default function GovernanceDocsPage() {
               <p className="text-xs font-mono text-emerald-400">{`{ "field": "output", "operator": "llm_evaluate", "value": "contains hate speech, profanity, or discriminatory language" }`}</p>
             </div>
 
-            <div className="flex items-start gap-2 bg-slate-700/5 border border-slate-700/20 rounded-lg p-3 mt-4">
-              <BookOpen size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-slate-700/80">
+            <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+              <BookOpen size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-blue-800">
                 <strong>Performance:</strong> Each <code className="bg-slate-100 px-1 rounded">llm_evaluate</code> call adds ~500ms–2s latency (Groq inference).
                 This runs asynchronously after the decision is recorded, so it does <strong>not</strong> block your AI system's response to the end user.
               </p>
@@ -362,7 +362,7 @@ export default function GovernanceDocsPage() {
           <Link href="/docs" className="text-sm text-slate-500 hover:text-slate-500 transition flex items-center gap-1.5">
             <ArrowLeft size={14} /> Back to Docs
           </Link>
-          <Link href="/governance/rules" className="text-sm bg-slate-800 hover:bg-slate-900 text-slate-900 px-4 py-2 rounded-lg transition font-medium">
+          <Link href="/governance/rules" className="text-sm bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg transition font-medium">
             Create a Rule →
           </Link>
         </div>

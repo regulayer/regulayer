@@ -42,7 +42,7 @@ export default function ContactPage() {
                             <div className="glass rounded-xl p-5 hover-lift">
                                 <Mail className="w-4 h-4 text-primary mb-3" />
                                 <h3 className="text-sm font-display font-semibold text-foreground mb-1">Email</h3>
-                                <a href="mailto:hello@regulayer.com" className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200">hello@regulayer.com</a>
+                                <a href="mailto:hello@regulayer.tech" className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200">hello@regulayer.tech</a>
                             </div>
                             <div className="glass rounded-xl p-5 hover-lift">
                                 <Clock className="w-4 h-4 text-primary mb-3" />

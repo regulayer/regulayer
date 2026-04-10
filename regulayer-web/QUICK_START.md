@@ -99,22 +99,22 @@ Animation settings in each component use Framer Motion:
 ## 🎯 Key Features
 
 ### Performance
-- ✅ Code splitting for 3D components
-- ✅ Lazy loading below-fold content
-- ✅ Optimized animations (GPU-accelerated)
-- ✅ Minimal bundle size
+-  Code splitting for 3D components
+-  Lazy loading below-fold content
+-  Optimized animations (GPU-accelerated)
+-  Minimal bundle size
 
 ### Accessibility
-- ✅ Semantic HTML
-- ✅ Keyboard navigation
-- ✅ Focus states
-- ✅ Color contrast (WCAG AA)
+-  Semantic HTML
+-  Keyboard navigation
+-  Focus states
+-  Color contrast (WCAG AA)
 
 ### Browser Support
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
+-  Chrome 90+
+-  Firefox 88+
+-  Safari 14+
+-  Edge 90+
 
 ## 🐛 Troubleshooting
 

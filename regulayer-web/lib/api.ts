@@ -227,7 +227,11 @@ export interface DailyUsage {
     date: string;
     count: number;
 }
-export const getDailyUsage = (orgId: string, days: number = 30) => api.get<DailyUsage[]>(`/v1/usage/orgs/${orgId}/daily?days=${days}`);
+export const getDailyUsage = (orgId: string, days: number = 30, projectId?: string) => {
+    let url = `/v1/usage/orgs/${orgId}/daily?days=${days}`;
+    if (projectId && projectId !== 'all') url += `&project_id=${projectId}`;
+    return api.get<DailyUsage[]>(url);
+};
 
 // --- Billing ---
 export const getBilling = (orgId: string) => api.get<{ decision_count: number; limit: number; tier: string; plan?: { name: string; limit_decisions: number } }>(`/v1/usage/${orgId}`);
@@ -681,72 +685,136 @@ export interface ComplianceScore {
     last_calculated: string;
 }
 
-// --- Generic localStorage CRUD (follows getExportHistory pattern) ---
+let cachedOrgId: string | null = null;
+export const clearOrgIdCache = () => { cachedOrgId = null; };
 
-function getStoredItems<T>(key: string): T[] {
-    if (typeof window === 'undefined') return [];
-    try { return JSON.parse(localStorage.getItem(key) || '[]'); }
-    catch { return []; }
-}
-
-function saveStoredItems<T>(key: string, items: T[]): void {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(items));
-    }
-}
-
-function upsertStoredItem<T extends { id: string }>(key: string, item: T): T {
-    const items = getStoredItems<T>(key);
-    const idx = items.findIndex((i: T) => i.id === item.id);
-    if (idx >= 0) items[idx] = item; else items.unshift(item);
-    saveStoredItems(key, items);
-    return item;
-}
-
-function deleteStoredItem(key: string, id: string): void {
-    const items = getStoredItems<{ id: string }>(key);
-    saveStoredItems(key, items.filter(i => i.id !== id));
-}
+const getOrgId = async () => {
+    if (cachedOrgId) return cachedOrgId;
+    const me = await getMe();
+    if (!me.data || !me.data.organization_id) throw new Error("No organization found");
+    cachedOrgId = me.data.organization_id;
+    return cachedOrgId;
+};
 
 // AI Systems
-const AI_SYSTEMS_KEY = 'regulayer_ai_systems';
-export const getAISystems = (): AISystem[] => getStoredItems<AISystem>(AI_SYSTEMS_KEY);
-export const getAISystem = (id: string): AISystem | undefined => getAISystems().find(s => s.id === id);
-export const saveAISystem = (s: AISystem): AISystem => upsertStoredItem(AI_SYSTEMS_KEY, s);
-export const deleteAISystemRecord = (id: string): void => deleteStoredItem(AI_SYSTEMS_KEY, id);
+export const getAISystems = async (): Promise<AISystem[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<AISystem[]>(`/v1/orgs/${orgId}/compliance/ai-systems`);
+    return res.data;
+};
+
+export const getAISystem = async (id: string): Promise<AISystem | undefined> => {
+    const systems = await getAISystems();
+    return systems.find(s => s.id === id);
+};
+
+export const saveAISystem = async (s: AISystem): Promise<AISystem> => {
+    const orgId = await getOrgId();
+    const res = await api.post<AISystem>(`/v1/orgs/${orgId}/compliance/ai-systems`, s);
+    return res.data;
+};
+
+export const deleteAISystemRecord = async (id: string): Promise<void> => {
+    // Requires delete endpoint in backend, stubbing for now.
+    console.warn("Delete AI system not fully implemented in backend.");
+};
 
 // Conformity Assessments
-const CONFORMITY_KEY = 'regulayer_conformity';
-export const getConformityAssessments = (): ConformityAssessment[] => getStoredItems<ConformityAssessment>(CONFORMITY_KEY);
-export const getConformityAssessment = (id: string): ConformityAssessment | undefined => getConformityAssessments().find(a => a.id === id);
-export const saveConformityAssessment = (a: ConformityAssessment): ConformityAssessment => upsertStoredItem(CONFORMITY_KEY, a);
-export const deleteConformityAssessmentRecord = (id: string): void => deleteStoredItem(CONFORMITY_KEY, id);
+export const getConformityAssessments = async (): Promise<ConformityAssessment[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<ConformityAssessment[]>(`/v1/orgs/${orgId}/compliance/conformity`);
+    return res.data;
+};
+
+export const getConformityAssessment = async (id: string): Promise<ConformityAssessment | undefined> => {
+    const assessments = await getConformityAssessments();
+    return assessments.find(a => a.id === id);
+};
+
+export const saveConformityAssessment = async (a: ConformityAssessment): Promise<ConformityAssessment> => {
+    const orgId = await getOrgId();
+    const res = await api.post<ConformityAssessment>(`/v1/orgs/${orgId}/compliance/conformity`, a);
+    return res.data;
+};
+
+export const deleteConformityAssessmentRecord = async (id: string): Promise<void> => {};
 
 // FRIA
-const FRIA_KEY = 'regulayer_fria';
-export const getFRIAs = (): FRIAAssessment[] => getStoredItems<FRIAAssessment>(FRIA_KEY);
-export const getFRIA = (id: string): FRIAAssessment | undefined => getFRIAs().find(f => f.id === id);
-export const saveFRIA = (f: FRIAAssessment): FRIAAssessment => upsertStoredItem(FRIA_KEY, f);
-export const deleteFRIARecord = (id: string): void => deleteStoredItem(FRIA_KEY, id);
+export const getFRIAs = async (): Promise<FRIAAssessment[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<FRIAAssessment[]>(`/v1/orgs/${orgId}/compliance/fria`);
+    return res.data;
+};
+
+export const getFRIA = async (id: string): Promise<FRIAAssessment | undefined> => {
+    const frias = await getFRIAs();
+    return frias.find(f => f.id === id);
+};
+
+export const saveFRIA = async (f: FRIAAssessment): Promise<FRIAAssessment> => {
+    const orgId = await getOrgId();
+    const res = await api.post<FRIAAssessment>(`/v1/orgs/${orgId}/compliance/fria`, f);
+    return res.data;
+};
+
+export const deleteFRIARecord = async (id: string): Promise<void> => {};
 
 // Tech Docs
-const TECHDOCS_KEY = 'regulayer_techdocs';
-export const getTechDocs = (): TechDocumentation[] => getStoredItems<TechDocumentation>(TECHDOCS_KEY);
-export const getTechDoc = (id: string): TechDocumentation | undefined => getTechDocs().find(d => d.id === id);
-export const saveTechDoc = (d: TechDocumentation): TechDocumentation => upsertStoredItem(TECHDOCS_KEY, d);
-export const deleteTechDocRecord = (id: string): void => deleteStoredItem(TECHDOCS_KEY, id);
+export const getTechDocs = async (): Promise<TechDocumentation[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<TechDocumentation[]>(`/v1/orgs/${orgId}/compliance/tech-docs`);
+    return res.data;
+};
+
+export const getTechDoc = async (id: string): Promise<TechDocumentation | undefined> => {
+    const docs = await getTechDocs();
+    return docs.find(d => d.id === id);
+};
+
+export const saveTechDoc = async (d: TechDocumentation): Promise<TechDocumentation> => {
+    const orgId = await getOrgId();
+    const res = await api.post<TechDocumentation>(`/v1/orgs/${orgId}/compliance/tech-docs`, d);
+    return res.data;
+};
+
+export const deleteTechDocRecord = async (id: string): Promise<void> => {};
 
 // Monitoring Plans
-const MONITORING_KEY = 'regulayer_monitoring';
-export const getMonitoringPlans = (): MonitoringPlan[] => getStoredItems<MonitoringPlan>(MONITORING_KEY);
-export const getMonitoringPlan = (id: string): MonitoringPlan | undefined => getMonitoringPlans().find(m => m.id === id);
-export const saveMonitoringPlan = (m: MonitoringPlan): MonitoringPlan => upsertStoredItem(MONITORING_KEY, m);
+export const getMonitoringPlans = async (): Promise<MonitoringPlan[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<MonitoringPlan[]>(`/v1/orgs/${orgId}/compliance/monitoring`);
+    return res.data;
+};
+
+export const getMonitoringPlan = async (id: string): Promise<MonitoringPlan | undefined> => {
+    const plans = await getMonitoringPlans();
+    return plans.find(m => m.id === id);
+};
+
+export const saveMonitoringPlan = async (m: MonitoringPlan): Promise<MonitoringPlan> => {
+    const orgId = await getOrgId();
+    const res = await api.post<MonitoringPlan>(`/v1/orgs/${orgId}/compliance/monitoring`, m);
+    return res.data;
+};
 
 // Incident Reports
-const INCIDENT_REPORTS_KEY = 'regulayer_incident_reports';
-export const getIncidentReports = (): IncidentReportData[] => getStoredItems<IncidentReportData>(INCIDENT_REPORTS_KEY);
-export const getIncidentReport = (id: string): IncidentReportData | undefined => getIncidentReports().find(r => r.id === id);
-export const saveIncidentReport = (r: IncidentReportData): IncidentReportData => upsertStoredItem(INCIDENT_REPORTS_KEY, r);
-export const deleteIncidentReportRecord = (id: string): void => deleteStoredItem(INCIDENT_REPORTS_KEY, id);
+export const getIncidentReports = async (): Promise<IncidentReportData[]> => {
+    const orgId = await getOrgId();
+    const res = await api.get<IncidentReportData[]>(`/v1/orgs/${orgId}/compliance/incidents`);
+    return res.data;
+};
+
+export const getIncidentReport = async (id: string): Promise<IncidentReportData | undefined> => {
+    const reports = await getIncidentReports();
+    return reports.find(r => r.id === id);
+};
+
+export const saveIncidentReport = async (r: IncidentReportData): Promise<IncidentReportData> => {
+    const orgId = await getOrgId();
+    const res = await api.post<IncidentReportData>(`/v1/orgs/${orgId}/compliance/incidents`, r);
+    return res.data;
+};
+
+export const deleteIncidentReportRecord = async (id: string): Promise<void> => {};
 
 export default api;

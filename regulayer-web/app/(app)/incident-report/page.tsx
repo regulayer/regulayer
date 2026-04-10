@@ -20,8 +20,8 @@ export default function IncidentReportPage() {
     const [selectedSystemId, setSelectedSystemId] = useState('');
 
     useEffect(() => {
-        setReports(getIncidentReports());
-        setSystems(getAISystems());
+        getIncidentReports().then(setReports).catch(console.error);
+        getAISystems().then(setSystems).catch(console.error);
     }, []);
 
     const handleCreate = () => {
@@ -38,7 +38,7 @@ export default function IncidentReportPage() {
             authority_name: '', linked_incident_ids: [], created_at: now.toISOString(), updated_at: now.toISOString(),
         };
         saveIncidentReport(report);
-        setReports(getIncidentReports());
+        getIncidentReports().then(setReports).catch(console.error);
         setShowModal(false);
         setSelectedSystemId('');
     };

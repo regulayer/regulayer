@@ -52,13 +52,17 @@ export default function AISystemDetailPage() {
     const [showStatesDropdown, setShowStatesDropdown] = useState(false);
 
     useEffect(() => {
-        const s = getAISystem(systemId);
-        if (!s) { router.push('/ai-systems'); return; }
-        setSystem(s);
-        if (s.risk_tier !== 'unclassified') {
-            setWizardStep(4);
-            setSelectedAnnexIII(s.annex_category);
-        }
+        getAISystem(systemId).then(s => {
+            if (!s) { router.push('/ai-systems'); return; }
+            setSystem(s);
+            if (s.risk_tier !== 'unclassified') {
+                setWizardStep(4);
+                setSelectedAnnexIII(s.annex_category);
+            }
+        }).catch(err => {
+            console.error(err);
+            router.push('/ai-systems');
+        });
     }, [systemId, router]);
 
     if (!system) return (
@@ -68,9 +72,9 @@ export default function AISystemDetailPage() {
     );
 
     const updateSystem = (updates: Partial<AISystem>) => {
+        if (!system) return;
         const updated = { ...system, ...updates, updated_at: new Date().toISOString() };
-        saveAISystem(updated);
-        setSystem(updated);
+        saveAISystem(updated).then(() => setSystem(updated)).catch(console.error);
     };
 
     const computeRiskTier = (annex1: boolean | null, annex3: AnnexCategory, exempt: boolean | null): { tier: RiskTier; rationale: string } => {

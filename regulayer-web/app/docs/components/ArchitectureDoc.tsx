@@ -1,133 +1,97 @@
 "use client";
 import React from "react";
-import { Server, Database, Brain, Activity, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Globe, Database, Shield, Cpu, Server, Activity, ArrowRight } from "lucide-react";
 
 export default function ArchitectureDocComponent() {
   return (
     <div>
       <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Architecture Overview</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        Regulayer is designed for extreme scale. It operates as a highly optimized, decoupled microservices architecture designed to handle massive enterprise LLM inference loads without adding latency to your application's critical path.
+        Regulayer is a distributed microservice platform built for enterprise-grade reliability, cryptographic integrity, and regulatory compliance. This page documents the complete system topology, data flow, and security architecture.
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6">System Components</h2>
-
-      <div className="space-y-8 mb-12">
-        {/* Control Plane */}
-        <div className="bg-white/50 border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-100/40 px-6 py-4 flex items-center gap-3 border-b border-slate-200">
-            <Server className="w-6 h-6 text-slate-500" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">The Control Plane</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-slate-500 mb-4 leading-relaxed">
-              The centralized "brain" of Regulayer. It handles all administrative tasks, including organization settings, project management, RBAC (Role-Based Access Control), API key provisioning, and serving the frontend dashboard.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-700" /> PostgreSQL for relational data</li>
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-700" /> Next.js/React frontend</li>
-              </ul>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-700" /> Python (FastAPI) backend</li>
-                <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-700" /> Strict logical tenant isolation</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Recorder */}
-        <div className="bg-white/50 border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-100/40 px-6 py-4 flex items-center gap-3 border-b border-slate-200">
-            <Zap className="w-6 h-6 text-emerald-400" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">The Recorder (Data Plane)</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-slate-500 mb-4 leading-relaxed">
-              A hyper-optimized service designed to receive trace payloads continuously. It computes a SHA-256 hash of the payload, cryptographically signs it using the Organization's private key, concatenates it with the <em>previous</em> hash, and commits it. This forms a blockchain-style immutable ledger.
-            </p>
-            <div className="bg-white rounded-lg p-4 font-mono text-sm text-slate-500 border border-slate-200">
-              Latency SLA: &lt; 50ms at P99 (Asynchronous from user request)
-            </div>
-          </div>
-        </div>
-
-        {/* Governance Engine */}
-        <div className="bg-white/50 border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-100/40 px-6 py-4 flex items-center gap-3 border-b border-slate-200">
-            <Brain className="w-6 h-6 text-amber-400" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">The Governance Engine</h3>
-          </div>
-          <div className="p-6">
-            <p className="text-slate-500 mb-4 leading-relaxed">
-              An asynchronous evaluation pipeline that pulls raw decisions from the internal stream, evaluates them against active risk policies (e.g. data loss prevention, toxicity, prompt injection), and updates the decision's compliance status in the database.
-            </p>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              This microservice utilizes local lightweight models (like LLaMA 3) or third-party APIs to run zero-shot semantic checks on the recorded inputs and outputs.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-6">Data Flow</h2>
-      <div className="bg-white/30 border border-slate-200 rounded-xl p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-6 text-center">
-        <div className="flex-1">
-          <div className="w-16 h-16 mx-auto bg-slate-700/10 border border-slate-700/30 rounded-full flex items-center justify-center mb-3">
-            <code className="text-slate-500 font-bold">SDK</code>
-          </div>
-          <p className="text-sm text-slate-600 font-medium">Your Application</p>
-          <p className="text-xs text-slate-500 mt-1">Sends async HTTP POST</p>
-        </div>
-
-        <ArrowRight className="w-8 h-8 text-slate-700 hidden md:block" />
-
-        <div className="flex-1">
-          <div className="w-16 h-16 mx-auto bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mb-3">
-            <Zap className="text-emerald-400" />
-          </div>
-          <p className="text-sm text-slate-600 font-medium">Recorder API</p>
-          <p className="text-xs text-slate-500 mt-1">Hashes & Validates</p>
-        </div>
-
-        <ArrowRight className="w-8 h-8 text-slate-700 hidden md:block" />
-
-        <div className="flex-1">
-          <div className="w-16 h-16 mx-auto bg-slate-100 border border-slate-300 rounded-full flex items-center justify-center mb-3">
-            <Database className="text-slate-500" />
-          </div>
-          <p className="text-sm text-slate-600 font-medium">Message Queue</p>
-          <p className="text-xs text-slate-500 mt-1">Async buffering</p>
-        </div>
-
-        <ArrowRight className="w-8 h-8 text-slate-700 hidden md:block" />
-
-        <div className="flex-1">
-          <div className="w-16 h-16 mx-auto bg-brand-600/10 border border-amber-500/30 rounded-full flex items-center justify-center mb-3">
-            <Brain className="text-amber-400" />
-          </div>
-          <p className="text-sm text-slate-600 font-medium">Policy Engine</p>
-          <p className="text-xs text-slate-500 mt-1">Semantic Evaluation</p>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-6">Security & Isolation</h2>
-      <p className="text-slate-500 mb-6 leading-relaxed">
-        Security is foundational to Regulayer. We employ defense-in-depth strategies across all layers of the stack:
+      <h2 className="text-2xl font-semibold mb-6">System Topology</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        Regulayer consists of six purpose-built microservices, connected by an API gateway that handles TLS termination, routing, and rate limiting. Each service has a single responsibility and can scale independently.
       </p>
-      <ul className="space-y-4 text-slate-600">
-        <li className="flex gap-3">
-          <ShieldCheck className="w-5 h-5 text-slate-500 flex-shrink-0" />
-          <div><strong>Data Encryption:</strong> All data is encrypted in transit (TLS 1.3) and at rest (AES-256).</div>
-        </li>
-        <li className="flex gap-3">
-          <ShieldCheck className="w-5 h-5 text-slate-500 flex-shrink-0" />
-          <div><strong>Tenant Isolation:</strong> Organizations are logically separated at the database level with Row-Level Security (RLS) policies enforcing boundary limits.</div>
-        </li>
-        <li className="flex gap-3">
-          <ShieldCheck className="w-5 h-5 text-slate-500 flex-shrink-0" />
-          <div><strong>Key Management:</strong> The Control Plane never stores raw secrets; only heavily salted password hashes and rotated OAuth tokens are persisted.</div>
-        </li>
-      </ul>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+        {[
+          { icon: Globe, name: "API Gateway", port: "8100", desc: "TLS-terminated entry point. API key validation, rate limiting, CORS, and request routing to downstream services.", color: "text-orange-500" },
+          { icon: Server, name: "Control Plane", port: "8000", desc: "Central orchestration: organization management, billing (Stripe), API key lifecycle, RBAC, project isolation, and the compliance API.", color: "text-amber-500" },
+          { icon: Database, name: "Decision Recorder", port: "8001", desc: "Append-only WORM vault. Ed25519 signing, SHA-256 hash chains, sequence ordering, and immutable decision storage.", color: "text-blue-500" },
+          { icon: Shield, name: "Governance Service", port: "8002", desc: "HITL review queues, RBAC-scoped reviewer assignment, Slack dispatch, annotations, evidence bundles, and decision timelines.", color: "text-purple-500" },
+          { icon: Cpu, name: "Policy Engine", port: "8003", desc: "Real-time rule evaluation: keyword matching, regex, numeric thresholds, semantic analysis (LLaMA 3), and ML anomaly detection.", color: "text-green-500" },
+          { icon: Activity, name: "Reports Service", port: "8005", desc: "Compliance reporting: chain integrity verification, governance summaries, incident reports, usage analytics, and SLA metrics.", color: "text-red-500" },
+        ].map((service, i) => (
+          <div key={i} className="border border-slate-200 rounded-lg p-5 hover:bg-white/50 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <service.icon className={`w-5 h-5 ${service.color}`} />
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">:{service.port}</span>
+            </div>
+            <h3 className="text-sm font-bold text-slate-700 mb-2">{service.name}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{service.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Data Flow Pipeline</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        Every AI decision follows a six-step pipeline from proxy interception to conformity documentation:
+      </p>
+
+      <div className="space-y-0 mb-10">
+        {[
+          { step: "01", title: "Proxy Interception", desc: "The Regulayer edge proxy captures the AI model input (prompt), output (response), and all metadata. Sensitive fields can be hashed before leaving the client environment." },
+          { step: "02", title: "Gateway Routing", desc: "The API Gateway validates the API key, checks rate limits, resolves organization/project context, and fans out the payload to the Decision Recorder and Policy Engine simultaneously." },
+          { step: "03", title: "Policy Evaluation", desc: "The Policy Engine evaluates the decision against all active policies (keyword, semantic, numeric, regex rules). Non-compliant decisions trigger FLAG, BLOCK, or REQUIRE_APPROVAL actions." },
+          { step: "04", title: "Cryptographic Sealing", desc: "The Decision Recorder canonicalizes the payload, computes a SHA-256 hash, links it to the previous record's hash (chain), and signs the entire block with Ed25519. WORM enforced." },
+          { step: "05", title: "Governance Dispatch", desc: "If any policy triggers REQUIRE_APPROVAL, the decision enters the HITL governance queue. Slack notifications are dispatched to configured channels. Compliance officers review, approve, or reject." },
+          { step: "06", title: "Conformity Documentation", desc: "All governance actions, human reviews, and decision metadata are continuously compiled into structured data for automated Conformity Assessments, FRIA reports, and regulatory submissions." },
+        ].map((step, i) => (
+          <div key={i} className="flex gap-6">
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full border-2 border-orange-400 flex items-center justify-center text-[11px] font-mono font-bold text-orange-500 flex-shrink-0 bg-white z-10">
+                {step.step}
+              </div>
+              {i < 5 && <div className="w-px flex-1 bg-slate-200 min-h-[30px]" />}
+            </div>
+            <div className="pb-8">
+              <h3 className="text-sm font-bold text-slate-700 mb-1">{step.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Technology Stack</h2>
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-10">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Layer</th>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Technology</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {[
+              ["Backend Services", "Python 3.11, FastAPI, Pydantic v2"],
+              ["Database", "PostgreSQL 15 with pgAudit extension"],
+              ["Frontend", "Next.js 14, React 18, TypeScript, Recharts"],
+              ["Auth", "Clerk (SSO, OAuth, MFA) + Custom RBAC"],
+              ["Payments", "Stripe (Subscriptions, Invoicing)"],
+              ["Containerization", "Docker, Docker Compose"],
+              ["API Gateway", "Caddy (TLS, reverse proxy, rate limiting)"],
+              ["Cryptography", "Ed25519 (signing), SHA-256 (hashing), AES-256-GCM (encryption at rest)"],
+            ].map(([layer, tech], i) => (
+              <tr key={i}>
+                <td className="px-4 py-3 font-medium text-slate-700">{layer}</td>
+                <td className="px-4 py-3 text-slate-500">{tech}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

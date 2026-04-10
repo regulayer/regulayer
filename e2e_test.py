@@ -35,7 +35,7 @@ async def main():
     try:
         with urllib.request.urlopen(req) as resp:
             created = json.loads(resp.read().decode())
-            print(f"✅ Rule created: {created.get('name')} (ID: {created.get('policy_id')})")
+            print(f" Rule created: {created.get('name')} (ID: {created.get('policy_id')})")
     except Exception as e:
         print(f"❌ Failed to create rule: {e}")
         # Try to read error body
@@ -69,7 +69,7 @@ async def main():
     try:
         with urllib.request.urlopen(req2) as resp:
             result = json.loads(resp.read().decode())
-            print(f"\n📋 Intake result: {json.dumps(result, indent=2)}")
+            print(f"\n Intake result: {json.dumps(result, indent=2)}")
     except Exception as e:
         print(f"❌ Intake failed: {e}")
         if hasattr(e, 'read'):
@@ -96,15 +96,15 @@ async def main():
             print(f"  state={row['review_state']}, time={row['timestamp']}, reason={row['action_reason']}")
         
         if len(rows) == 0:
-            print("\n⚠️  No governance entries found! Actions may not have dispatched.")
+            print("\n️  No governance entries found! Actions may not have dispatched.")
         else:
             states = [r['review_state'] for r in rows]
             if 'pending' in states:
-                print("\n✅ SUCCESS! Decision was flagged with 'pending' state (require_approval worked!)")
+                print("\n SUCCESS! Decision was flagged with 'pending' state (require_approval worked!)")
             elif any(s != 'unreviewed' for s in states):
-                print(f"\n✅ Actions were dispatched. States: {states}")
+                print(f"\n Actions were dispatched. States: {states}")
             else:
-                print("\n⚠️  Only 'unreviewed' states found.")
+                print("\n️  Only 'unreviewed' states found.")
     finally:
         await conn.close()
 

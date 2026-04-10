@@ -1,78 +1,93 @@
 "use client";
 import React from "react";
-import { CopyCheck, FileBarChart, HardDrive, ShieldCheck, Scale } from "lucide-react";
+
+const CodeBlock = ({ children, title }: { children: string; title?: string }) => (
+  <div className="bg-slate-900 rounded-lg overflow-hidden mb-4 border border-slate-700">
+    {title && <div className="bg-slate-800 px-4 py-2 text-xs font-mono text-slate-400 border-b border-slate-700">{title}</div>}
+    <pre className="p-4 overflow-x-auto"><code className="text-sm font-mono text-emerald-400">{children}</code></pre>
+  </div>
+);
 
 export default function ReportsDocComponent() {
   return (
     <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Compliance & Audit Reports</h1>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Compliance Reports</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        Regulayer provides one-click generation of PDF, CSV, and secure JSON reports designed specifically for external auditors, legal discovery (E-Discovery), and executive risk committees.
+        Regulayer generates board-ready compliance reports automatically from your AI governance data. Reports can be accessed via the API or exported from the dashboard. Available on Pro and Enterprise plans.
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6">Available Artifacts</h2>
+      <h2 className="text-2xl font-semibold mb-6">Available Report Types</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        <div className="bg-white/50 border border-slate-200 rounded-xl p-6 hover:bg-white transition-colors">
-          <div className="w-12 h-12 bg-slate-700/10 rounded-lg flex items-center justify-center mb-4">
-            <CopyCheck className="w-6 h-6 text-slate-500" />
+      <div className="space-y-6 mb-10">
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">Chain Integrity Report</h3>
+            <code className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">GET /v1/reports/chain/default</code>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Chain Integrity Proofs</h3>
-          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
-            A detailed JSON export containing the signed hash chain for a given time period or specific decision UUID.
+          <p className="text-sm text-slate-500 leading-relaxed mb-3">
+            Verifies the mathematical integrity of your entire hash chain. Walks through every record and confirms that each SHA-256 hash correctly links to its predecessor. Detects any unauthorized modifications to historical records.
           </p>
-          <p className="text-xs text-slate-500">
-            <strong>Use Case:</strong> Proving to regulators or opposing counsel that an AI log file was not altered, deleted, or fabricated retroactively.
-          </p>
+          <p className="text-xs text-slate-400">Returns: Chain length, verification status (pass/fail), first broken link (if any), total records verified.</p>
         </div>
 
-        <div className="bg-white/50 border border-slate-200 rounded-xl p-6 hover:bg-white transition-colors">
-          <div className="w-12 h-12 bg-brand-600/10 rounded-lg flex items-center justify-center mb-4">
-            <FileBarChart className="w-6 h-6 text-amber-400" />
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">Governance Review Report</h3>
+            <code className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">GET /v1/reports/governance</code>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Incident & Policy Summaries</h3>
-          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
-            Aggregate PDF reports detailing all flagged decisions over a quarter, broken down by policy violation type, AI system, and risk level.
+          <p className="text-sm text-slate-500 leading-relaxed mb-3">
+            Comprehensive summary of all HITL governance reviews for the reporting period. Includes: total decisions reviewed, approval/rejection ratios, average review time, reviewer activity, and justification logs.
           </p>
-          <p className="text-xs text-slate-500">
-            <strong>Use Case:</strong> Board presentations, quarterly risk reviews, and identifying problematic AI models driving up compliance costs.
-          </p>
+          <p className="text-xs text-slate-400">Ideal for: Board presentations, regulatory submissions, EU AI Act Article 14 compliance evidence.</p>
         </div>
 
-        <div className="bg-white/50 border border-slate-200 rounded-xl p-6 hover:bg-white transition-colors">
-          <div className="w-12 h-12 bg-emerald-500/10 rounded-lg flex items-center justify-center mb-4">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">Incident Report</h3>
+            <code className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">GET /v1/reports/incidents</code>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Governance Audit Ledger</h3>
-          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
-            A CSV/PDF export tracking human actions in the dashboard. Shows exactly which compliance officer logged in, viewed a flagged decision, and marked it Approved/Rejected.
+          <p className="text-sm text-slate-500 leading-relaxed mb-3">
+            Lists all compliance incidents with severity classification, source, resolution status, remediation timelines, and root cause notes. Supports date range filtering.
           </p>
-          <p className="text-xs text-slate-500">
-            <strong>Use Case:</strong> Fulfilling SOC 2 access and monitoring controls; proving the "Human-in-the-Loop" workflow is actively utilized.
-          </p>
+          <p className="text-xs text-slate-400">Ideal for: SOC 2 audits, incident postmortems, regulatory inquiries.</p>
         </div>
 
-        <div className="bg-white/50 border border-slate-200 rounded-xl p-6 hover:bg-white transition-colors">
-          <div className="w-12 h-12 bg-cyan-500/10 rounded-lg flex items-center justify-center mb-4">
-            <HardDrive className="w-6 h-6 text-cyan-400" />
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">Usage Analytics Report</h3>
+            <code className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">GET /v1/reports/usage</code>
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Full Payload Bulk Export</h3>
-          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
-            Export the raw inputs, outputs, and metadata for every recorded decision within a specific date range as flat JSON files or Parquet.
+          <p className="text-sm text-slate-500 leading-relaxed mb-3">
+            Detailed usage analytics including decision counts by project, model, and time period. Available in JSON and PDF formats.
           </p>
-          <p className="text-xs text-slate-500">
-            <strong>Use Case:</strong> Ingesting historical production traffic into Snowflake/Databricks for custom analytics or retraining internal foundation models.
+          <CodeBlock title="Query Parameters">format=json | pdf
+start_date=2026-01-01
+end_date=2026-03-31</CodeBlock>
+        </div>
+
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">SLA Compliance Report</h3>
+            <code className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">GET /v1/reports/sla</code>
+          </div>
+          <p className="text-sm text-slate-500 leading-relaxed mb-3">
+            Service level agreement compliance metrics including platform uptime, API response times, incident resolution times, and data availability guarantees.
           </p>
+          <p className="text-xs text-slate-400">Available on Enterprise plan. Custom SLA thresholds can be configured.</p>
         </div>
       </div>
 
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3 pt-6 border-t border-slate-200">
-        <Scale className="text-amber-400" />
-        Legal Defensibility
-      </h2>
-      <p className="text-slate-600 leading-relaxed">
-        Regulayer reports are designed specifically with legal defensibility in mind. Because every artifact ties back to the immutable hash chain, the records adhere to the highest standards of digital evidence. If your AI system is subpoenaed for generating unauthorized financial advice or biased hiring decisions, Regulayer provides undeniable proof of the model's exact behavior at the time of the incident.
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Dashboard Analytics</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        The dashboard provides real-time visual analytics accessible to all team members:
       </p>
+      <ul className="list-disc list-inside space-y-2 text-sm text-slate-500 mb-6">
+        <li><strong>Bar chart:</strong> Daily decision volume over the selected time period</li>
+        <li><strong>Timeline filter:</strong> 24 hours, 7 days, 30 days, or 90 days</li>
+        <li><strong>Project filter:</strong> Filter by specific project or view all</li>
+        <li><strong>Metrics cards:</strong> Total decisions, usage percentage, active projects, team members</li>
+        <li><strong>Auto-refresh:</strong> Data updates automatically when filters change</li>
+      </ul>
     </div>
   );
 }

@@ -15,7 +15,7 @@ HEADERS = {
 }
 
 def print_pass(msg):
-    print(f"✅ PASS: {msg}")
+    print(f" PASS: {msg}")
 
 def print_fail(msg):
     print(f"❌ FAIL: {msg}")

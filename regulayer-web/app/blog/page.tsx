@@ -19,11 +19,11 @@ export default function BlogPage() {
                         </span>
                         <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-bold tracking-[-0.04em] text-[hsl(15,45%,15%)] leading-[0.9] mb-8" style={{ fontFamily: "var(--font-space-grotesk)" }}>
                             Stories from the<br/>
-                            <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)]">proof layer.</span>
+                            <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)]">governance layer.</span>
                         </h1>
                         <p className="text-[18px] text-[hsl(15,30%,45%)] leading-[1.7] font-light max-w-lg mx-auto mb-12">
-                            Engineering deep dives, product updates, and essays on the
-                            future of AI accountability. We're preparing our first posts.
+                            Engineering deep dives, compliance framework analyses, and essays on the
+                            future of AI governance. We’re preparing our first posts.
                         </p>
                         <div className="w-full max-w-md mx-auto border border-[hsl(15,30%,88%)] rounded-none p-8 bg-white">
                             <p className="text-[13px] text-[hsl(15,30%,50%)] mb-4">Get notified when we publish.</p>

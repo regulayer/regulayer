@@ -34,11 +34,10 @@ export default function AboutPage() {
                 <div className={`container relative z-10 max-w-3xl transition-all duration-500 ${hero.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
                     <p className="text-xs font-display font-semibold text-primary uppercase tracking-[0.2em] mb-4">About</p>
                     <h1 className="font-display text-display mb-6 max-w-2xl">
-                        Accountability infrastructure for <span className="gradient-text">autonomous systems</span>.
+                        Enterprise AI <span className="gradient-text">Governance Infrastructure</span>.
                     </h1>
                     <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
-                        We build cryptographic systems of record that make AI decisions verifiable,
-                        tamper-proof, and regulation-ready — so enterprises can deploy AI with confidence.
+                        Regulayer provides the compliance infrastructure layer that regulated enterprises need to deploy AI responsibly — with Human-in-the-Loop governance, automated conformity assessments, and immutable audit trails.
                     </p>
                 </div>
             </section>
@@ -48,24 +47,21 @@ export default function AboutPage() {
                 <div className={`container max-w-3xl transition-all duration-500 ${story.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
                     <div className="grid md:grid-cols-2 gap-14">
                         <div>
-                            <h2 className="font-display text-headline mb-4">The gap</h2>
+                            <h2 className="font-display text-headline mb-4">The challenge</h2>
                             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                                AI systems make millions of decisions every day — credit approvals, medical triage,
-                                hiring filters, content moderation. But almost none of it is provably recorded.
+                                AI systems make millions of consequential decisions daily — credit approvals, diagnostic triage, hiring assessments, content moderation. But the regulatory landscape is tightening fast. The EU AI Act mandates documented governance, fundamental rights assessments, and human oversight for high-risk applications.
                             </p>
                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                When regulators ask &quot;show me the evidence&quot;, most teams scramble.
-                                Logs are incomplete, tampered, or simply don&apos;t exist.
+                                Most organizations lack the infrastructure to comply. When auditors request conformity documentation, teams scramble with spreadsheets. Governance remains manual, reactive, and fragmented.
                             </p>
                         </div>
                         <div>
-                            <h2 className="font-display text-headline mb-4">Our answer</h2>
+                            <h2 className="font-display text-headline mb-4">Our approach</h2>
                             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                                Regulayer is an append-only, cryptographically sealed evidence layer for AI decisions.
-                                Every model call, every input/output pair, every governance check — hashed, signed, and stored.
+                                Regulayer is a purpose-built compliance gateway that sits transparently in your AI inference path. Every model request is intercepted, evaluated against organizational policy, and routed through Human-in-the-Loop governance queues when necessary.
                             </p>
                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                Not just logging. Not just monitoring. <span className="text-foreground font-medium">Proof.</span>
+                                Automated Conformity Assessments, Fundamental Rights Impact Assessments (FRIA), and cryptographically sealed audit trails are generated continuously — not after the fact. <span className="text-foreground font-medium">Compliance by construction.</span>
                             </p>
                         </div>
                     </div>
@@ -79,10 +75,10 @@ export default function AboutPage() {
                     <p className="text-xs font-display font-semibold text-primary uppercase tracking-[0.2em] mb-8">Engineering Principles</p>
                     <div className="space-y-6">
                         {[
-                            { title: "Immutability first", desc: "Write-once storage with cryptographic chain verification. No record can be modified after ingestion." },
-                            { title: "Zero trust architecture", desc: "Every tenant gets isolated encryption keys, dedicated partitions, and independent verification chains." },
-                            { title: "Compliance by construction", desc: "EU AI Act articles are mapped directly to system capabilities — not bolted on afterwards." },
-                            { title: "Invisible to models", desc: "Sub-2ms async overhead. Regulayer sits beside your pipeline, never in it." },
+                            { title: "Human oversight by default", desc: "Every high-risk AI decision can be routed to authorized compliance officers for manual review before reaching the end user." },
+                            { title: "Regulatory-native design", desc: "EU AI Act articles, FRIA requirements, and conformity assessment criteria are mapped directly to system capabilities from day one." },
+                            { title: "Zero-trust data residency", desc: "Every tenant gets isolated encryption keys, scoped RBAC policies, and dedicated project partitions with strict data sovereignty controls." },
+                            { title: "Transparent integration", desc: "Deploy as a drop-in proxy for OpenAI, Anthropic, or any custom model endpoint. No code refactoring required." },
                         ].map((p, i) => (
                             <div key={i} className="glass rounded-xl p-6 hover-lift group">
                                 <h3 className="font-display text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">{p.title}</h3>

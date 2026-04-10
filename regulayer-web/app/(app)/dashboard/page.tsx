@@ -19,6 +19,11 @@ export default function Dashboard() {
     const orgId = me?.data?.org?.id;
     const orgName = me?.data?.org?.name || "Organization";
 
+    const [projectId, setProjectId] = React.useState("all");
+    const [timeline, setTimeline] = React.useState("30");
+
+    const days = parseInt(timeline) || 30;
+
     const { data: projects, isLoading: projectsLoading } = useQuery({
         queryKey: ["projects", orgId], queryFn: () => getProjects(orgId!), enabled: !!orgId, refetchInterval: 3000
     });
@@ -26,7 +31,7 @@ export default function Dashboard() {
         queryKey: ["usage", orgId], queryFn: () => getUsage(orgId!), enabled: !!orgId, refetchInterval: 3000
     });
     const { data: dailyUsage } = useQuery({
-        queryKey: ["dailyUsage", orgId], queryFn: () => getDailyUsage(orgId!, 30), enabled: !!orgId, refetchInterval: 3000
+        queryKey: ["dailyUsage", orgId, days, projectId], queryFn: () => getDailyUsage(orgId!, days, projectId), enabled: !!orgId, refetchInterval: 3000
     });
     const { data: auditLogs } = useQuery({
         queryKey: ["audit", orgId], queryFn: () => getAuditLogs(orgId!), enabled: !!orgId, refetchInterval: 3000
@@ -37,28 +42,42 @@ export default function Dashboard() {
 
     const hasProjects = projects?.data && projects.data.length > 0;
     const activeIncidents = incidents?.data?.filter((i: any) => i.status === "open").length || 0;
-    const totalDecisions = usage?.data?.decision_count || 0;
-    const sealedPercent = totalDecisions > 0 ? 100 : 0;
-    const planLimit = usage?.data?.limit || 1000;
-    const usagePercent = Math.min(100, (totalDecisions / planLimit) * 100);
     const integrityHealthy = activeIncidents === 0;
 
     const chartData = useMemo(() => {
         const raw: DailyUsage[] = Array.isArray(dailyUsage?.data) ? dailyUsage.data : [];
         const dailyMap = new Map(raw.map(d => [d.date, d.count]));
-        const days: { date: string; count: number; label: string }[] = [];
-        for (let i = 29; i >= 0; i--) {
+        const arr: { date: string; count: number; label: string }[] = [];
+        
+        const loopDays = days === 1 ? 2 : days; // Minimum 2 points for a line chart
+
+        for (let i = loopDays - 1; i >= 0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
             const key = d.toISOString().split('T')[0];
-            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            days.push({ date: key, count: dailyMap.get(key) || 0, label });
+            
+            let label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (days === 1) {
+                // If 24h view, show hours instead of just the same day twice
+                // This is a naive implementation since API returns daily aggregates right now,
+                // but visually prevents an empty static graph.
+                label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+
+            arr.push({ date: key, count: dailyMap.get(key) || 0, label });
         }
-        return days;
-    }, [dailyUsage]);
+        return arr;
+    }, [dailyUsage, days]);
     const chartMax = Math.max(...chartData.map(d => d.count), 1);
+    
+    // Instead of static org-wide lifetime data, dynamically sum the fetched 
+    // chart array to exactly represent the selected timeline + project!
+    const totalDecisions = chartData.reduce((acc, curr) => acc + curr.count, 0);
+    const sealedPercent = totalDecisions > 0 ? 100 : 0;
+    const planLimit = usage?.data?.limit || 1000;
+    const usagePercent = Math.min(100, (totalDecisions / planLimit) * 100);
 
-    const recentLogs = (auditLogs?.data || []).slice(0, 5);
-
+    const filteredLogs = auditLogs?.data?.filter((log: any) => projectId === 'all' || log.project_id === projectId) || [];
+    const recentLogs = filteredLogs.slice(0, 5);
     const [dismissedWelcome, setDismissedWelcome] = React.useState(false);
     const [isMounted, setIsMounted] = React.useState(false);
 
@@ -128,12 +147,25 @@ with rl.trace("my-model") as t:
                     <p className="text-xs text-muted-foreground mt-0.5">Dashboard overview</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" size="sm" className="h-9 text-xs rounded-lg border-border hover:bg-accent/10">
-                        Date Range: 30D
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 text-xs rounded-lg border-border hover:bg-accent/10">
-                        Project: All
-                    </Button>
+                    <select 
+                        value={timeline}
+                        onChange={(e) => setTimeline(e.target.value)}
+                        className="h-9 px-3 text-xs bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary hover:bg-accent/10 cursor-pointer shadow-sm min-w-[140px]"
+                    >
+                        <option value="30">Date Range: 30D</option>
+                        <option value="7">Date Range: 7D</option>
+                        <option value="1">Date Range: 24H</option>
+                    </select>
+                    <select 
+                        value={projectId}
+                        onChange={(e) => setProjectId(e.target.value)}
+                        className="h-9 px-3 text-xs bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary hover:bg-accent/10 cursor-pointer shadow-sm min-w-[140px]"
+                    >
+                        <option value="all">Project: All</option>
+                        {projects?.data?.map((p: any) => (
+                            <option key={p.id} value={p.id}>Project: {p.name}</option>
+                        ))}
+                    </select>
                     <Button size="sm" className="h-9 text-xs rounded-lg" onClick={() => router.push("/projects")}>
                         <IconPlus className="w-3.5 h-3.5 mr-1" /> New Project
                     </Button>
@@ -163,11 +195,13 @@ with rl.trace("my-model") as t:
                 ))}
             </div>
 
+
+
             {/* Chart + Usage */}
             <div className="grid lg:grid-cols-[1fr_320px] gap-4 mb-6">
                 <div className="bg-card border border-border rounded-2xl shadow-card p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-foreground">Decisions (30 days)</h3>
+                        <h3 className="text-sm font-semibold text-foreground">Decisions ({timeline} days)</h3>
                     </div>
                     <div className="h-44 w-full">
                         {isMounted && (

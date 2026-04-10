@@ -30,7 +30,7 @@ function CreateProjectModal({ onClose, onCreate }: { onClose: () => void; onCrea
                     <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Project Name</label>
                         <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-white border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:bg-slate-700 transition-colors"
+                            className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                             placeholder="e.g. Production Environment" autoFocus />
                     </div>
                     <div className="flex justify-end gap-3 mt-6">

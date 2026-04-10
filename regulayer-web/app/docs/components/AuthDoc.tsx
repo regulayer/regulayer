@@ -1,100 +1,120 @@
 "use client";
 import React from "react";
-import { KeyRound, Users, ShieldAlert, Check } from "lucide-react";
+import { Key, Shield, Users, Lock } from "lucide-react";
+
+const CodeBlock = ({ children, title }: { children: string; title?: string }) => (
+  <div className="bg-slate-900 rounded-lg overflow-hidden mb-4 border border-slate-700">
+    {title && <div className="bg-slate-800 px-4 py-2 text-xs font-mono text-slate-400 border-b border-slate-700">{title}</div>}
+    <pre className="p-4 overflow-x-auto"><code className="text-sm font-mono text-emerald-400">{children}</code></pre>
+  </div>
+);
 
 export default function AuthDocComponent() {
   return (
     <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Authentication & Authorization</h1>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Authentication &amp; Authorization</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        Regulayer secures your data through robust API Key authentication for programmatic access and Role-Based Access Control (RBAC) via SSO for human dashboard users.
+        Regulayer uses a two-layer security model: Clerk for user authentication (identity verification) and a custom RBAC system for authorization (permission enforcement).
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-        <KeyRound className="text-slate-500" />
-        API Key Authentication
-      </h2>
-      <p className="text-slate-600 mb-4 leading-relaxed">
-        All programmatic interactions with the Regulayer API from your application code must be authenticated using a heavily-permissioned API Key.
-      </p>
+      <h2 className="text-2xl font-semibold mb-6">Authentication Methods</h2>
 
-      <div className="bg-white/50 border border-slate-200 rounded-xl p-6 mb-8">
-        <h3 className="font-semibold text-slate-900 mb-4">Request Headers</h3>
-        <p className="text-sm text-slate-500 mb-4">Include your API key using standard Bearer token authentication or via a custom header.</p>
-        <div className="bg-white border border-slate-200 p-4 rounded-lg font-mono text-sm text-emerald-400 mb-2">
-          Authorization: Bearer rl_live_abc123...
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Key className="w-5 h-5 text-orange-500" />
+            <h3 className="font-semibold text-slate-700">API Key Authentication</h3>
+          </div>
+          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
+            For programmatic access (SDK, proxy, CI/CD pipelines). API keys are scoped to specific projects and support granular scopes.
+          </p>
+          <CodeBlock title="HTTP Header">X-API-Key: rl_live_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</CodeBlock>
+          <div className="text-xs text-slate-400 space-y-1">
+            <p><strong>Format:</strong> <code className="bg-slate-100 px-1 rounded">rl_live_</code> prefix + 32 random characters</p>
+            <p><strong>Scopes:</strong> INGEST (send decisions), READ (query decisions)</p>
+            <p><strong>Storage:</strong> Hashed with bcrypt at rest (shown once on creation)</p>
+          </div>
         </div>
-        <div className="bg-white border border-slate-200 p-4 rounded-lg font-mono text-sm text-emerald-400">
-          X-Regulayer-Api-Key: rl_live_abc123...
+
+        <div className="border border-slate-200 rounded-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="w-5 h-5 text-blue-500" />
+            <h3 className="font-semibold text-slate-700">JWT Bearer Authentication</h3>
+          </div>
+          <p className="text-sm text-slate-500 mb-3 leading-relaxed">
+            For dashboard and web app access. JWTs are issued by Clerk after successful login and include user identity, organization, and role claims.
+          </p>
+          <CodeBlock title="HTTP Header">Authorization: Bearer eyJhbGciOiJSUzI1NiIs...</CodeBlock>
+          <div className="text-xs text-slate-400 space-y-1">
+            <p><strong>Provider:</strong> Clerk</p>
+            <p><strong>Supports:</strong> Email/password, OAuth (Google, GitHub), SSO (Enterprise)</p>
+            <p><strong>MFA:</strong> Available on Pro and Enterprise plans</p>
+          </div>
         </div>
       </div>
 
-      <h3 className="text-xl font-semibold mt-8 mb-4">Live vs. Test Keys</h3>
-      <p className="text-slate-600 mb-4">Regulayer uses prefixing to help infrastructure tools identify key types:</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <div className="border border-slate-200 rounded-lg p-5 bg-white/30">
-          <code className="text-slate-500 font-bold mb-2 block">rl_live_*</code>
-          <h4 className="font-medium text-slate-700 mb-2">Production Keys</h4>
-          <p className="text-sm text-slate-500">Records decisions permanently in the cryptographic ledger. Immutable and auditable.</p>
-        </div>
-        <div className="border border-slate-200 rounded-lg p-5 bg-white/30 border-dashed">
-          <code className="text-amber-400 font-bold mb-2 block">rl_test_*</code>
-          <h4 className="font-medium text-slate-700 mb-2">Development Keys</h4>
-          <p className="text-sm text-slate-500">Decisions are processed but intentionally bypass cryptographic persistence. Ideal for CI pipelines.</p>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3 pt-8 border-t border-slate-200">
-        <Users className="text-slate-500" />
-        Human Access (RBAC)
-      </h2>
-      <p className="text-slate-600 mb-4 leading-relaxed">
-        Access to the Governance Dashboard is governed by strict Role-Based Access Control. API keys inherit the permissions of the Project they belong to, ensuring logical separation.
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Role-Based Access Control (RBAC)</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        Every user in an organization is assigned one of four roles. Roles determine what actions a user can perform across all organization resources.
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 mb-8">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-white text-slate-500 uppercase text-xs font-semibold">
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-10">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-6 py-4">Role</th>
-              <th className="px-6 py-4">Capabilities</th>
-              <th className="px-6 py-4">Ideal For</th>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Role</th>
+              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Permissions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800 text-slate-600 bg-white/30">
+          <tbody className="divide-y divide-slate-100">
             <tr>
-              <td className="px-6 py-4 font-medium text-slate-900">Owner</td>
-              <td className="px-6 py-4">Full access. Manage billing, delete organizations, invite Admins.</td>
-              <td className="px-6 py-4">CTO, CISO</td>
+              <td className="px-4 py-3 font-bold text-slate-700">Owner</td>
+              <td className="px-4 py-3 text-slate-500">Full access. Delete org, manage billing, invite members, manage all projects, create/revoke API keys, governance reviews.</td>
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-slate-900">Admin</td>
-              <td className="px-6 py-4">Create projects, generate API keys, configure governance policies.</td>
-              <td className="px-6 py-4">Engineering Leads</td>
+              <td className="px-4 py-3 font-bold text-slate-700">Admin</td>
+              <td className="px-4 py-3 text-slate-500">Manage projects, API keys, policies, governance reviews. Cannot delete org or manage billing.</td>
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-slate-900">Reviewer</td>
-              <td className="px-6 py-4">Approve/Reject flagged AI decisions. Export compliance reports.</td>
-              <td className="px-6 py-4">Compliance Staff, Legal</td>
+              <td className="px-4 py-3 font-bold text-slate-700">Member</td>
+              <td className="px-4 py-3 text-slate-500">View dashboard, review governance queue, submit annotations. Cannot create projects or manage API keys.</td>
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-slate-900">Viewer</td>
-              <td className="px-6 py-4">Read-only access to decisions and policies. Cannot modify anything.</td>
-              <td className="px-6 py-4">Auditors</td>
+              <td className="px-4 py-3 font-bold text-slate-700">Viewer</td>
+              <td className="px-4 py-3 text-slate-500">Read-only access to dashboard and reports. Cannot perform any write operations.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3 pt-8 border-t border-slate-200">
-        <ShieldAlert className="text-slate-500" />
-        Security Features
-      </h2>
-      <ul className="space-y-3 text-slate-500 list-disc list-inside ml-2">
-        <li><strong>SAML SSO:</strong> Enterprise SSO via Okta, Azure AD, and Google Workspace.</li>
-        <li><strong>Automatic Key Revocation:</strong> Leaked API keys pushed to public GitHub repositories are automatically detected and revoked within 30 seconds.</li>
-        <li><strong>IP Allowlisting:</strong> Restrict API calls to specific corporate CIDR blocks.</li>
-      </ul>
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">API Key Lifecycle</h2>
+
+      <div className="space-y-4 mb-10">
+        <div className="flex gap-4 items-start">
+          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0 mt-1">1</div>
+          <div>
+            <p className="text-sm text-slate-600"><strong>Create:</strong> Navigate to Dashboard → API Keys → Create API Key. Select a project and name the key.</p>
+          </div>
+        </div>
+        <div className="flex gap-4 items-start">
+          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0 mt-1">2</div>
+          <div>
+            <p className="text-sm text-slate-600"><strong>Copy:</strong> The secret key is displayed exactly once. Copy and store it in a secure secrets manager (e.g., AWS Secrets Manager, HashiCorp Vault).</p>
+          </div>
+        </div>
+        <div className="flex gap-4 items-start">
+          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0 mt-1">3</div>
+          <div>
+            <p className="text-sm text-slate-600"><strong>Use:</strong> Set <code className="bg-slate-100 px-1 rounded">REGULAYER_API_KEY</code> as an environment variable. The SDK auto-detects it.</p>
+          </div>
+        </div>
+        <div className="flex gap-4 items-start">
+          <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-xs font-bold text-red-500 flex-shrink-0 mt-1">4</div>
+          <div>
+            <p className="text-sm text-slate-600"><strong>Revoke:</strong> Delete the key from the dashboard. This is immediate and permanent — all requests using this key will fail instantly.</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

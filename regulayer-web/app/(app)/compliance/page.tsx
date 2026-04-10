@@ -40,21 +40,21 @@ export default function CompliancePage() {
     const [scores, setScores] = useState<ComplianceScore[]>([]);
 
     useEffect(() => {
-        const sys = getAISystems();
-        setSystems(sys);
-        if (sys.length > 0) setSelectedSystemId(sys[0].id);
+        Promise.all([
+            getAISystems(),
+            getConformityAssessments(),
+            getFRIAs(),
+            getTechDocs(),
+            getMonitoringPlans()
+        ]).then(([sys, conformity, frias, techDocs, monitoring]) => {
+            setSystems(sys);
+            if (sys.length > 0) setSelectedSystemId(sys[0].id);
 
-        // Compute scores
-        const conformity = getConformityAssessments();
-        const frias = getFRIAs();
-        const techDocs = getTechDocs();
-        const monitoring = getMonitoringPlans();
-
-        const computed: ComplianceScore[] = sys.map(system => {
-            const sysConformity = conformity.find(c => c.system_id === system.id);
-            const sysFria = frias.find(f => f.system_id === system.id);
-            const sysDoc = techDocs.find(d => d.system_id === system.id);
-            const sysMon = monitoring.find(m => m.system_id === system.id);
+            const computed: ComplianceScore[] = sys.map(system => {
+                const sysConformity = conformity.find(c => c.system_id === system.id);
+                const sysFria = frias.find(f => f.system_id === system.id);
+                const sysDoc = techDocs.find(d => d.system_id === system.id);
+                const sysMon = monitoring.find(m => m.system_id === system.id);
 
             const articleScores: ComplianceArticleScore[] = ARTICLES.map(art => {
                 let score = 0;
@@ -134,6 +134,7 @@ export default function CompliancePage() {
         });
 
         setScores(computed);
+        }).catch(console.error);
     }, []);
 
     const daysUntilEnforcement = Math.max(0, Math.ceil((ENFORCEMENT_DATE.getTime() - Date.now()) / 86400000));
@@ -147,9 +148,15 @@ export default function CompliancePage() {
 
     return (
         <div className="p-6 md:p-10 pb-20 space-y-6 text-foreground">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">EU AI Act Compliance</h1>
-                <p className="text-muted-foreground text-sm">Your organization's readiness for the August 2, 2026 enforcement date.</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">EU AI Act Compliance</h1>
+                    <p className="text-muted-foreground text-sm">Your organization's readiness for the August 2, 2026 enforcement date.</p>
+                </div>
+                <Link href="/compliance-report" className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors">
+                    <IconTargetArrow size={16} />
+                    Generate Report
+                </Link>
             </div>
 
             {/* Countdown + Org Score */}

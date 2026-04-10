@@ -9,7 +9,7 @@ This module contains the non-technical infrastructure required for Regulayer to 
 ### 🏛️ Adoption (`/adoption`)
 Reference guides for specific institutional roles (Regulators, Courts, Auditors, Gov).
 
-### 🛡️ Endorsement Boundaries (`/endorsement-boundaries`)
+###  Endorsement Boundaries (`/endorsement-boundaries`)
 Strict rules preventing "trust washing".
 - **NON_ENDORSEMENT_POLICY.md**: We don't certify "Safe AI".
 - **CITATION_RULES.md**: How to cite us properly.

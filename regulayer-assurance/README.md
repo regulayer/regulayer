@@ -16,7 +16,7 @@ They are authoritative. If the code contradicts these documents, it is a critica
 | [**OPERATIONAL_ASSUMPTIONS.md**](./OPERATIONAL_ASSUMPTIONS.md) | Requirements for the deployment environment (Keys, TLS, DB) to maintain trust. | DevOps, SREs |
 | [**VERSIONING_POLICY.md**](./VERSIONING_POLICY.md) | Defines how these specifications are versioned and aligned with software releases. | Project Managers |
 
-## 🛡️ Core Guarantee
+##  Core Guarantee
 Regulayer guarantees that **once a decision is recorded, it cannot be secretly altered or forged.**
 
 We do **not** guarantee the correctness of the AI model itself, only the integrity of its audit trail.

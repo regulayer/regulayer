@@ -97,7 +97,7 @@ def verify_bundle(file_path: str):
     # 1. Version Check
     version = data.get("proof_bundle_version")
     if version != SUPPORTED_VERSION:
-        print(f"⚠️  Warning: Bundle version {version} differs from supported {SUPPORTED_VERSION}.")
+        print(f"️  Warning: Bundle version {version} differs from supported {SUPPORTED_VERSION}.")
     
     # 2. Schema Check
     required_fields = ["record_id", "canonical_event", "record_hash", "chain_id"]
@@ -144,7 +144,7 @@ def verify_bundle(file_path: str):
         return False
     print("PASS")
     
-    print("\n✅ VERIFICATION SUCCESSFUL")
+    print("\n VERIFICATION SUCCESSFUL")
     print(f"   Record ID: {data.get('record_id')}")
     return True
 

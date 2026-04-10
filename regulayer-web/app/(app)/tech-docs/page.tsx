@@ -26,8 +26,8 @@ export default function TechDocsPage() {
     const [selectedSystemId, setSelectedSystemId] = useState('');
 
     useEffect(() => {
-        setDocs(getTechDocs());
-        setSystems(getAISystems());
+        getTechDocs().then(setDocs).catch(console.error);
+        getAISystems().then(setSystems).catch(console.error);
     }, []);
 
     const handleCreate = () => {
@@ -45,7 +45,7 @@ export default function TechDocsPage() {
             created_at: now, updated_at: now,
         };
         saveTechDoc(newDoc);
-        setDocs(getTechDocs());
+        getTechDocs().then(setDocs).catch(console.error);
         setShowModal(false);
         setSelectedSystemId('');
     };

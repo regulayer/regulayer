@@ -116,7 +116,7 @@ class BillingService:
 
         # Default for non-stripe orgs (Free Tier)
         status = {
-            "plan": {"id": "free", "name": "Free Tier", "price": "$0", "features": ["1,000 Decisions/mo"], "limit_decisions": 1000, "limit_members": 2},
+            "plan": {"id": "free", "name": "Free", "price": "$0", "features": ["1,000 decisions/mo", "Up to 2 team members", "7-day retention", "1 project", "Community support"], "limit_decisions": 1000, "limit_members": 2},
             "status": "active",
             "current_period_end": None,
             "invoices": []
@@ -154,7 +154,7 @@ class BillingService:
                         "id": "pro",
                         "name": "Pro", 
                         "price": "$99/mo",
-                        "features": ["50k Decisions/mo", "Email Support", "Advanced Reports"],
+                        "features": ["50,000 decisions/mo", "Up to 20 team members", "1-year retention", "Unlimited projects", "RBAC & SSO", "HITL Governance Queue", "Conformity Assessments"],
                         "limit_decisions": 50000,
                         "limit_members": 20
                     }
@@ -163,7 +163,7 @@ class BillingService:
                         "id": "enterprise",
                         "name": "Enterprise",
                         "price": "Custom",
-                        "features": ["Unlimited", "SLA"],
+                        "features": ["Unlimited decisions", "Unlimited team members", "Unlimited retention", "Dedicated infrastructure", "Automated FRIA Generation", "On-premise deployment", "SOC 2 Type II BAA"],
                         "limit_decisions": 1000000,
                         "limit_members": 999999
                     }

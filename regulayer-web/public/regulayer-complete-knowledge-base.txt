@@ -1,0 +1,1352 @@
+================================================================================
+REGULAYER — COMPLETE PLATFORM KNOWLEDGE BASE
+Version: 2.0 | Last Updated: April 2026
+================================================================================
+
+This document contains the exhaustive, definitive reference for the Regulayer
+platform. It is designed to be consumed by AI systems, developers, compliance
+officers, and technical architects. After reading this document, you should be
+able to answer ANY question about Regulayer — from high-level architecture to
+individual API endpoint parameters.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1.  EXECUTIVE SUMMARY
+2.  WHAT IS REGULAYER
+3.  THE PROBLEM WE SOLVE
+4.  CORE ARCHITECTURE
+5.  MICROSERVICE TOPOLOGY
+6.  DATA FLOW PIPELINE
+7.  AUTHENTICATION & AUTHORIZATION
+8.  SDK INTEGRATION (PYTHON)
+9.  API REFERENCE — COMPLETE ENDPOINTS
+10. DASHBOARD NAVIGATION & FEATURES
+11. HUMAN-IN-THE-LOOP (HITL) GOVERNANCE
+12. POLICY ENGINE
+13. COMPLIANCE FRAMEWORK: EU AI ACT
+14. COMPLIANCE FRAMEWORK: SOC 2 TYPE II
+15. FRIA (FUNDAMENTAL RIGHTS IMPACT ASSESSMENT)
+16. CONFORMITY ASSESSMENTS
+17. CRYPTOGRAPHIC VAULT & AUDIT TRAILS
+18. PRICING & BILLING
+19. PROJECT MANAGEMENT
+20. TEAM MANAGEMENT & RBAC
+21. REPORTS & ANALYTICS
+22. INTEGRATIONS & SUPPORTED PROVIDERS
+23. WEBHOOKS & EVENTS
+24. DEPLOYMENT & INFRASTRUCTURE
+25. SECURITY MODEL
+26. GLOSSARY
+27. FAQ
+
+================================================================================
+1. EXECUTIVE SUMMARY
+================================================================================
+
+Regulayer is an Enterprise AI Governance & Compliance platform. It provides a
+transparent proxy gateway that intercepts AI model inferences in real-time,
+enforces organizational policies, routes high-risk decisions to human compliance
+officers via Human-in-the-Loop (HITL) governance queues, and automatically
+generates regulatory documentation including EU AI Act Conformity Assessments
+and Fundamental Rights Impact Assessments (FRIA).
+
+KEY VALUE PROPOSITIONS:
+- Drop-in proxy for OpenAI, Anthropic, Google, AWS Bedrock, Azure, and more
+- Real-time policy enforcement before AI responses reach end users
+- Human-in-the-Loop governance workflows for high-risk decisions
+- Automated EU AI Act conformity documentation generation
+- Cryptographically sealed, tamper-proof audit trails (WORM compliant)
+- SOC 2 Type II compliant infrastructure
+- Role-Based Access Control (RBAC) with project-level isolation
+
+================================================================================
+2. WHAT IS REGULAYER
+================================================================================
+
+Regulayer is NOT a monitoring tool. It is NOT an observability platform. It is
+an active governance layer that sits in the critical path of your AI inference
+pipeline.
+
+WHAT REGULAYER DOES:
+1. INTERCEPTS every AI model request/response pair transparently
+2. EVALUATES each inference against organizational compliance policies
+3. BLOCKS or FLAGS non-compliant outputs in real-time
+4. ROUTES flagged decisions to compliance officers for manual review
+5. RECORDS every action cryptographically in an immutable audit vault
+6. GENERATES board-ready compliance reports automatically
+
+WHAT REGULAYER IS NOT:
+- It is NOT a log aggregator (it actively governs, not passively logs)
+- It is NOT a model training tool
+- It is NOT a prompt engineering platform
+- It is NOT a chatbot builder
+
+TARGET USERS:
+- Chief Compliance Officers (CCOs)
+- AI Risk & Governance teams
+- DevOps / MLOps engineers integrating AI into production
+- Legal teams preparing for EU AI Act enforcement
+- Enterprise architects designing regulated AI systems
+
+================================================================================
+3. THE PROBLEM WE SOLVE
+================================================================================
+
+REGULATORY CHALLENGE:
+The EU AI Act (effective August 2026) mandates that organizations deploying
+"high-risk" AI systems must:
+- Maintain comprehensive technical documentation
+- Conduct Fundamental Rights Impact Assessments (FRIA)
+- Implement human oversight mechanisms
+- Ensure transparency and explainability
+- Maintain detailed logging of AI system operations
+- Submit Conformity Assessments before deployment
+
+ENTERPRISE CHALLENGE:
+Most organizations deploying AI today have:
+- No tamper-proof audit trails of AI decisions
+- No structured workflow for human oversight
+- No automated compliance documentation generation
+- No real-time policy enforcement on AI outputs
+- No centralized governance dashboard
+
+REGULAYER SOLUTION:
+Regulayer provides the complete infrastructure to satisfy all of the above
+requirements through a single platform with a single integration point.
+
+================================================================================
+4. CORE ARCHITECTURE
+================================================================================
+
+Regulayer is built as a distributed microservice platform with six core
+services, connected by an API gateway that handles TLS termination, routing,
+and rate limiting.
+
+ARCHITECTURE DIAGRAM (TEXT):
+
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Your App      │────▶│  API Gateway     │────▶│  Control Plane  │
+│   (AI Client)   │     │  (Port 8100)     │     │  (Port 8000)    │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │                        │
+                               ▼                        ▼
+                        ┌──────────────┐          ┌──────────────┐
+                        │  Policy      │          │  Governance  │
+                        │  Engine      │          │  Service     │
+                        │  (Port 8003) │          │  (Port 8002) │
+                        └──────────────┘          └──────────────┘
+                               │                        │
+                               ▼                        ▼
+                        ┌──────────────┐          ┌──────────────┐
+                        │  Decision    │          │  Reports     │
+                        │  Recorder    │          │  Service     │
+                        │  (Port 8001) │          │  (Port 8005) │
+                        └──────────────┘          └──────────────┘
+
+TECHNOLOGY STACK:
+- Backend: Python 3.11 + FastAPI
+- Database: PostgreSQL 15 with pgAudit
+- Frontend: Next.js 14 + React 18 + TypeScript
+- Containerization: Docker + Docker Compose
+- Auth: Clerk (authentication) + custom RBAC (authorization)
+- Payments: Stripe
+- Charts: Recharts
+- Animations: Framer Motion
+
+================================================================================
+5. MICROSERVICE TOPOLOGY
+================================================================================
+
+SERVICE 1: CONTROL PLANE (Port 8000)
+─────────────────────────────────────
+The central orchestration service. Manages:
+- Organization CRUD operations
+- User management and RBAC
+- Project lifecycle
+- API key creation and management
+- Billing integration (Stripe)
+- Usage tracking and quotas
+- Audit log recording
+- Compliance API (FRIA, Conformity, AI Systems, Tech Docs, Monitoring Plans)
+- Incident management
+
+SERVICE 2: DECISION RECORDER (Port 8001)
+────────────────────────────────────────
+The append-only cryptographic vault:
+- Receives AI decision payloads (input, output, metadata)
+- Computes SHA-256 hash of the canonicalized payload
+- Links each hash to the previous record (hash chain)
+- Signs with Ed25519 cryptographic signatures
+- Stores in WORM-compliant append-only storage
+- Indexes by organization, project, model, timestamp
+
+SERVICE 3: GOVERNANCE SERVICE (Port 8002)
+─────────────────────────────────────────
+Human-in-the-Loop review workflows:
+- Maintains review queues for flagged decisions
+- Allows compliance officers to approve/reject decisions
+- Supports annotations and tagging
+- Generates evidence bundles for auditors
+- Tracks decision timelines
+- Integrates with Slack for real-time notifications
+
+SERVICE 4: POLICY ENGINE (Port 8003)
+────────────────────────────────────
+Real-time rule evaluation:
+- Evaluates decisions against declarative JSON policies
+- Supports: keyword matching, numeric thresholds, semantic analysis
+- Statistical ML anomaly detection (Z-Score based)
+- Actions: ALLOW, FLAG, BLOCK, REQUIRE_APPROVAL
+- Can be configured per-project or organization-wide
+
+SERVICE 5: REPORTS SERVICE (Port 8005)
+─────────────────────────────────────
+Compliance reporting and analytics:
+- Chain integrity verification
+- Governance review summaries
+- Incident reports
+- Usage analytics
+- SLA compliance metrics
+
+SERVICE 6: API GATEWAY (Port 8100)
+──────────────────────────────────
+The public-facing entry point:
+- TLS termination
+- API key validation
+- Rate limiting
+- Request routing to internal services
+- CORS handling
+
+================================================================================
+6. DATA FLOW PIPELINE
+================================================================================
+
+STEP 1: PROXY INTERCEPTION
+Your application makes an AI API call through the Regulayer proxy. The proxy
+captures the complete request (model, messages, parameters) and the full
+response from the AI provider.
+
+STEP 2: GATEWAY ROUTING
+The API Gateway validates your API key, checks rate limits, resolves your
+organization and project context, and fans out the payload to the Decision
+Recorder and Policy Engine simultaneously.
+
+STEP 3: POLICY EVALUATION
+The Policy Engine evaluates the decision against all active policies. Policies
+can be scoped to specific projects or applied organization-wide. If a policy
+triggers, the decision is flagged with the appropriate action (FLAG, BLOCK, or
+REQUIRE_APPROVAL).
+
+STEP 4: CRYPTOGRAPHIC SEALING
+The Decision Recorder canonicalizes the payload, computes a SHA-256 hash,
+cryptographically links it to the previous record's hash (forming an immutable
+chain), and signs the entire block with an Ed25519 private key.
+
+STEP 5: GOVERNANCE DISPATCH
+If any policy triggered a REQUIRE_APPROVAL or BLOCK action, the decision is
+routed to the Governance Service. A review item is created in the HITL queue,
+and (if configured) a Slack notification is dispatched to the appropriate
+governance channel.
+
+STEP 6: CONFORMITY DOCUMENTATION
+All governance actions, human reviews, policy evaluations, and decision
+metadata are continuously compiled into structured data that can be exported
+as Conformity Assessments and FRIA reports.
+
+================================================================================
+7. AUTHENTICATION & AUTHORIZATION
+================================================================================
+
+AUTHENTICATION (WHO YOU ARE):
+Regulayer uses Clerk for user authentication. Clerk provides:
+- Email/password authentication
+- OAuth (Google, GitHub)
+- Single Sign-On (SSO) for Enterprise customers
+- JWT token issuance and validation
+
+AUTHORIZATION (WHAT YOU CAN DO):
+Regulayer implements custom Role-Based Access Control (RBAC):
+
+ROLES:
+┌─────────┬──────────────────────────────────────────────────────────┐
+│ Role    │ Permissions                                              │
+├─────────┼──────────────────────────────────────────────────────────┤
+│ OWNER   │ Full access. Can delete org, manage billing, invite      │
+│         │ members, create/delete projects, manage API keys.        │
+├─────────┼──────────────────────────────────────────────────────────┤
+│ ADMIN   │ Can manage projects, API keys, policies, and governance  │
+│         │ reviews. Cannot delete the organization or manage        │
+│         │ billing.                                                 │
+├─────────┼──────────────────────────────────────────────────────────┤
+│ MEMBER  │ Can view dashboard, review governance queue, submit      │
+│         │ annotations. Cannot create projects or manage API keys.  │
+├─────────┼──────────────────────────────────────────────────────────┤
+│ VIEWER  │ Read-only access to dashboard and reports. Cannot        │
+│         │ perform any write operations.                            │
+└─────────┴──────────────────────────────────────────────────────────┘
+
+API KEY AUTHENTICATION:
+For programmatic access (SDK, proxy, CI/CD), Regulayer uses API keys:
+- Format: rl_live_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+- Scoped to a specific project
+- Hashed with bcrypt at rest (plain key shown only once on creation)
+- Support scopes: INGEST (send decisions), READ (query decisions)
+
+API KEY LIFECYCLE:
+1. Navigate to Dashboard → API Keys
+2. Click "Create API Key"
+3. Select the target project
+4. Name the key (e.g., "Production Gateway")
+5. Copy the key immediately (it won't be shown again)
+6. Set REGULAYER_API_KEY environment variable in your application
+
+================================================================================
+8. SDK INTEGRATION (PYTHON)
+================================================================================
+
+INSTALLATION:
+  pip install regulayer
+
+INITIALIZATION:
+  import os
+  from regulayer import Regulayer
+
+  # Option 1: Auto-detect from environment
+  client = Regulayer()  # Reads REGULAYER_API_KEY
+
+  # Option 2: Explicit configuration
+  client = Regulayer(
+      api_key="rl_live_your_key_here",
+      base_url="https://api.regulayer.tech"  # Optional, defaults to production
+  )
+
+BASIC USAGE — @trace() DECORATOR:
+  import openai
+
+  @client.trace(model="gpt-4", system_name="customer-support-agent")
+  def generate_response(user_query: str) -> str:
+      response = openai.ChatCompletion.create(
+          model="gpt-4",
+          messages=[{"role": "user", "content": user_query}]
+      )
+      return response.choices[0].message.content
+
+  # This call is automatically intercepted, hashed, and recorded
+  answer = generate_response("How do I reset my account?")
+
+MANUAL RECORDING:
+  decision = client.decisions.record(
+      input_data={"role": "user", "content": "Approve loan for $50,000"},
+      output_data={"decision": "approved", "amount": 50000},
+      model="gpt-4-turbo",
+      system_name="loan-approval-agent",
+      metadata={
+          "customer_id": "C-12345",
+          "risk_score": 0.23,
+          "region": "EU"
+      },
+      tags=["financial", "high-value", "eu-customer"]
+  )
+
+  print(f"Decision ID: {decision.id}")
+  print(f"SHA-256 Hash: {decision.hash}")
+  print(f"Signature: {decision.signature}")
+
+PROXY MODE (RECOMMENDED FOR PRODUCTION):
+Instead of using the SDK decorator, you can configure Regulayer as a
+transparent proxy in front of your AI provider:
+
+  import openai
+
+  # Point your OpenAI client at the Regulayer proxy
+  openai.api_base = "https://proxy.regulayer.tech/v1"
+  openai.api_key = "your-openai-key"
+
+  # Add Regulayer auth as a header
+  response = openai.ChatCompletion.create(
+      model="gpt-4",
+      messages=[{"role": "user", "content": "Hello"}],
+      headers={"X-Regulayer-Key": "rl_live_your_key_here"}
+  )
+  # The proxy transparently intercepts, evaluates policies, and records.
+
+================================================================================
+9. API REFERENCE — COMPLETE ENDPOINTS
+================================================================================
+
+BASE URL: https://api.regulayer.tech (or http://localhost:8100 for development)
+
+All authenticated endpoints require either:
+- Bearer token (JWT from Clerk) in Authorization header
+- API key in X-API-Key header (for programmatic access)
+
+─── AUTHENTICATION ───
+
+POST   /v1/auth/register          Register a new user
+POST   /v1/auth/login             Login and obtain JWT
+GET    /v1/auth/me                Get current authenticated user profile
+
+─── ORGANIZATIONS ───
+
+POST   /v1/orgs                   Create a new organization
+GET    /v1/orgs                   List organizations for current user
+GET    /v1/orgs/{org_id}          Get organization by ID
+PATCH  /v1/orgs/{org_id}          Update organization details
+PATCH  /v1/orgs/{org_id}/status   Update organization status (active/suspended)
+
+─── TEAM MANAGEMENT ───
+
+GET    /v1/orgs/{org_id}/members           List organization members
+POST   /v1/orgs/{org_id}/members/invite    Invite a member by email
+PUT    /v1/orgs/{org_id}/members/{user_id} Update member role
+DELETE /v1/orgs/{org_id}/members/{user_id} Remove member from organization
+
+─── PROJECTS ───
+
+POST   /v1/orgs/{org_id}/projects     Create a new project
+GET    /v1/orgs/{org_id}/projects     List projects for organization
+GET    /v1/projects/{project_id}      Get project by ID
+PATCH  /v1/projects/{project_id}      Update project details
+
+─── API KEYS ───
+
+POST   /v1/projects/{project_id}/keys    Create a new API key
+GET    /v1/projects/{project_id}/keys    List API keys for project
+DELETE /v1/keys/{key_id}                 Revoke an API key
+
+─── DECISIONS (INGESTION) ───
+
+POST   /v1/decisions                     Record a new AI decision
+  Body: {
+    "input_data": { ... },           // The input sent to the AI model
+    "output_data": { ... },          // The response from the AI model
+    "model": "gpt-4",               // Model identifier
+    "system_name": "my-agent",      // System/agent name
+    "metadata": { ... },            // Arbitrary metadata
+    "tags": ["tag1", "tag2"]        // Tags for filtering
+  }
+
+─── DECISIONS (QUERY) ───
+
+GET    /v1/decisions                     List decisions with filters
+  Query params:
+    - project_id (optional)
+    - status (optional): pending_review, approved, rejected, recorded
+    - model (optional)
+    - start_date, end_date (optional)
+    - limit (default: 50, max: 200)
+    - offset (default: 0)
+
+GET    /v1/decisions/{decision_id}       Get decision details
+
+─── GOVERNANCE (HITL) ───
+
+GET    /v1/governance/queue              Get pending review queue
+  Query params:
+    - project_id (optional)
+    - status (optional): pending_review, approved, rejected
+    - limit (default: 50)
+
+GET    /v1/governance/{decision_id}              Get governance details
+POST   /v1/governance/{decision_id}/reviews      Submit a review
+  Body: {
+    "action": "approve" | "reject",
+    "justification": "This output complies with policy X...",
+    "reviewer_notes": "Optional notes"
+  }
+
+POST   /v1/governance/{decision_id}/annotations  Add an annotation
+  Body: {
+    "content": "Annotation text",
+    "annotation_type": "note" | "flag" | "escalation"
+  }
+
+POST   /v1/governance/{decision_id}/tags         Add a tag
+GET    /v1/governance/{decision_id}/evidence      Get evidence bundle
+GET    /v1/governance/{decision_id}/timeline      Get event timeline
+
+─── POLICIES ───
+
+GET    /v1/policies                      List all policies
+POST   /v1/policies                      Create a new policy
+  Body: {
+    "name": "PII Detection Policy",
+    "description": "Flag outputs containing PII",
+    "rules": [ ... ],                // Array of rule objects
+    "action": "flag" | "block" | "require_approval",
+    "scope": "organization" | "project",
+    "project_id": null               // Required if scope is "project"
+  }
+
+GET    /v1/policies/{policy_id}          Get policy details
+PATCH  /v1/policies/{policy_id}/enable   Enable or disable a policy
+
+─── COMPLIANCE (EU AI ACT) ───
+
+POST   /v1/orgs/{org_id}/compliance/ai-systems       Register an AI system
+GET    /v1/orgs/{org_id}/compliance/ai-systems        List AI systems
+
+POST   /v1/orgs/{org_id}/compliance/conformity        Create conformity assessment
+GET    /v1/orgs/{org_id}/compliance/conformity         List conformity assessments
+
+POST   /v1/orgs/{org_id}/compliance/fria               Create FRIA
+GET    /v1/orgs/{org_id}/compliance/fria               List FRIAs
+
+POST   /v1/orgs/{org_id}/compliance/tech-docs          Create technical documentation
+GET    /v1/orgs/{org_id}/compliance/tech-docs          List technical documentation
+
+POST   /v1/orgs/{org_id}/compliance/monitoring         Create monitoring plan
+GET    /v1/orgs/{org_id}/compliance/monitoring         List monitoring plans
+
+POST   /v1/orgs/{org_id}/compliance/incidents          Report a compliance incident
+GET    /v1/orgs/{org_id}/compliance/incidents          List compliance incidents
+
+─── REPORTS ───
+
+GET    /v1/reports/chain/default         Hash chain integrity report
+GET    /v1/reports/governance            Governance review summary
+GET    /v1/reports/incidents             Incident report
+GET    /v1/reports/usage                 Usage analytics (JSON or PDF)
+GET    /v1/reports/sla                   SLA compliance metrics
+
+─── BILLING ───
+
+GET    /v1/billing/status                Get current billing status
+POST   /v1/billing/checkout              Create Stripe checkout session
+POST   /v1/billing/portal                Create Stripe customer portal session
+POST   /v1/billing/webhook               Stripe webhook handler
+
+─── USAGE ───
+
+GET    /v1/usage/{org_id}                Get organization usage summary
+GET    /v1/usage/orgs/{org_id}/daily     Get daily usage breakdown
+  Query params:
+    - days (default: 30, max: 365)
+    - project_id (optional)
+
+─── AUDIT LOGS ───
+
+GET    /v1/orgs/{org_id}/audit-logs      Get organization audit trail
+
+─── PUBLIC ───
+
+GET    /v1/public/status                 Platform health check (no auth)
+
+================================================================================
+10. DASHBOARD NAVIGATION & FEATURES
+================================================================================
+
+After logging in at https://app.regulayer.tech, users see the main application
+dashboard. Here is every page and what it does:
+
+SIDEBAR NAVIGATION:
+┌────────────────────────────────────────────────────┐
+│  Dashboard       - Usage metrics, charts, stats │
+│  Projects        - Create/manage projects       │
+│  API Keys        - Generate/revoke API keys     │
+│  Decisions       - Browse AI decision records   │
+│  Governance      - HITL review queue            │
+│  Compliance      - EU AI Act documents          │
+│  Team            - Member management            │
+│  Billing         - Plan, invoices, upgrade      │
+│  Settings        - Organization settings        │
+└────────────────────────────────────────────────────┘
+
+DASHBOARD PAGE:
+- Total Decisions (count for selected period)
+- Usage Percentage (decisions used vs plan limit)
+- Active Projects count
+- Team Members count
+- Usage chart (bar chart, filterable by timeline: 24H/7D/30D/90D)
+- Project filter dropdown
+- Timeline filter dropdown
+- Data auto-refreshes when filters change
+
+PROJECTS PAGE:
+- List of all projects in the organization
+- Create new project (name, description)
+- Each project shows: name, ID, created date, decision count
+- Click to view project details
+
+API KEYS PAGE:
+- List all API keys across projects
+- Create new key: select project, enter key name
+- Shows: key name, project, created date, last used
+- Key secret shown ONLY once on creation
+- Revoke keys (permanent, cannot undo)
+
+DECISIONS PAGE:
+- Paginated list of all AI decisions
+- Each row shows: timestamp, model, system_name, status, hash (truncated)
+- Click to expand: full input, full output, metadata, tags
+- Filter by: project, status, date range
+
+GOVERNANCE PAGE:
+- Human-in-the-Loop review queue
+- Shows only decisions with status: pending_review
+- For each flagged decision:
+  - View the AI input and output
+  - See which policy triggered the flag
+  - See the risk assessment
+  - APPROVE with justification
+  - REJECT with justification (custom message optional, default provided)
+  - Add annotations and tags
+  - View full evidence bundle
+  - View event timeline
+
+COMPLIANCE PAGE:
+- EU AI Act compliance management
+- Sub-sections:
+  - AI Systems Registry: Register your AI systems
+  - Conformity Assessments: Create/view assessments
+  - FRIA: Create/view Fundamental Rights Impact Assessments
+  - Technical Documentation: Upload/generate tech docs
+  - Monitoring Plans: Define monitoring strategies
+  - Incident Reports: Log compliance incidents
+  - Compliance Report: Generate downloadable PDF reports
+
+COMPLIANCE REPORT PAGE:
+- Generate a professional, print-ready EU AI Act compliance report
+- Select an AI system from your registered systems
+- View "data readiness" percentage for each system
+- Generate a detailed article-by-article compliance assessment
+- Preview the report inline with scoring badges and evidence statements
+- Download as a professionally formatted HTML document (print to PDF)
+- Systems achieving ≥80% score receive the "REGULAYER VERIFIED" seal
+- Report includes: overall score, article breakdown, priority actions,
+  platform capabilities summary, and legal disclaimer
+
+TEAM PAGE:
+- View all organization members
+- Invite new members by email
+- Change member roles (Owner, Admin, Member, Viewer)
+- Remove members
+
+BILLING PAGE:
+- Current plan details (Free, Pro, or Enterprise)
+- Feature list for current plan
+- Usage vs limits
+- Upgrade/downgrade options
+- Invoice history
+- Manage payment method (Stripe portal)
+
+================================================================================
+11. HUMAN-IN-THE-LOOP (HITL) GOVERNANCE
+================================================================================
+
+PURPOSE:
+HITL governance ensures that high-risk AI decisions receive human oversight
+before impacting end users. This satisfies EU AI Act Article 14 requirements
+for human oversight in high-risk AI systems.
+
+HOW IT WORKS:
+
+1. TRIGGER: A policy rule evaluates an AI decision and determines it requires
+   human review (action: "require_approval" or "flag")
+
+2. QUEUE: The decision enters the governance review queue visible in the
+   dashboard under "Governance"
+
+3. REVIEW: A designated compliance officer opens the decision and sees:
+   - The complete AI input (prompt/query)
+   - The complete AI output (response)
+   - The policy that triggered the flag
+   - Risk scores and metadata
+   - Historical context
+
+4. ACTION: The reviewer can:
+   a. APPROVE — The decision is marked as approved. The justification is
+      recorded in the immutable audit trail.
+   b. REJECT — The decision is marked as rejected. A rejection message is
+      sent (custom message if provided, otherwise default project-level
+      decline message). The justification is recorded.
+   c. ANNOTATE — Add notes for other reviewers or auditors.
+   d. TAG — Categorize the decision for reporting purposes.
+   e. ESCALATE — Flag for senior review.
+
+5. AUDIT TRAIL: Every action (approve, reject, annotate) is cryptographically
+   recorded with the reviewer's identity, timestamp, and justification.
+
+SLACK INTEGRATION:
+When a decision requires review, Regulayer can dispatch a rich notification to
+a configured Slack channel. The notification includes:
+- Decision summary
+- Triggering policy name
+- Direct link to the governance dashboard
+- Quick-action buttons (on Enterprise plan)
+
+================================================================================
+12. POLICY ENGINE
+================================================================================
+
+The Policy Engine evaluates every AI decision against a set of declarative
+rules. Policies can be created via the API or the dashboard.
+
+POLICY STRUCTURE:
+{
+  "name": "PII Detection",
+  "description": "Flag any output containing personal data",
+  "rules": [
+    {
+      "field": "output_data.content",
+      "operator": "contains",
+      "value": "social security",
+      "case_sensitive": false
+    }
+  ],
+  "action": "flag",
+  "scope": "organization",
+  "enabled": true
+}
+
+SUPPORTED OPERATORS:
+- contains       : String contains substring
+- not_contains   : String does not contain substring
+- equals         : Exact string match
+- regex          : Regular expression match
+- gt, gte, lt, lte : Numeric comparisons
+- semantic       : AI-powered semantic analysis (uses LLaMA 3)
+
+ACTIONS:
+- "allow"            : Decision passes, no action taken
+- "flag"             : Decision is flagged for awareness, recorded normally
+- "block"            : Decision is blocked from reaching the end user (proxy mode only)
+- "require_approval" : Decision enters HITL governance queue for human review
+
+EVALUATION ORDER:
+1. All active policies are evaluated in parallel
+2. The most restrictive action wins (block > require_approval > flag > allow)
+3. Multiple policies can flag the same decision
+4. All triggering policies are recorded in the decision metadata
+
+================================================================================
+13. COMPLIANCE FRAMEWORK: EU AI ACT
+================================================================================
+
+The EU AI Act (Regulation 2024/1689) is the world's first comprehensive AI
+regulation. Regulayer maps its capabilities directly to EU AI Act requirements:
+
+ARTICLE 9 — RISK MANAGEMENT SYSTEM
+Regulayer Mapping: The Policy Engine + Statistical ML Anomaly Detection
+constitutes a continuous risk management system. Every AI decision is evaluated
+against risk thresholds, and anomalous behavior triggers automatic alerts.
+
+ARTICLE 10 — DATA AND DATA GOVERNANCE
+Regulayer Mapping: The cryptographic vault maintains a complete chain-of-custody
+for all data flowing through AI systems. Hash chains prove data integrity.
+
+ARTICLE 11 — TECHNICAL DOCUMENTATION
+Regulayer Mapping: The Compliance API (/compliance/tech-docs) provides
+structured storage for technical documentation. Organizations can upload or
+auto-generate documentation describing their AI systems.
+
+ARTICLE 12 — RECORD-KEEPING
+Regulayer Mapping: The WORM-compliant Decision Recorder maintains immutable
+records of every AI inference, including inputs, outputs, timestamps, model
+versions, and all human override actions.
+
+ARTICLE 13 — TRANSPARENCY AND INFORMATION
+Regulayer Mapping: The governance dashboard provides complete transparency
+into AI decision-making. Every decision can be inspected, and the full audit
+trail is accessible to authorized personnel.
+
+ARTICLE 14 — HUMAN OVERSIGHT
+Regulayer Mapping: The HITL Governance Queue directly satisfies this
+requirement. High-risk decisions are routed to human reviewers who can
+approve, reject, or modify AI outputs before they reach end users.
+
+ARTICLE 15 — ACCURACY, ROBUSTNESS, AND CYBERSECURITY
+Regulayer Mapping: Statistical ML anomaly detection tracks model behavior
+baselines. Cryptographic signing prevents tampering. Zero-trust architecture
+ensures data integrity.
+
+ARTICLE 27 — FUNDAMENTAL RIGHTS IMPACT ASSESSMENT
+Regulayer Mapping: The FRIA Generator (/compliance/fria) provides structured
+assessment templates that map directly to FRIA requirements, documenting
+potential impacts on fundamental rights.
+
+HOW TO BECOME EU AI ACT COMPLIANT WITH REGULAYER:
+Step-by-step guide:
+
+1. REGISTER YOUR AI SYSTEMS
+   POST /v1/orgs/{org_id}/compliance/ai-systems
+   Register each AI system you deploy, including:
+   - System name and description
+   - Risk classification (minimal, limited, high, unacceptable)
+   - Intended purpose
+   - Target population
+   - Deployment region
+
+2. CREATE A FRIA
+   POST /v1/orgs/{org_id}/compliance/fria
+   For each high-risk AI system, create a Fundamental Rights Impact Assessment:
+   - Identify affected fundamental rights
+   - Assess likelihood and severity of impact
+   - Document mitigation measures
+   - Define monitoring procedures
+
+3. CONFIGURE POLICIES
+   POST /v1/policies
+   Create governance policies that enforce your compliance requirements:
+   - PII detection policies
+   - Bias detection policies
+   - Content safety policies
+   - Domain-specific compliance rules
+
+4. ENABLE HITL GOVERNANCE
+   Configure policies with action: "require_approval" for high-risk systems.
+   Assign compliance officers as reviewers.
+
+5. GENERATE CONFORMITY ASSESSMENT
+   POST /v1/orgs/{org_id}/compliance/conformity
+   Create a conformity assessment documenting how your AI system meets each
+   applicable EU AI Act requirement.
+
+6. CREATE TECHNICAL DOCUMENTATION
+   POST /v1/orgs/{org_id}/compliance/tech-docs
+   Document your AI system's architecture, training data, evaluation metrics,
+   and operational parameters.
+
+7. ESTABLISH MONITORING PLAN
+   POST /v1/orgs/{org_id}/compliance/monitoring
+   Define ongoing monitoring procedures, including:
+   - Performance metrics to track
+   - Anomaly detection thresholds
+   - Review frequency
+   - Escalation procedures
+
+8. EXPORT REPORTS
+   GET /v1/reports/governance
+   GET /v1/reports/chain/default
+   Generate board-ready compliance reports demonstrating ongoing compliance.
+
+9. GENERATE DOWNLOADABLE COMPLIANCE REPORT
+   Navigate to Dashboard → Compliance Report (sidebar).
+   Select the AI system you want to generate a report for.
+   Click "Generate Compliance Report" to produce a professional, print-ready
+   EU AI Act compliance document.
+
+   The generated report includes:
+   - Article-by-article compliance scoring (10 articles assessed)
+   - Evidence statements for each article explaining HOW compliance is met
+   - Overall compliance percentage score
+   - Priority actions for incomplete requirements
+   - Platform capabilities summary (inherent compliance features)
+   - Regulayer Verified seal (awarded when overall score ≥ 80%)
+   - Legal disclaimer noting this is a self-assessment
+   - Professional formatting suitable for board presentations
+
+   REGULAYER VERIFIED SEAL:
+   When an AI system achieves ≥ 80% compliance across all 10 assessed EU AI Act
+   articles, it receives the "REGULAYER VERIFIED" seal in the downloaded report.
+   This seal indicates that:
+   a. The system has completed all required compliance documentation
+   b. HITL governance workflows are active
+   c. Cryptographic audit trails are maintained
+   d. Policy enforcement is in place
+   e. The self-assessment has been validated against platform records
+
+   NOTE: The Regulayer Verified seal is a self-assessment indicator based on
+   platform data. It does not constitute legal certification of EU AI Act
+   compliance. Organizations should consult qualified legal counsel for
+   official certifications.
+
+   REPORT AVAILABILITY:
+   Reports can only be generated for AI systems that have been registered in the
+   platform. The "data readiness" indicator shows what percentage of required
+   compliance data has been entered for each system. Systems with 100% data
+   readiness will produce the most comprehensive reports.
+
+================================================================================
+14. COMPLIANCE FRAMEWORK: SOC 2 TYPE II
+================================================================================
+
+Regulayer's architecture is designed to satisfy SOC 2 Type II trust service
+criteria:
+
+SECURITY:
+- TLS 1.3 encryption in transit
+- AES-256-GCM encryption at rest
+- RBAC with principle of least privilege
+- API keys hashed with bcrypt
+- Per-tenant cryptographic isolation
+
+AVAILABILITY:
+- Multi-service architecture with no single point of failure
+- Health monitoring and auto-recovery
+- Incident management system with severity classification
+
+PROCESSING INTEGRITY:
+- SHA-256 hash chains prove decision integrity
+- Ed25519 digital signatures for non-repudiation
+- WORM storage prevents modification or deletion
+
+CONFIDENTIALITY:
+- Zero-trust multi-tenancy
+- Per-organization encryption keys
+- Project-level data isolation
+
+PRIVACY:
+- GDPR-ready data residency controls
+- Data processing agreements (DPA) available
+- Right to erasure supported (with audit trail retention)
+
+================================================================================
+15. FRIA (FUNDAMENTAL RIGHTS IMPACT ASSESSMENT)
+================================================================================
+
+WHAT IS A FRIA:
+A structured assessment required by the EU AI Act (Article 27) for deployers
+of high-risk AI systems. It evaluates the potential impact of an AI system on
+fundamental rights such as:
+- Right to non-discrimination
+- Right to privacy
+- Freedom of expression
+- Right to human dignity
+- Right to an effective remedy
+
+CREATING A FRIA IN REGULAYER:
+POST /v1/orgs/{org_id}/compliance/fria
+
+Request body:
+{
+  "ai_system_id": "uuid-of-registered-system",
+  "assessment_type": "initial" | "periodic" | "incident-triggered",
+  "rights_assessed": [
+    {
+      "right": "Non-discrimination",
+      "impact_likelihood": "medium",
+      "impact_severity": "high",
+      "affected_groups": ["protected classes"],
+      "mitigation_measures": ["Bias testing", "HITL review for flagged outputs"],
+      "residual_risk": "low"
+    }
+  ],
+  "overall_risk_level": "high",
+  "approval_status": "draft" | "approved" | "requires_revision",
+  "assessor_name": "Jane Smith, CCO",
+  "next_review_date": "2026-10-01"
+}
+
+================================================================================
+16. CONFORMITY ASSESSMENTS
+================================================================================
+
+WHAT IS A CONFORMITY ASSESSMENT:
+A documented evaluation proving an AI system conforms to applicable regulatory
+requirements. Required before deploying high-risk AI systems under the EU AI
+Act.
+
+CREATING IN REGULAYER:
+POST /v1/orgs/{org_id}/compliance/conformity
+
+The assessment maps each EU AI Act article to your system's capabilities:
+{
+  "ai_system_id": "uuid",
+  "articles_assessed": [
+    {
+      "article": "Article 9 — Risk Management",
+      "status": "compliant",
+      "evidence": "Policy engine evaluates 100% of decisions...",
+      "evidence_links": ["/v1/reports/governance"]
+    }
+  ],
+  "overall_status": "compliant" | "partially_compliant" | "non_compliant",
+  "assessor": "External Auditor Name",
+  "valid_until": "2027-04-01"
+}
+
+================================================================================
+17. CRYPTOGRAPHIC VAULT & AUDIT TRAILS
+================================================================================
+
+HASH CHAIN STRUCTURE:
+Every AI decision is cryptographically sealed into an immutable hash chain:
+
+Record N:
+{
+  "id": "uuid",
+  "sequence_number": 12345,
+  "payload_hash": "SHA-256(canonicalized input + output + metadata)",
+  "previous_hash": "hash of record N-1",
+  "chain_hash": "SHA-256(payload_hash + previous_hash)",
+  "signature": "Ed25519(chain_hash, private_key)",
+  "timestamp": "ISO 8601",
+  "organization_id": "uuid",
+  "project_id": "uuid"
+}
+
+VERIFICATION:
+Any record can be independently verified by:
+1. Recomputing the payload hash from the original data
+2. Verifying the chain link: H(record_N) = SHA-256(payload_hash + H(record_N-1))
+3. Verifying the Ed25519 signature with the public key
+
+WORM COMPLIANCE:
+- Records can ONLY be appended, never modified or deleted
+- Retention periods are enforced based on plan tier:
+  - Free: 7 days
+  - Pro: 1 year
+  - Enterprise: Unlimited (configurable)
+- SEC 17a-4 compliant storage architecture
+
+================================================================================
+18. PRICING & BILLING
+================================================================================
+
+FREE PLAN ($0/month):
+- 1,000 decisions per month
+- Up to 2 team members
+- 7-day data retention
+- 1 project
+- Community support
+- Dashboard access
+- Basic policy engine
+
+PRO PLAN ($99/month):
+- 50,000 decisions per month
+- Up to 20 team members
+- 1-year data retention
+- Unlimited projects
+- RBAC & SSO
+- HITL Governance Queue
+- Conformity Assessments
+- Priority support
+- Advanced analytics
+
+ENTERPRISE PLAN (Custom pricing):
+- Unlimited decisions
+- Unlimited team members
+- Unlimited data retention
+- Dedicated infrastructure
+- Automated FRIA Generation
+- Interactive Slack Governance
+- On-premise deployment option
+- SOC 2 Type II BAA
+- Dedicated Customer Success Manager
+- Custom SLAs
+- 24/7 support
+
+BILLING MECHANICS:
+- Subscriptions managed through Stripe
+- Monthly billing cycle
+- Usage tracked per organization
+- Overage: Soft limit with notifications (decisions are not blocked)
+- Upgrade/downgrade available anytime
+- Invoices available in the Billing dashboard
+
+================================================================================
+19. PROJECT MANAGEMENT
+================================================================================
+
+Projects are the primary unit of organization within Regulayer. They provide
+logical isolation for different AI applications, models, or environments.
+
+CREATING A PROJECT:
+1. Navigate to Dashboard → Projects
+2. Click "Create Project"
+3. Enter project name (e.g., "Production - Customer Support Bot")
+4. Optionally add a description
+5. The project is created with a unique UUID
+
+PROJECT-LEVEL ISOLATION:
+- API keys are scoped to specific projects
+- Policies can be scoped to specific projects
+- Decisions are recorded under specific projects
+- Usage can be filtered by project on the dashboard
+- Team members see all projects in their organization
+
+RECOMMENDED PROJECT STRUCTURE:
+- One project per AI application/agent
+- Separate projects for dev/staging/production environments
+- Example:
+  - "Customer Support Bot - Production"
+  - "Customer Support Bot - Staging"
+  - "Loan Approval Agent - Production"
+  - "Content Moderation - Production"
+
+================================================================================
+20. TEAM MANAGEMENT & RBAC
+================================================================================
+
+INVITING TEAM MEMBERS:
+1. Navigate to Dashboard → Team
+2. Click "Invite Member"
+3. Enter the email address
+4. Select initial role (Admin, Member, or Viewer)
+5. The invitee receives an email with a signup/login link
+
+CHANGING ROLES:
+1. Navigate to Dashboard → Team
+2. Find the member in the list
+3. Click the role dropdown
+4. Select the new role
+5. Change takes effect immediately
+
+REMOVING MEMBERS:
+1. Navigate to Dashboard → Team
+2. Find the member
+3. Click "Remove"
+4. Confirm the removal
+5. The member immediately loses access
+
+NOTE: There must always be at least one Owner per organization.
+
+================================================================================
+21. REPORTS & ANALYTICS
+================================================================================
+
+Regulayer provides several built-in report types:
+
+CHAIN INTEGRITY REPORT:
+GET /v1/reports/chain/default
+Verifies the mathematical integrity of the hash chain. Detects any
+unauthorized modifications to historical records.
+
+GOVERNANCE REVIEW REPORT:
+GET /v1/reports/governance
+Summary of all governance reviews: approved, rejected, pending. Includes
+reviewer names, timestamps, and justifications.
+
+INCIDENT REPORT:
+GET /v1/reports/incidents
+Lists all compliance incidents with severity, source, resolution status,
+and remediation timelines.
+
+USAGE REPORT:
+GET /v1/reports/usage?format=json
+GET /v1/reports/usage?format=pdf
+Detailed usage analytics including decision counts by project, model,
+and time period.
+
+SLA COMPLIANCE REPORT:
+GET /v1/reports/sla
+Service level agreement compliance metrics including uptime, response
+times, and incident resolution times.
+
+DASHBOARD ANALYTICS:
+The dashboard provides real-time visual analytics:
+- Bar chart showing daily decision volume
+- Filterable by timeline (24 hours, 7 days, 30 days, 90 days)
+- Filterable by project
+- Total decisions counter
+- Usage percentage relative to plan limit
+
+================================================================================
+22. INTEGRATIONS & SUPPORTED PROVIDERS
+================================================================================
+
+Regulayer supports integration with all major AI providers:
+
+┌─────────────────┬──────────────┬──────────────────────────────────┐
+│ Provider        │ Protocol     │ Supported Models                 │
+├─────────────────┼──────────────┼──────────────────────────────────┤
+│ OpenAI          │ REST API     │ GPT-4, GPT-4o, o1, all chat     │
+│ Anthropic       │ REST API     │ Claude 3.5 Sonnet, Opus, Haiku  │
+│ Google Vertex   │ gRPC         │ Gemini 1.5 Pro, Gemini Ultra    │
+│ AWS Bedrock     │ SDK Hook     │ Titan, Llama 3, all FMs         │
+│ Azure OpenAI    │ SDK Wrapper  │ GPT-4 Dedicated deployments     │
+│ LangChain       │ Callback     │ All chain types, agents         │
+│ LlamaIndex      │ Callback     │ Query engines, retrievers       │
+│ Hugging Face    │ REST API     │ Inference API, Endpoints        │
+│ PostgreSQL      │ Schema       │ Compliance vault integration    │
+│ AWS S3          │ API          │ Immutable archival (Object Lock)│
+└─────────────────┴──────────────┴──────────────────────────────────┘
+
+INTEGRATION METHODS:
+1. Proxy Mode (recommended): Point your AI client at the Regulayer proxy URL
+2. SDK Decorator: Use @client.trace() in Python
+3. Manual Recording: Use client.decisions.record() for custom flows
+4. Webhook Listener: Receive events from Regulayer for downstream processing
+
+================================================================================
+23. WEBHOOKS & EVENTS
+================================================================================
+
+Regulayer can dispatch webhook notifications when specific events occur:
+
+SUPPORTED EVENTS:
+- decision.recorded       : A new decision was recorded
+- decision.flagged        : A decision was flagged by a policy
+- decision.blocked        : A decision was blocked by a policy
+- governance.review_required : A decision requires human review
+- governance.approved     : A decision was approved by a reviewer
+- governance.rejected     : A decision was rejected by a reviewer
+- incident.created        : A new compliance incident was created
+- incident.resolved       : A compliance incident was resolved
+
+WEBHOOK PAYLOAD FORMAT:
+{
+  "event": "governance.review_required",
+  "timestamp": "2026-04-10T05:30:00Z",
+  "data": {
+    "decision_id": "uuid",
+    "project_id": "uuid",
+    "organization_id": "uuid",
+    "model": "gpt-4",
+    "policy_triggered": "PII Detection",
+    "action": "require_approval"
+  }
+}
+
+CONFIGURING WEBHOOKS:
+Webhooks are configured via the API or dashboard settings. Provide:
+- Endpoint URL (must be HTTPS)
+- Events to subscribe to
+- Secret key for signature verification
+
+================================================================================
+24. DEPLOYMENT & INFRASTRUCTURE
+================================================================================
+
+CLOUD DEPLOYMENT (DEFAULT):
+Regulayer runs as a fully managed SaaS platform. No infrastructure management
+required. Simply sign up, create an API key, and integrate.
+
+ON-PREMISE DEPLOYMENT (ENTERPRISE):
+For organizations with strict data sovereignty requirements:
+1. Regulayer provides Docker images for all microservices
+2. Deploy using Docker Compose or Kubernetes
+3. All data stays within your infrastructure
+4. Regulayer provides configuration guidance and support
+
+DOCKER COMPOSE (DEVELOPMENT):
+The development environment uses Docker Compose with these services:
+- gateway (port 8100): Caddy-based API gateway
+- control-plane (port 8000): FastAPI control plane
+- decision-recorder (port 8001): Decision recording service
+- governance (port 8002): Governance service
+- policy-engine (port 8003): Policy evaluation service
+- reports (port 8005): Reports service
+- web (port 3000): Next.js web application
+- postgres (port 5432): PostgreSQL database
+
+REQUIRED ENVIRONMENT VARIABLES:
+- DATABASE_URL: PostgreSQL connection string
+- CLERK_SECRET_KEY: Clerk authentication secret
+- NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: Clerk public key
+- STRIPE_API_KEY: Stripe API key for billing
+- STRIPE_WEBHOOK_SECRET: Stripe webhook signing secret
+- STRIPE_PRICE_ID_PRO: Stripe price ID for Pro plan
+- INTERNAL_SECRET: Shared secret for service-to-service auth
+
+================================================================================
+25. SECURITY MODEL
+================================================================================
+
+LAYER 1 — NETWORK ISOLATION:
+- TLS 1.3 encryption for all external traffic
+- Internal mTLS between microservices
+- Rate limiting per API key and IP address
+- CORS configuration with allowed origins
+
+LAYER 2 — DATA PROTECTION:
+- AES-256-GCM encryption at rest
+- Per-tenant cryptographic key isolation
+- Append-only WORM storage (no UPDATE or DELETE operations)
+- Bcrypt hashing for API key secrets
+
+LAYER 3 — ACCESS CONTROL:
+- Role-Based Access Control (RBAC) with 4 roles
+- API keys scoped to specific projects
+- Internal auth secrets for service-to-service communication
+- Clerk-managed user authentication with MFA support
+
+LAYER 4 — COMPLIANCE:
+- SEC 17a-4 WORM compliance for audit records
+- EU AI Act article mapping throughout the platform
+- SOC 2 Type II audit trail for all operations
+- GDPR-ready data residency controls
+- HIPAA BAA available on Enterprise plan
+
+================================================================================
+26. GLOSSARY
+================================================================================
+
+AI System: Any system that uses machine learning models to make decisions or
+generate outputs.
+
+Conformity Assessment: A documented evaluation proving an AI system meets
+applicable regulatory requirements.
+
+Decision: A single AI inference event consisting of an input (prompt/query),
+an output (response), and metadata (model, timestamp, etc.).
+
+FRIA: Fundamental Rights Impact Assessment. An evaluation of how an AI system
+may impact human rights.
+
+Governance Queue: The list of AI decisions awaiting human review.
+
+Hash Chain: A sequence of cryptographic hashes where each hash includes the
+previous hash, forming an immutable chain.
+
+HITL: Human-in-the-Loop. A workflow where humans review and approve AI
+decisions before they take effect.
+
+Policy: A set of rules that evaluate AI decisions and determine actions
+(allow, flag, block, require_approval).
+
+RBAC: Role-Based Access Control. A system where permissions are assigned to
+roles, and roles are assigned to users.
+
+WORM: Write-Once, Read-Many. A storage paradigm where data can only be
+written once and never modified or deleted.
+
+================================================================================
+27. FAQ
+================================================================================
+
+Q: Does Regulayer slow down my AI application?
+A: In proxy mode, Regulayer adds < 50ms of latency. In async/SDK mode,
+recording happens asynchronously and does not block your application.
+
+Q: Can Regulayer block AI responses in real-time?
+A: Yes, in proxy mode. The Policy Engine evaluates the response before it
+reaches your application. If a "block" policy triggers, the response is
+replaced with a governance-approved fallback message.
+
+Q: What happens if I exceed my decision limit?
+A: Decisions are not hard-blocked. You receive notifications and your usage
+indicator turns red. Upgrading to a higher plan is recommended.
+
+Q: Can I self-host Regulayer?
+A: Yes, on the Enterprise plan. We provide Docker images and Kubernetes
+manifests for on-premise deployment.
+
+Q: Is my AI data stored by Regulayer?
+A: Yes, the input and output of each decision are stored in the cryptographic
+vault. This is necessary for governance reviews and audit trails. Data is
+encrypted at rest and retention is based on your plan tier.
+
+Q: Can I use Regulayer with open-source models?
+A: Yes. Regulayer works with any model — OpenAI, Anthropic, local Llama,
+Mistral, or custom inference servers. The SDK captures the input/output
+regardless of the underlying model.
+
+Q: How does Regulayer handle multiple environments?
+A: Use separate projects for dev/staging/production. Each project has its own
+API keys, policies, and decision records.
+
+Q: Can multiple team members review the same decision?
+A: Yes. Multiple reviewers can add annotations, but only one can submit the
+final approve/reject action.
+
+Q: How do I export compliance reports?
+A: Use the Reports API endpoints or navigate to the dashboard. Reports can
+be exported as JSON or PDF (on Pro and Enterprise plans).
+
+Q: What is the difference between "flag" and "require_approval"?
+A: "Flag" marks the decision for awareness but allows it to proceed.
+"Require_approval" blocks the decision in the governance queue until a
+human reviewer approves it.
+
+================================================================================
+END OF DOCUMENT
+
+This document was generated by Regulayer. For the latest version, visit:
+https://regulayer.tech/docs
+
+For questions, contact: support@regulayer.tech
+================================================================================

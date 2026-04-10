@@ -39,12 +39,12 @@ const services = [
 ];
 
 const dataFlowSteps = [
-    { step: "01", title: "SDK Intercept", desc: "The Python SDK captures AI model inputs, outputs, and metadata. ZKP hidden_fields are salted and SHA-256 hashed before any data leaves the client machine." },
+    { step: "01", title: "Proxy Intercept", desc: "The Regulayer edge proxy captures AI model inputs, outputs, and metadata. Sensitive fields are hashed before any data leaves the client environment." },
     { step: "02", title: "Gateway Routing", desc: "The Ingestion Gateway validates the API key, enforces rate limits, injects org/project context headers, and fans-out to both the Recorder and Policy Engine." },
-    { step: "03", title: "Policy Evaluation", desc: "The Policy Engine evaluates all active rules. The ML Anomaly Detector tracks statistical baselines. In Gate Mode, non-compliant decisions are blocked instantly." },
+    { step: "03", title: "Policy Evaluation", desc: "The Policy Engine evaluates all active rules against EU AI Act thresholds. The ML Anomaly Detector tracks statistical baselines. Non-compliant decisions are blocked instantly." },
     { step: "04", title: "Cryptographic Sealing", desc: "The Recorder canonicalizes the payload, computes the SHA-256 hash, links it to the previous record's hash, and Ed25519-signs the entire block. WORM enforced." },
-    { step: "05", title: "Governance Dispatch", desc: "If policies trigger require_approval or block actions, the Governance Service creates review queues and fires rich Slack Block-Kit notifications to enterprise channels." },
-    { step: "06", title: "Merkle Anchoring", desc: "Periodically, all record hashes are compressed into a Merkle Root. This single root can be anchored to Ethereum, Bitcoin, or Arweave for public, trustless verification." },
+    { step: "05", title: "Governance Dispatch", desc: "If policies trigger require_approval or block actions, the Governance Service creates HITL review queues and fires rich Slack notifications to enterprise channels." },
+    { step: "06", title: "Conformity Documentation", desc: "Periodically, all governance actions and audit data are compiled into automated Conformity Assessments and FRIA reports, ready for regulatory submission." },
 ];
 
 const cryptoPrimitives = [
@@ -81,11 +81,11 @@ export default function ArchitecturePage() {
                 <div className={`max-w-5xl mx-auto px-6 lg:px-10 relative z-10 transition-all duration-700 ${hero.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
                     <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">System Architecture &amp; Technical Registry</span>
                     <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-bold tracking-tight leading-[1.05] mb-8" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                        The Cryptographic<br />Proof Pipeline.
+                        The Compliance<br />Gateway Pipeline.
                     </h1>
                     <p className="text-[18px] text-[hsl(15,25%,45%)] leading-relaxed max-w-2xl font-light">
-                        A complete technical overview of Regulayer&apos;s distributed microservice architecture — from SDK intercept to blockchain anchoring. 
-                        Six purpose-built services, zero single points of failure, mathematically verifiable at every layer.
+                        A complete technical overview of Regulayer&apos;s distributed microservice architecture — from proxy interception to conformity documentation. 
+                        Six purpose-built services, zero single points of failure, governance-enforced at every layer.
                     </p>
                     <div className="flex gap-4 mt-10">
                         <Link href="/docs/api" className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(15,45%,15%)] text-white text-sm font-bold tracking-wide hover:bg-[hsl(15,85%,58%)] transition-colors">
@@ -134,7 +134,7 @@ export default function ArchitecturePage() {
                     <div className="mb-16 pb-8 border-b border-[hsl(15,30%,85%)]">
                         <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,85%,58%)] uppercase mb-4 block">Data Flow Registry</span>
                         <h2 className="text-[clamp(2rem,3.5vw,3rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            From SDK to Blockchain.<br /><span className="font-light text-[hsl(15,25%,45%)]">The complete decision lifecycle.</span>
+                            From Proxy to Conformity Report.<br /><span className="font-light text-[hsl(15,25%,45%)]">The complete governance lifecycle.</span>
                         </h2>
                     </div>
 
@@ -221,10 +221,10 @@ export default function ArchitecturePage() {
             <section ref={cta.ref} className="py-24 lg:py-32">
                 <div className={`max-w-2xl mx-auto px-6 lg:px-10 text-center transition-all duration-700 ${cta.v ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
                     <h2 className="text-[clamp(2rem,3.5vw,3rem)] font-bold tracking-tight leading-[1.1] mb-6" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                        Ready to deploy<br /><span className="font-light text-[hsl(15,25%,45%)]">deterministic governance?</span>
+                        Ready to deploy<br /><span className="font-light text-[hsl(15,25%,45%)]">compliant AI governance?</span>
                     </h2>
                     <p className="text-[16px] text-[hsl(15,25%,45%)] leading-relaxed font-light mb-10 max-w-lg mx-auto">
-                        Connect your AI systems to Regulayer in under 5 minutes. Every inference cryptographically sealed, every decision provably recorded.
+                        Connect your AI systems to Regulayer in minutes. Every inference governed, every decision auditable, every report automated.
                     </p>
                     <div className="flex gap-4 justify-center">
                         <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-3.5 bg-[hsl(15,45%,15%)] text-white text-sm font-bold tracking-wide hover:bg-[hsl(15,85%,58%)] transition-colors">

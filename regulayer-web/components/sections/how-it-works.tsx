@@ -14,28 +14,28 @@ import { motion, useScroll, useTransform, useInView } from "framer-motion";
 const steps = [
     {
         id: "sys_capture",
-        title: "Ingestion Vector",
-        desc: "The Regulayer interceptor binds to your inference path. It captures the complete request-response binary pair with <0.4ms overhead. The primary ML execution thread is never blocked.",
+        title: "Proxy Interception",
+        desc: "The Regulayer edge proxy binds to your inference path. It captures the complete request-response binary pair seamlessly. The primary ML execution thread is routed through policy without adding perceptible latency.",
         spec: "NODE_01 :: CAPTURE",
         code: `POST /v1/chat/completions\n{ "model": "gpt-4", "messages": [...] }`,
         color: "hsl(15,85%,58%)",
         align: "left"
     },
     {
-        id: "sys_seal",
-        title: "Cryptographic Sealing",
-        desc: "A deterministic SHA-256 hash is generated from the payload vector. The Rust engine immediately signs this hash using your organization's private key, forming an irrefutable proof of state.",
-        spec: "NODE_02 :: ED25519_HMAC",
-        code: `LATENCY: 0.38ms\nSIGNATURE_HMAC(payload, private_key)`,
+        id: "sys_policy",
+        title: "Policy & Governance",
+        desc: "The payload is instantaneously evaluated against EU AI Act and corporate standards. Suspicious or high-risk inferences are routed to a Human-in-the-Loop (HITL) queue for manual compliance officer review.",
+        spec: "NODE_02 :: POLICY_ENGINE",
+        code: `EVALUATE(payload, enterprise_policies)\nIF risk > threshold: ROUTE_TO_HITL()`,
         color: "hsl(15,45%,15%)",
         align: "right"
     },
     {
-        id: "sys_ledger",
-        title: "WORM Anchoring",
-        desc: "The signed attestation is asynchronously flushed to our Write-Once, Read-Many ledger. The record is cryptographically linked to the previous temporal hash.",
-        spec: "NODE_03 :: APPEND_ONLY",
-        code: `STATE: ANCHORED\nH(n) == Hash(payload(n) + H(n-1))`,
+        id: "sys_doc",
+        title: "Compliance Documentation",
+        desc: "The inference, human override decisions, and metadata are cryptographically sealed. Regulayer automatically generates board-ready Technical Conformity Assessments, FRIA reports, and print-ready PDF Compliance Reports carrying the Regulayer Verified seal.",
+        spec: "NODE_03 :: AUDIT_TRAIL",
+        code: `STATE: IMMUTABLE\nGENERATE_PDF(Conformity_Assessment)`,
         color: "hsl(15,25%,45%)",
         align: "left"
     }
@@ -111,8 +111,8 @@ export function HowItWorks() {
                     <div>
                         <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">System Architecture</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            Cryptographic determinism.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">Zero architectural friction.</span>
+                            Enterprise-grade workflow.<br />
+                            <span className="font-light text-[hsl(15,25%,45%)]">Zero algorithmic friction.</span>
                         </h2>
                     </div>
                 </div>

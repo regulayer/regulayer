@@ -33,7 +33,7 @@ export default function TrustCenterPage() {
                         transition={{ duration: 0.5, delay: 0.1 }}
                         className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-transparent bg-clip-text bg-gradient-to-b from-slate-900 to-slate-500"
                     >
-                        Security is our <br /> fundamental primitive.
+                        Security is engineered <br />into every layer.
                     </motion.h1>
 
                     <motion.p
@@ -42,7 +42,7 @@ export default function TrustCenterPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="text-lg text-slate-500 max-w-2xl mx-auto mb-10"
                     >
-                        Regulayer operates on a zero-trust architecture. We secure the critical path of your AI applications with cryptographic guarantees and immutable ledgers.
+                        Regulayer operates on a zero-trust architecture. Your AI governance data is protected with cryptographic sealing, strict RBAC isolation, and rigorous compliance controls designed for regulated industries.
                     </motion.p>
                 </div>
             </section>
@@ -52,40 +52,40 @@ export default function TrustCenterPage() {
                 <div className="container px-6 mx-auto max-w-6xl">
                     <div className="mb-16">
                         <h2 className="text-3xl font-bold tracking-tight mb-4">Core Security Pillars</h2>
-                        <p className="text-slate-500 max-w-2xl">Our architecture is designed from the ground up to prevent data tampering, ensure privacy, and maintain high availability.</p>
+                        <p className="text-slate-500 max-w-2xl">Our architecture enforces data integrity, organizational isolation, and regulatory compliance at every level of the stack.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
                             {
                                 icon: Fingerprint,
-                                title: "Cryptographic Ledgers",
-                                desc: "Every AI decision recorded on Regulayer is canonicalized, hashed with SHA-256, and digitally signed. Tampering is mathematically impossible without detection."
+                                title: "Immutable Audit Vault",
+                                desc: "Every AI inference, human override, and governance action is cryptographically signed with Ed25519 and archived into a tamper-proof, append-only vault. Modification after ingestion is mathematically impossible."
                             },
                             {
                                 icon: Lock,
-                                title: "WORM Storage",
-                                desc: "Audit logs are written to Write-Once-Read-Many (WORM) storage. Even Regulayer engineers cannot modify or delete recorded decisions before the retention policy expires."
+                                title: "WORM-Compliant Storage",
+                                desc: "Decision records are persisted to Write-Once-Read-Many (WORM) storage. Records cannot be modified or deleted before the mandatory retention period expires — not even by Regulayer engineers."
                             },
                             {
                                 icon: EyeOff,
-                                title: "Zero Data Residency",
-                                desc: "We sit out-of-band as an asynchronous sidecar. Your raw prompts and responses never pass through our infrastructure; only the mathematical proofs do."
+                                title: "Enterprise Data Residency",
+                                desc: "Strict logical and cryptographic separation between organizations. Each tenant operates within dedicated project partitions with independently scoped encryption keys and access policies."
                             },
                             {
                                 icon: Key,
-                                title: "Key Management",
-                                desc: "API keys are hashed at rest using bcrypt with a high work factor. We only ever display the full key secret once during creation."
+                                title: "Key & Secret Management",
+                                desc: "API keys are hashed at rest using bcrypt with high work factors. Secrets are displayed exactly once during creation. Project-scoped keys ensure granular access control across teams."
                             },
                             {
                                 icon: Server,
                                 title: "High Availability",
-                                desc: "Multi-region active-active deployment ensures 99.99% uptime. Our distributed architecture prevents single points of failure."
+                                desc: "Multi-region deployment with active health monitoring ensures maximum uptime. Distributed microservice architecture eliminates single points of failure across the governance pipeline."
                             },
                             {
                                 icon: ShieldCheck,
-                                title: "Continuous Auditing",
-                                desc: "Automated vulnerability scanning, dependency checking, and continuous penetration testing secure our infrastructure."
+                                title: "Continuous Security Assurance",
+                                desc: "Automated vulnerability scanning, dependency auditing, and regular penetration testing secure the infrastructure. RBAC and SSO enforcement provide granular organizational access control."
                             }
                         ].map((pillar, i) => (
                             <motion.div
@@ -122,7 +122,7 @@ export default function TrustCenterPage() {
                                 {[
                                     { title: "SOC 2 Type II", status: "Audited Annually" },
                                     { title: "GDPR Compliant", status: "DPA Available" },
-                                    { title: "EU AI Act Ready", status: "Continuous Monitoring" },
+                                    { title: "EU AI Act Conformity", status: "Automated Assessments" },
                                     { title: "HIPAA Capable", status: "BAA Available on Enterprise" }
                                 ].map((cert, i) => (
                                     <li key={i} className="flex items-center gap-4 p-4 rounded-xl bg-white/50 border border-slate-200">

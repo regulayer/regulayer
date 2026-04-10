@@ -31,8 +31,8 @@ export default function MonitoringPage() {
     const [selectedPlanIdx, setSelectedPlanIdx] = useState(0);
 
     useEffect(() => {
-        setPlans(getMonitoringPlans());
-        setSystems(getAISystems());
+        getMonitoringPlans().then(setPlans).catch(console.error);
+        getAISystems().then(setSystems).catch(console.error);
     }, []);
 
     const handleCreate = () => {
@@ -50,7 +50,7 @@ export default function MonitoringPage() {
             created_at: now, updated_at: now,
         };
         saveMonitoringPlan(plan);
-        setPlans(getMonitoringPlans());
+        getMonitoringPlans().then(setPlans).catch(console.error);
         setShowModal(false);
         setSelectedSystemId('');
     };
@@ -166,7 +166,7 @@ export default function MonitoringPage() {
                                                 </ResponsiveContainer>
                                             </div>
                                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                <span>⚠ {kpi.threshold_warning}{kpi.unit}</span>
+                                                <span> {kpi.threshold_warning}{kpi.unit}</span>
                                                 <span>🔴 {kpi.threshold_critical}{kpi.unit}</span>
                                             </div>
                                         </div>

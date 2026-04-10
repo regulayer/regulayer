@@ -349,7 +349,7 @@ export default function GovernanceRulesPage() {
                                                         <option value="notify_email">✉ Notify via Email</option>
                                                         <option value="block">⛔ Block Decision</option>
                                                         <option value="auto_approve">✓ Auto-Approve</option>
-                                                        <option value="add_tag">🔑 Add Tag</option>
+                                                        <option value="add_tag"> Add Tag</option>
                                                         <option value="set_review_state">⚙ Set Review State</option>
                                                         <option value="notify_webhook">🔗 Notify via Webhook</option>
                                                     </select>

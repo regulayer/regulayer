@@ -22,6 +22,7 @@ from .enums import OrgStatus, ProjectEnvironment, UserRole, ApiKeyScope
 # ============================================================
 
 class OrganizationCreate(BaseModel):
+    id: Optional[UUID] = None
     """Request to create an organization."""
     name: str = Field(min_length=1, max_length=255)
     logo_url: Optional[str] = None
@@ -54,6 +55,7 @@ class OrganizationUpdate(BaseModel):
 # ============================================================
 
 class ProjectCreate(BaseModel):
+    id: Optional[UUID] = None
     """Request to create a project."""
     name: str = Field(min_length=1, max_length=255)
     environment: ProjectEnvironment = ProjectEnvironment.DEV
@@ -102,6 +104,7 @@ class PortalSessionRequest(BaseModel):
 # ============================================================
 
 class ApiKeyCreate(BaseModel):
+    id: Optional[UUID] = None
     """Request to create an API key."""
     name: str = Field(min_length=1, max_length=255)
     scopes: List[ApiKeyScope] = [ApiKeyScope.INGEST]
@@ -134,6 +137,7 @@ class ApiKeyWithSecret(ApiKey):
 # ============================================================
 
 class UserCreate(BaseModel):
+    id: Optional[UUID] = None
     """Request to create a user."""
     email: EmailStr
     role: UserRole = UserRole.MEMBER
@@ -159,6 +163,7 @@ class UserWithOrg(User):
 # ============================================================
 
 class InvitationCreate(BaseModel):
+    id: Optional[UUID] = None
     """Request to invite a user."""
     email: EmailStr
     role: UserRole = UserRole.MEMBER
@@ -288,6 +293,7 @@ class NotificationPreference(BaseModel):
 # ============================================================
 
 class WebhookDestinationCreate(BaseModel):
+    id: Optional[UUID] = None
     """Create a new webhook destination."""
     name: str
     url: str
@@ -313,3 +319,110 @@ class WebhookDestination(BaseModel):
     updated_at: Optional[datetime] = None
 
 
+
+# ============================================================
+# EU AI Act Compliance
+# ============================================================
+
+class AISystemCreate(BaseModel):
+    id: Optional[UUID] = None
+    name: str
+    version: str
+    description: str
+    intended_purpose: str
+    provider_name: str
+    risk_tier: str
+    annex_category: str
+    lifecycle_status: str
+    classification_rationale: str
+    member_states: List[str]
+
+class AISystemModel(AISystemCreate):
+    id: UUID
+    organization_id: UUID
+    deployment_date: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+class ConformityAssessmentCreate(BaseModel):
+    id: Optional[UUID] = None
+    system_id: UUID
+    system_name: Optional[str] = None
+    status: str
+    assessment_type: str
+    checklist: list
+    ce_declaration_generated: bool
+
+class ConformityAssessmentModel(ConformityAssessmentCreate):
+    id: UUID
+    organization_id: UUID
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+class FRIACreate(BaseModel):
+    id: Optional[UUID] = None
+    system_id: UUID
+    system_name: Optional[str] = None
+    status: str
+    deployer_info: dict
+    system_description: dict
+    rights_analysis: list
+    mitigation_measures: list
+    human_oversight_plan: str
+    monitoring_commitments: str
+    authority_submission: Optional[dict] = None
+
+class FRIAModel(FRIACreate):
+    id: UUID
+    organization_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+class TechDocumentationCreate(BaseModel):
+    id: Optional[UUID] = None
+    system_id: UUID
+    system_name: Optional[str] = None
+    overall_completeness: int
+    sections: list
+
+class TechDocumentationModel(TechDocumentationCreate):
+    id: UUID
+    organization_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+class MonitoringPlanCreate(BaseModel):
+    id: Optional[UUID] = None
+    system_id: UUID
+    system_name: Optional[str] = None
+    review_frequency: str
+    next_review_date: str
+    alerts_enabled: bool
+    kpis: list
+
+class MonitoringPlanModel(MonitoringPlanCreate):
+    id: UUID
+    organization_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+class IncidentReportCreate(BaseModel):
+    id: Optional[UUID] = None
+    system_id: UUID
+    system_name: Optional[str] = None
+    severity: str
+    deadline_days: int
+    deadline_date: str
+    status: str
+    authority_name: str
+    submission_date: Optional[str] = None
+    linked_incident_ids: list
+    form_data: dict
+
+class IncidentReportModel(IncidentReportCreate):
+    id: UUID
+    organization_id: UUID
+    created_at: datetime
+    updated_at: datetime

@@ -1,68 +1,122 @@
 "use client";
 import React from "react";
-import { ShieldCheck, Server, Eye, FileSignature } from "lucide-react";
+import { ShieldCheck, Lock, Database, Eye } from "lucide-react";
 
 export default function Soc2DocComponent() {
   return (
     <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">SOC 2 Type II Mapping</h1>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">SOC 2 Type II Compliance</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        As your organization scales its AI initiatives, extending your SOC 2 perimeter to include LLM infrastructure is complex. Regulayer provides out-of-the-box satisfaction for crucial Trust Services Criteria, dramatically accelerating your audit readiness.
+        Regulayer&apos;s architecture is designed to satisfy all five SOC 2 Type II trust service criteria. This page documents how Regulayer maps to each criterion and how organizations can leverage the platform for their own SOC 2 compliance.
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6">Fulfilling the Trust Services Criteria</h2>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-10">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> Regulayer itself undergoes annual SOC 2 Type II audits. For Enterprise customers, we provide a BAA (Business Associate Agreement) and our latest SOC 2 report upon request.
+        </p>
+      </div>
 
-      <div className="space-y-6 mb-12">
-        <div className="bg-white/40 border border-slate-200 rounded-xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-700/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          <div className="flex items-center gap-3 mb-3 relative">
-            <Server className="w-5 h-5 text-slate-500" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">CC7.1: System Monitoring & Anomaly Detection</h3>
+      <h2 className="text-2xl font-semibold mb-6">Trust Service Criteria Mapping</h2>
+
+      <div className="space-y-6 mb-10">
+        <div className="border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <Lock className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-slate-800 text-lg">Security</h3>
           </div>
-          <p className="text-slate-500 text-sm leading-relaxed ml-8">
-            <strong>The Control:</strong> The entity uses detection and monitoring procedures to identify changes to configurations that result in the introduction of new vulnerabilities, and susceptibilities to newly discovered vulnerabilities.
+          <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+            Protection of system resources against unauthorized access.
           </p>
-          <div className="ml-8 mt-3 bg-slate-700/10 border border-slate-700/20 text-slate-700/90 text-sm p-3 rounded-lg">
-            <strong>Regulayer's Solution:</strong> The Policy Engine continuously and autonomously monitors all AI decisions. High-risk outputs (like a model hallucinating PII) are instantly detected and trigger <code className="bg-slate-100 text-slate-500 px-1 rounded">decision.flagged</code> alerts via webhook for immediate SIEM ingestion.
-          </div>
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-500">
+            <li>TLS 1.3 encryption for all external traffic</li>
+            <li>Internal mTLS between microservices</li>
+            <li>Rate limiting per API key and IP address</li>
+            <li>RBAC with principle of least privilege (4 roles)</li>
+            <li>API keys hashed with bcrypt at rest</li>
+            <li>Per-tenant cryptographic isolation</li>
+          </ul>
         </div>
 
-        <div className="bg-white/40 border border-slate-200 rounded-xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          <div className="flex items-center gap-3 mb-3 relative">
-            <Eye className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">CC8.1: Incident Identification & Remediation</h3>
+        <div className="border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <ShieldCheck className="w-5 h-5 text-green-500" />
+            <h3 className="font-bold text-slate-800 text-lg">Availability</h3>
           </div>
-          <p className="text-slate-500 text-sm leading-relaxed ml-8">
-            <strong>The Control:</strong> The entity analyzes the design and operating effectiveness of its incident response procedures, including communication with internal and external parties.
+          <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+            System components are available for operation as committed.
           </p>
-          <div className="ml-8 mt-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-200/90 text-sm p-3 rounded-lg">
-            <strong>Regulayer's Solution:</strong> The Governance Dashboard provides a structured "Pending Review" queue for compliance teams. The explicit act of a human clicking "Reject" or "Approve" with a required justification proves that remediation protocols exist and are actively exercised.
-          </div>
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-500">
+            <li>Multi-service architecture with no single point of failure</li>
+            <li>Active health monitoring and auto-recovery</li>
+            <li>Incident management system with severity classification</li>
+            <li>Public status page at <code className="bg-slate-100 px-1 rounded">/status</code></li>
+            <li>Custom SLAs available on Enterprise plan</li>
+          </ul>
         </div>
 
-        <div className="bg-white/40 border border-slate-200 rounded-xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-600/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          <div className="flex items-center gap-3 mb-3 relative">
-            <FileSignature className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-bold text-slate-900 m-0">PI1.2: Information Logging & Audit Trails</h3>
+        <div className="border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <Database className="w-5 h-5 text-orange-500" />
+            <h3 className="font-bold text-slate-800 text-lg">Processing Integrity</h3>
           </div>
-          <p className="text-slate-500 text-sm leading-relaxed ml-8">
-            <strong>The Control:</strong> The entity implements policies and procedures over the creation and maintenance of audit logs relevant to the collection, creation, use, and processing of personal information.
+          <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+            System processing is complete, valid, accurate, and authorized.
           </p>
-          <div className="ml-8 mt-3 bg-brand-600/10 border border-amber-500/20 text-amber-200/90 text-sm p-3 rounded-lg">
-            <strong>Regulayer's Solution:</strong> The Cryptographic Recorder hashes and signs every LLM payload, linking it to the previous hash. This produces an unbreakable, tamper-evident audit trail that proves to your SOC 2 auditor exactly what your system processed.
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-500">
+            <li>SHA-256 hash chains prove decision integrity</li>
+            <li>Ed25519 digital signatures for non-repudiation</li>
+            <li>WORM storage prevents modification or deletion</li>
+            <li>Chain Integrity Reports verify the entire audit trail</li>
+            <li>Every governance action is cryptographically signed</li>
+          </ul>
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <Lock className="w-5 h-5 text-purple-500" />
+            <h3 className="font-bold text-slate-800 text-lg">Confidentiality</h3>
           </div>
+          <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+            Information designated as confidential is protected as committed.
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-500">
+            <li>AES-256-GCM encryption at rest</li>
+            <li>Zero-trust multi-tenancy</li>
+            <li>Per-organization encryption keys</li>
+            <li>Project-level data isolation</li>
+            <li>Strict access controls via RBAC</li>
+          </ul>
+        </div>
+
+        <div className="border border-slate-200 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <Eye className="w-5 h-5 text-cyan-500" />
+            <h3 className="font-bold text-slate-800 text-lg">Privacy</h3>
+          </div>
+          <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+            Personal information is collected, used, retained, and disposed of in conformity with commitments.
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-500">
+            <li>GDPR-ready data residency controls</li>
+            <li>Data Processing Agreements (DPA) available</li>
+            <li>Right to erasure supported (with audit trail retention)</li>
+            <li>Configurable data retention periods by plan tier</li>
+            <li>HIPAA BAA available on Enterprise plan</li>
+          </ul>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-lg p-5">
-        <ShieldCheck className="text-emerald-500 w-8 h-8 flex-shrink-0" />
-        <div>
-          <h4 className="text-slate-900 font-medium text-sm">Regulayer is SOC 2 Type II Certified</h4>
-          <p className="text-slate-500 text-sm mt-1">To request a copy of our latest independent audit report, please go to the Trust Center dashboard or email <a href="mailto:security@regulayer.tech" className="text-slate-500 hover:text-slate-600">security@regulayer.tech</a>.</p>
-        </div>
-      </div>
+      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">How Regulayer Supports Your SOC 2 Audit</h2>
+      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+        If your organization is pursuing SOC 2 compliance, Regulayer provides critical evidence:
+      </p>
+      <ul className="list-disc list-inside space-y-2 text-sm text-slate-500 mb-6">
+        <li><strong>Immutable audit trails</strong> — Prove that AI decisions are recorded without tampering</li>
+        <li><strong>HITL governance records</strong> — Demonstrate human oversight of automated systems</li>
+        <li><strong>Access control logs</strong> — Show RBAC enforcement and API key management</li>
+        <li><strong>Incident management</strong> — Document incident detection, classification, and resolution</li>
+        <li><strong>Chain integrity reports</strong> — Independently verify processing integrity</li>
+      </ul>
     </div>
   );
 }

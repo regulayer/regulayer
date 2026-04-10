@@ -19,25 +19,25 @@ const PLANS = {
     starter: {
         name: 'Free',
         price: '$0',
-        features: ['1,000 decisions / month', '7-day retention', 'Community Support', 'Up to 2 Team Members'],
+        features: ['1,000 decisions / mo', 'Up to 2 team members', '7-day retention', '1 project', 'Community support'],
     },
     pro: {
-        name: 'Growth',
+        name: 'Pro', // Renamed from Growth to Pro
         price: '$99',
-        features: ['50,000 decisions / month', '1-year retention', 'Email & Slack Support', 'Up to 10 Team Members', 'Full governance workflows'],
+        features: ['50,000 decisions / mo', 'Up to 20 team members', '1-year retention', 'Unlimited projects', 'RBAC & SSO', 'HITL Governance Queue', 'Conformity Assessments'],
         disabled: false,
     },
     enterprise: {
         name: 'Enterprise',
         price: 'Custom',
         features: [
-            'Unlimited decisions / day',
-            'Cryptographic Evidence Export',
-            'Offline Verification Tool',
-            'Governance Overlay',
-            'Dedicated Support',
-            'Custom SLAs',
-            'Unlimited Team Members'
+            'Unlimited decisions',
+            'Unlimited team members',
+            'Unlimited retention',
+            'Dedicated infrastructure',
+            'Automated FRIA Generation',
+            'On-premise deployment',
+            'SOC 2 Type II BAA'
         ],
     },
 };

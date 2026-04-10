@@ -16,10 +16,11 @@ export default function TechDocDetailPage() {
     const [editMode, setEditMode] = useState(false);
 
     useEffect(() => {
-        const d = getTechDoc(docId);
-        if (!d) { router.push('/tech-docs'); return; }
-        setDoc(d);
-        if (d.sections.length > 0) setActiveSection(d.sections[0].id);
+        getTechDoc(docId).then(d => {
+            if (!d) { router.push('/tech-docs'); return; }
+            setDoc(d);
+            if (d.sections.length > 0) setActiveSection(d.sections[0].id);
+        }).catch(() => router.push('/tech-docs'));
     }, [docId, router]);
 
     if (!doc) return <div className="p-20 flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-border border-t-primary animate-spin" /></div>;

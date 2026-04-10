@@ -47,7 +47,7 @@ export default function AISystemsPage() {
     const [formData, setFormData] = useState({ name: '', version: '1.0', description: '', intended_purpose: '', provider_name: '', project_id: '' });
 
     useEffect(() => {
-        setSystems(getAISystems());
+        getAISystems().then(setSystems).catch(console.error);
         getMe().then(res => {
             if (res.data?.organization_id) {
                 getProjects(res.data.organization_id).then(p => setProjects(p.data || [])).catch(() => {});
@@ -72,16 +72,14 @@ export default function AISystemsPage() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
         };
-        saveAISystem(newSystem);
-        setSystems(getAISystems());
+        saveAISystem(newSystem).then(() => getAISystems().then(setSystems));
         setShowModal(false);
         setFormData({ name: '', version: '1.0', description: '', intended_purpose: '', provider_name: '', project_id: '' });
     };
 
     const handleDelete = (id: string) => {
         if (!confirm('Delete this AI system? This cannot be undone.')) return;
-        deleteAISystemRecord(id);
-        setSystems(getAISystems());
+        deleteAISystemRecord(id).then(() => getAISystems().then(setSystems));
     };
 
     const filtered = useMemo(() => {
@@ -300,3 +298,4 @@ export default function AISystemsPage() {
         </div>
     );
 }
+
