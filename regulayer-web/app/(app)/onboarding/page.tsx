@@ -123,7 +123,7 @@ export default function OnboardingPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
-                <Loader2 className="w-8 h-8 bg-slate-700 animate-spin" />
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         );
     }
@@ -228,7 +228,7 @@ export default function OnboardingPage() {
                                 <div className="p-8 border-b border-border bg-white">
                                     {saving ? (
                                         <div className="flex justify-center py-6">
-                                            <Loader2 className="w-6 h-6 bg-slate-700 animate-spin" />
+                                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
                                         </div>
                                     ) : apiKey ? (
                                         <div>
@@ -252,7 +252,7 @@ export default function OnboardingPage() {
                                     ) : (
                                         <div className="text-center py-6">
                                             <p className="text-red-400 text-sm mb-4">API key generation failed.</p>
-                                            <button onClick={attemptKeyGeneration} className="text-sm font-medium text-zinc-400 hover:-zinc-300">Retry</button>
+                                            <button onClick={attemptKeyGeneration} className="text-sm font-medium text-zinc-400 hover:text-zinc-300">Retry</button>
                                         </div>
                                     )}
                                 </div>
@@ -265,7 +265,7 @@ export default function OnboardingPage() {
                                                 key={lang}
                                                 onClick={() => setActiveLang(lang)}
                                                 className={`px-4 py-3 text-xs font-mono font-medium transition-all capitalize border-b-2 ${activeLang === lang
-                                                    ? '-zinc-400 bg-slate-700 bg-[#222230]'
+                                                    ? 'text-zinc-400 border-primary bg-[#222230]'
                                                     : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-[#222230]/50'
                                                     }`}
                                             >

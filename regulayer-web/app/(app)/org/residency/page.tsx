@@ -138,7 +138,7 @@ function RegionCard({
                         {isAllowed && !isLocked && (
                             <button
                                 onClick={onSetPrimary}
-                                className="text-xs bg-slate-800 hover:underline ml-auto"
+                                className="text-xs text-primary hover:underline ml-auto"
                             >
                                 Set as Primary
                             </button>

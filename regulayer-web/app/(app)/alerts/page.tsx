@@ -43,7 +43,7 @@ export default function AlertsPage() {
         switch (severity) {
             case 'critical': return <IconAlertOctagon className="h-5 w-5 text-red-500" />;
             case 'warning': return <IconAlertTriangle className="h-5 w-5 text-amber-500" />;
-            case 'info': return <IconInfoCircle className="h-5 w-5 bg-slate-700" />;
+            case 'info': return <IconInfoCircle className="h-5 w-5 text-blue-500" />;
             default: return <IconInfoCircle className="h-5 w-5 text-muted-foreground" />;
         }
     };
@@ -53,7 +53,7 @@ export default function AlertsPage() {
         switch (severity) {
             case 'critical': return <span className={cn(base, "bg-red-100 text-red-800 border-red-200")}>Critical</span>;
             case 'warning': return <span className={cn(base, "bg-amber-100 text-amber-800 border-amber-200")}>Warning</span>;
-            case 'info': return <span className={cn(base, "-zinc-100 text-zinc-800 text-zinc-200")}>Info</span>;
+            case 'info': return <span className={cn(base, "bg-zinc-100 text-zinc-800 border-zinc-200")}>Info</span>;
             default: return <span className={cn(base, "bg-secondary text-foreground border-border")}>{severity}</span>;
         }
     };

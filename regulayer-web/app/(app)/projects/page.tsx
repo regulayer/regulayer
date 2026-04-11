@@ -99,7 +99,7 @@ function GovernanceToggle({ project, onUpdate }: { project: Project; onUpdate: (
                         "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
                         !isGate
                             ? "bg-emerald-500/10 text-emerald-500 shadow-sm" 
-                            : "text-muted-foreground hover:text-foreground hover:bg-slate-800"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                 >
                     <IconEye size={14} /> Observe
@@ -111,7 +111,7 @@ function GovernanceToggle({ project, onUpdate }: { project: Project; onUpdate: (
                         "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
                         isGate 
                             ? "bg-amber-500/10 text-amber-500 shadow-sm" 
-                            : "text-muted-foreground hover:text-foreground hover:bg-slate-800"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                 >
                     <IconLock size={14} /> Gate
@@ -293,7 +293,7 @@ export default function ProjectsPage() {
                                                 <Link href={`/api-keys?project=${project.id}`} className="text-xs text-muted-foreground hover:text-foreground transition">
                                                     <IconKey size={15} />
                                                 </Link>
-                                                <Link href={`/decisions?project=${project.id}`} className="text-xs bg-slate-800 hover:underline font-medium">
+                                                <Link href={`/decisions?project=${project.id}`} className="text-xs text-primary hover:underline font-medium">
                                                     View Decisions
                                                 </Link>
                                             </div>

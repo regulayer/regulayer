@@ -45,7 +45,7 @@ function CopyField({ label, value }: { label: string, value: string }) {
                 </code>
                 <button
                     onClick={handleCopy}
-                    className="p-1.5 text-muted-foreground hover:bg-slate-700 hover:-zinc-50 rounded transition-all"
+                    className="p-1.5 text-muted-foreground hover:bg-muted rounded transition-all"
                     title="Copy to clipboard"
                 >
                     {copied ? <IconCheck size={16} className="text-emerald-500" /> : <IconCopy size={16} />}
@@ -71,7 +71,7 @@ function Section({ title, icon: Icon, children, danger = false }: SectionProps) 
             <div className="flex items-center gap-3 mb-6">
                 <div className={cn(
                     "p-2.5 rounded-lg",
-                    danger ? "bg-red-100 text-red-600" : "-zinc-50 bg-slate-800"
+                    danger ? "bg-red-100 text-red-600" : "bg-primary/10 text-primary"
                 )}>
                     <Icon size={20} />
                 </div>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                 {/* User Profile */}
                 <Section title="Personal Profile" icon={IconUser}>
                     <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl mb-6">
-                        <div className="h-16 w-16 rounded-full bg-gradient-to-br bg-slate-700 bg-slate-800 flex items-center justify-center text-foreground text-xl font-bold">
+                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-brand-700 flex items-center justify-center text-white text-xl font-bold">
                             {user.email[0].toUpperCase()}
                         </div>
                         <div>
@@ -220,7 +220,7 @@ export default function SettingsPage() {
                                 {user.email.split('@')[0]}
                             </h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span className="px-2 py-0.5 text-zinc-100/50 bg-slate-900 rounded text-xs font-semibold capitalize">
+                                <span className="px-2 py-0.5 text-white bg-primary/80 rounded text-xs font-semibold capitalize">
                                     {user.role}
                                 </span>
                             </div>
@@ -250,7 +250,7 @@ export default function SettingsPage() {
                                 <button
                                     onClick={handleSaveOrg}
                                     disabled={saving || orgName === org?.name}
-                                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-50 disabled:grayscale transition-all"
+                                    className="px-3 py-2 bg-primary hover:bg-brand-700 text-white rounded-lg disabled:opacity-50 disabled:grayscale transition-all"
                                 >
                                     {saving ? <IconLoader2 className="animate-spin" size={20} /> : <IconCheck size={20} />}
                                 </button>

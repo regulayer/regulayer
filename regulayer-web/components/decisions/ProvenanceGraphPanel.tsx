@@ -180,7 +180,7 @@ export function ProvenanceGraphPanel({ relationships }: ProvenanceGraphPanelProp
 
             {/* Trust Banner */}
             <div className="p-4 -zinc-50">
-                <p className="-zinc-700 text-sm flex items-center gap-2">
+                <p className="text-zinc-700 text-sm flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     These links explain context. Each decision remains independently verifiable.
                 </p>

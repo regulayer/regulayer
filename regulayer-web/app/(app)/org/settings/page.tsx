@@ -166,7 +166,7 @@ export default function OrgSettingsPage() {
                                 <span className="text-foreground font-medium">Audit Log</span>
                                 <p className="text-sm text-muted-foreground">View all access events</p>
                             </div>
-                            <Link href="/org/audit-log" className="bg-slate-800 hover:underline text-sm flex items-center gap-1">
+                            <Link href="/org/audit-log" className="text-primary hover:underline text-sm flex items-center gap-1">
                                 View <ExternalLink className="w-3 h-3" />
                             </Link>
                         </div>
@@ -175,7 +175,7 @@ export default function OrgSettingsPage() {
                                 <span className="text-foreground font-medium">Role Matrix</span>
                                 <p className="text-sm text-muted-foreground">View role permissions</p>
                             </div>
-                            <Link href="/org/team" className="bg-slate-800 hover:underline text-sm flex items-center gap-1">
+                            <Link href="/org/team" className="text-primary hover:underline text-sm flex items-center gap-1">
                                 View <ExternalLink className="w-3 h-3" />
                             </Link>
                         </div>

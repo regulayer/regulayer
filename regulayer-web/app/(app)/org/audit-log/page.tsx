@@ -117,10 +117,10 @@ export default function AuditLogPage() {
                 </div>
 
                 {/* Important Notice */}
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
                     <FileText className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                        <p className="-zinc-800 text-sm font-medium">Access Events Only</p>
+                        <p className="text-zinc-800 text-sm font-medium">Access Events Only</p>
                         <p className="text-muted-foreground text-sm">
                             This log tracks access events &mdash; not decisions. Decision records are stored in the cryptographic chain.
                         </p>

@@ -334,7 +334,7 @@ with trace(
             )}
 
             {status && !recordError && (
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 mb-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <p className="text-muted-foreground text-sm">{status}</p>
                 </div>
             )}
@@ -410,7 +410,7 @@ function Step5Success({ decisionId }: { decisionId: string }) {
 
             <p className="text-sm text-muted-foreground">
                 This proof can be verified without Regulayer.
-                <Link href="/docs/verify-offline" className="bg-slate-800 hover:underline ml-1">
+                <Link href="/docs/verify-offline" className="text-primary hover:underline ml-1">
                     Learn about offline verification →
                 </Link>
             </p>

@@ -26,7 +26,7 @@ export default function DecisionDetail() {
     if (loading) {
         return (
             <div className="p-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-8 h-8 border-4 -zinc-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 <p className="text-slate-500 animate-pulse">Loading record {id}...</p>
             </div>
         );
@@ -38,7 +38,7 @@ export default function DecisionDetail() {
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600"><IconAlertTriangle size={24} /></div>
                 <h3 className="text-lg font-semibold">Decision not found</h3>
                 <p className="text-slate-500 max-w-md">{error || "The requested decision record could not be found."}</p>
-                <Link href="/decisions" className="mt-4 px-4 py-2 -zinc-600 text-white rounded-lg hover:-zinc-700 transition">Back to Decisions</Link>
+                <Link href="/decisions" className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-brand-700 transition">Back to Decisions</Link>
             </div>
         );
     }
@@ -48,7 +48,7 @@ export default function DecisionDetail() {
         completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         verified: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         pending: 'bg-amber-50 text-amber-700 border-amber-200',
-        started: '-zinc-50 -zinc-700 -zinc-200',
+        started: 'bg-zinc-50 text-zinc-700 border-zinc-200',
     };
 
     return (

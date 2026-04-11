@@ -209,7 +209,7 @@ export default function GovernanceDocsPage() {
         {/* Available Fields */}
         <section className="mb-14">
           <div className="flex items-center gap-2 mb-4">
-            <BookOpen size={18} className="-zinc-400" />
+            <BookOpen size={18} className="text-zinc-400" />
             <h2 className="text-xl font-semibold">Available Fields</h2>
           </div>
           <p className="text-slate-500 text-sm mb-4">

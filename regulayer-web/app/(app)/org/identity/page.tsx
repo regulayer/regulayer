@@ -164,8 +164,8 @@ function ConfigureProviderModal({
                     <p className="text-xs text-muted-foreground mt-1">Comma-separated list of email domains</p>
                 </div>
 
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-3 mb-6">
-                    <p className="-zinc-800 text-sm">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                    <p className="text-zinc-800 text-sm">
                         <strong>Note:</strong> SSO controls access only. Cryptographic records remain independent.
                     </p>
                 </div>
@@ -325,10 +325,10 @@ export default function IdentitySettingsPage() {
                 </div>
 
                 {/* Trust Warning */}
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
                     <Shield className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                        <p className="-zinc-800 text-sm font-medium">SSO Controls Access Only</p>
+                        <p className="text-zinc-800 text-sm font-medium">SSO Controls Access Only</p>
                         <p className="text-muted-foreground text-sm">
                             Cryptographic records remain independent. SSO failure never blocks proof export or offline verification.
                         </p>
@@ -343,7 +343,7 @@ export default function IdentitySettingsPage() {
                             <p className="text-muted-foreground">No identity providers configured</p>
                             <button
                                 onClick={() => setShowConfigModal(true)}
-                                className="mt-4 bg-slate-800 hover:underline"
+                                className="mt-4 text-primary hover:underline"
                             >
                                 Add your first provider →
                             </button>

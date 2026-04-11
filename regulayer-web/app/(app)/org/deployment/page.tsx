@@ -264,10 +264,10 @@ export default function DeploymentSettingsPage() {
                 </div>
 
                 {/* Contact for Mode Change */}
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-4 flex items-start gap-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
                     <Info className="w-5 h-5 text-muted-foreground mt-0.5" />
                     <div>
-                        <p className="-zinc-800 text-sm font-medium">Need to Change Modes?</p>
+                        <p className="text-zinc-800 text-sm font-medium">Need to Change Modes?</p>
                         <p className="text-muted-foreground text-sm">
                             Deployment mode changes require coordination.{' '}
                             <a href="mailto:enterprise@regulayer.io" className="underline">Contact our enterprise team</a> for migration assistance.

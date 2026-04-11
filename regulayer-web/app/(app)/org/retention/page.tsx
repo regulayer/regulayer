@@ -73,8 +73,8 @@ function RequestDeletionModal({ onClose, onSubmit }: { onClose: () => void; onSu
             <div className="bg-card rounded-xl p-6 w-full max-w-lg">
                 <h2 className="text-xl font-bold text-foreground mb-4">Request Deletion</h2>
 
-                <div className="-zinc-50 border text-zinc-200 rounded-lg p-3 mb-6">
-                    <p className="-zinc-800 text-sm">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                    <p className="text-zinc-800 text-sm">
                         <strong>Important:</strong> This hides the decision from UI and redacts metadata.
                         Cryptographic records are never deleted.
                     </p>
