@@ -224,7 +224,7 @@ export default function BillingPage() {
                             </ul>
 
                             <button
-                                onClick={() => (plan as any).disabled ? window.location.href = 'mailto:sales@regulayer.tech' : isCurrent ? handlePortal() : handleUpgrade(key)}
+                                onClick={() => (plan as any).disabled ? window.location.href = 'mailto:hello@regulayer.tech' : isCurrent ? handlePortal() : handleUpgrade(key)}
                                 disabled={isCurrent || checkoutLoading}
                                 className={cn(
                                     "w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all duration-200",
@@ -258,7 +258,7 @@ export default function BillingPage() {
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto mt-1">
                     Need SOC2 Type II reports, on-premise deployment, or custom BAA? Contact our sales team for an enterprise agreement.
                 </p>
-                <a href="mailto:sales@regulayer.tech" className="mt-4 text-primary text-sm font-medium hover:underline flex items-center justify-center gap-1 mx-auto w-fit">
+                <a href="mailto:hello@regulayer.tech" className="mt-4 text-primary text-sm font-medium hover:underline flex items-center justify-center gap-1 mx-auto w-fit">
                     Contact Sales <IconExternalLink size={14} />
                 </a>
             </div>
