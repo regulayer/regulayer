@@ -58,10 +58,7 @@ async def get_system_report(
         content = json_renderer.render(report)
         return Response(
             content=content,
-            media_type="application/json",
-            headers={
-                "Content-Disposition": "attachment; filename=system_trust_report.json"
-            }
+            media_type="application/json"
         )
     
     return report
@@ -140,10 +137,7 @@ async def get_decision_report(
         content = json_renderer.render(report)
         return Response(
             content=content,
-            media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=decision_report_{decision_id}.json"
-            }
+            media_type="application/json"
         )
     
     return report
@@ -196,10 +190,7 @@ async def get_chain_report(
         content = json_renderer.render(report)
         return Response(
             content=content,
-            media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=chain_report_{chain_id}.json"
-            }
+            media_type="application/json"
         )
     
     return report
