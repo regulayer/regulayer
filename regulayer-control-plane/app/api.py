@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 import stripe
 
 from fastapi import FastAPI, HTTPException, Depends, Request, Header, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
+
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from .enums import ProjectEnvironment, UserRole
@@ -48,64 +48,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# ---------- Custom Pure-ASGI CORS Middleware ----------
-# Starlette's CORSMiddleware does NOT work reliably when combined with
-# BaseHTTPMiddleware subclasses (SecurityHeaders, StructuredLogger, etc.).
-# This is a documented Starlette issue.  We use a pure-ASGI implementation
-# that intercepts at the lowest level and is immune to this conflict.
 
-class _CORSMiddleware:
-    """Lightweight pure-ASGI CORS middleware."""
-    def __init__(self, app):
-        self.app = app
-        self.allowed_origins = set(settings.cors_origins)
+# NOTE: No CORS middleware here. The ingestion gateway is the sole CORS layer.
+# Internal services must NOT add their own CORS headers to avoid duplicates.
 
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        # Extract Origin header
-        origin = None
-        for key, value in scope.get("headers", []):
-            if key == b"origin":
-                origin = value.decode()
-                break
-
-        # Pre-flight (OPTIONS)
-        if scope["method"] == "OPTIONS" and origin:
-            from starlette.responses import Response
-            headers = {
-                "access-control-allow-origin": origin if origin in self.allowed_origins else "",
-                "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-                "access-control-allow-headers": "authorization, content-type, x-regulayer-api-key, x-request-id, x-internal-secret",
-                "access-control-allow-credentials": "true",
-                "access-control-max-age": "600",
-            }
-            resp = Response(status_code=200, headers=headers)
-            await resp(scope, receive, send)
-            return
-
-        # Normal request – inject CORS headers into the response
-        async def send_with_cors(message):
-            if message["type"] == "http.response.start" and origin and origin in self.allowed_origins:
-                headers = list(message.get("headers", []))
-                headers.append((b"access-control-allow-origin", origin.encode()))
-                headers.append((b"access-control-allow-credentials", b"true"))
-                headers.append((b"vary", b"Origin"))
-                message = {**message, "headers": headers}
-            await send(message)
-
-        await self.app(scope, receive, send_with_cors)
-
-
-# Apply middlewares -- order matters less now since our CORS is pure-ASGI
 from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(StructuredLoggerMiddleware)
 app.add_middleware(RequestIdMiddleware)
-app.add_middleware(_CORSMiddleware)
 
 from .compliance_api import router as compliance_router
 app.include_router(compliance_router)

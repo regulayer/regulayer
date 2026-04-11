@@ -68,9 +68,16 @@ class _CORSMiddleware:
             await send({"type": "http.response.body", "body": b""})
             return
 
+        # CORS headers that only the gateway should set
+        _CORS_HEADER_PREFIXES = (b"access-control-",)
+
         async def send_with_cors(message):
             if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
+                # Strip any CORS headers leaked by upstream services to prevent duplicates
+                headers = [
+                    (k, v) for k, v in message.get("headers", [])
+                    if not k.lower().startswith(_CORS_HEADER_PREFIXES)
+                ]
                 headers.append((b"access-control-allow-origin", origin.encode() if origin else b"*"))
                 headers.append((b"access-control-expose-headers", b"*"))
                 message = {**message, "headers": headers}

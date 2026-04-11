@@ -1,7 +1,6 @@
 import os
 import sys
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from app.api import router
 from app.core.keys import KeyManager
 
@@ -99,14 +98,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Regulayer Recorder", version="1.0.0", lifespan=lifespan)
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# NOTE: No CORS middleware here. The gateway is the sole CORS layer.
 
 # Global Key Manager
 # Use settings.recorder_signing_key_path if env var is missing

@@ -1,9 +1,10 @@
 """
 Regulayer Reports Service - Entry Point
+CORS is handled by the ingestion gateway (the public-facing layer).
+Internal services must NOT add their own CORS headers to avoid duplicates.
 """
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from .api import router
 from .config import settings
 
@@ -13,14 +14,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# NOTE: No CORS middleware here. The gateway is the sole CORS layer.
 
 @app.get("/health")
 async def health_check():

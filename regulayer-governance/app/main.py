@@ -1,6 +1,5 @@
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .api import router
 from .storage import init_governance_db
@@ -11,15 +10,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
-# Currently permissive for internal/demo use
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# NOTE: No CORS middleware here. The gateway is the sole CORS layer.
 
 @app.on_event("startup")
 async def startup():
