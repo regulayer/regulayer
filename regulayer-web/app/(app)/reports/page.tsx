@@ -312,7 +312,7 @@ export default function ReportsPage() {
                 />
                 <MetricStat
                     label="Decisions Recorded"
-                    value={usageReport ? usageReport.decisions_recorded.toLocaleString() : '—'}
+                    value={usageReport?.decisions_recorded?.toLocaleString() ?? '—'}
                     icon={IconChartBar}
                     color="bg-amber-500/10 text-amber-500"
                 />
