@@ -5,7 +5,7 @@ api.{$REGULAYER_DOMAIN} {
     # 1. Handle CORS Preflight First
     @cors_preflight method OPTIONS
     handle @cors_preflight {
-        header Access-Control-Allow-Origin "{header.origin}"
+        header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
         header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
         header Access-Control-Allow-Headers "*"
         header Access-Control-Allow-Credentials "true"
@@ -15,7 +15,7 @@ api.{$REGULAYER_DOMAIN} {
 
     # 2. Proxy everything else and attach CORS headers
     handle {
-        header Access-Control-Allow-Origin "{header.origin}"
+        header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
         header Access-Control-Allow-Credentials "true"
         header Access-Control-Expose-Headers "*"
         
@@ -24,7 +24,7 @@ api.{$REGULAYER_DOMAIN} {
 
     # 3. Add CORS to Caddy's own error pages
     handle_errors {
-        header Access-Control-Allow-Origin "{header.origin}"
+        header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
         header Access-Control-Allow-Credentials "true"
         respond "{\"error\": \"service unavailable\"}" 502
     }

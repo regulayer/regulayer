@@ -347,7 +347,7 @@ export default function ReportsPage() {
                                 <IconLoader2 className="animate-spin text-muted-foreground" size={24} />
                             </div>
                         ) : govPieData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                            <ResponsiveContainer width="100%" height="100%" minHeight={200} minWidth={0}>
                                 <PieChart>
                                     <Pie
                                         data={govPieData}
@@ -398,7 +398,7 @@ export default function ReportsPage() {
                                 <IconLoader2 className="animate-spin text-muted-foreground" size={24} />
                             </div>
                         ) : slaBarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                            <ResponsiveContainer width="100%" height="100%" minHeight={200} minWidth={0}>
                                 <BarChart data={slaBarData} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                                     <XAxis type="number" hide />
                                     <YAxis
@@ -449,7 +449,7 @@ export default function ReportsPage() {
                                 <IconLoader2 className="animate-spin text-muted-foreground" size={24} />
                             </div>
                         ) : incidentBarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                            <ResponsiveContainer width="100%" height="100%" minHeight={200} minWidth={0}>
                                 <BarChart data={incidentBarData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
                                     <XAxis
                                         dataKey="name"

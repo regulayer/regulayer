@@ -205,7 +205,7 @@ with rl.trace("my-model") as t:
                     </div>
                     <div className="h-44 w-full">
                         {isMounted && (
-                        <ResponsiveContainer width="100%" height="100%" minHeight={176}>
+                        <ResponsiveContainer width="100%" height="100%" minHeight={176} minWidth={0}>
                             <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
