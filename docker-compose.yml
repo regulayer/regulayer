@@ -171,6 +171,7 @@ services:
       - RECORDER_URL=http://recorder:8000
       - GOVERNANCE_URL=http://governance:8002
       - PENDING_REPORTS_DIR=/reports/pending
+      - REPORTS_INTERNAL_SECRET=${REPORTS_INTERNAL_SECRET}
     depends_on:
       recorder:
         condition: service_started
