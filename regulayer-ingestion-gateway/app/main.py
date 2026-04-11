@@ -40,16 +40,46 @@ app = FastAPI(
     version="1.0.0"
 )
 
-from .config import settings
+# ---------- Pure-ASGI CORS Middleware ----------
+# Starlette's CORSMiddleware does NOT work reliably when combined with
+# BaseHTTPMiddleware subclasses. We use a pure-ASGI implementation.
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
-    allow_headers=["*"],
-)
+class _CORSMiddleware:
+    """Lightweight pure-ASGI CORS middleware."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers_raw = dict(scope.get("headers", []))
+        origin = headers_raw.get(b"origin", b"").decode()
+
+        if scope["method"] == "OPTIONS":
+            resp_headers = [
+                (b"access-control-allow-origin", origin.encode() if origin else b"*"),
+                (b"access-control-allow-methods", b"GET,POST,PUT,PATCH,DELETE,OPTIONS"),
+                (b"access-control-allow-headers", b"*"),
+                (b"access-control-max-age", b"600"),
+                (b"content-length", b"0"),
+            ]
+            await send({"type": "http.response.start", "status": 204, "headers": resp_headers})
+            await send({"type": "http.response.body", "body": b""})
+            return
+
+        async def send_with_cors(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"access-control-allow-origin", origin.encode() if origin else b"*"))
+                headers.append((b"access-control-expose-headers", b"*"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_cors)
+
+app.add_middleware(_CORSMiddleware)
 
 from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
 
