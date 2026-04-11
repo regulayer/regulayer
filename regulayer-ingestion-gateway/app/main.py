@@ -39,61 +39,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# ---------- Pure-ASGI CORS Middleware ----------
-# Starlette's CORSMiddleware does NOT work reliably when combined with
-# BaseHTTPMiddleware subclasses. We use a pure-ASGI implementation.
-
-class _CORSMiddleware:
-    """Lightweight pure-ASGI CORS middleware."""
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        headers_raw = dict(scope.get("headers", []))
-        origin = headers_raw.get(b"origin", b"").decode()
-
-        if scope["method"] == "OPTIONS":
-            resp_headers = [
-                (b"access-control-allow-origin", origin.encode() if origin else b"*"),
-                (b"access-control-allow-methods", b"GET,POST,PUT,PATCH,DELETE,OPTIONS"),
-                (b"access-control-allow-headers", b"*"),
-                (b"access-control-max-age", b"600"),
-                (b"content-length", b"0"),
-            ]
-            await send({"type": "http.response.start", "status": 204, "headers": resp_headers})
-            await send({"type": "http.response.body", "body": b""})
-            return
-
-        # CORS headers that only the gateway should set
-        _CORS_HEADER_PREFIXES = (b"access-control-",)
-
-        async def send_with_cors(message):
-            if message["type"] == "http.response.start":
-                # Strip any CORS headers leaked by upstream services to prevent duplicates
-                headers = [
-                    (k, v) for k, v in message.get("headers", [])
-                    if not k.lower().startswith(_CORS_HEADER_PREFIXES)
-                ]
-                headers.append((b"access-control-allow-origin", origin.encode() if origin else b"*"))
-                headers.append((b"access-control-expose-headers", b"*"))
-                message = {**message, "headers": headers}
-            await send(message)
-
-        await self.app(scope, receive, send_with_cors)
+# ---------- CORS ----------
+# CORS is handled by Caddy (the outermost reverse proxy layer).
+# See Caddyfile for configuration. Handling CORS here was unreliable
+# because BaseHTTPMiddleware subclasses break the ASGI send chain,
+# causing CORS headers to be silently dropped on some responses.
 
 from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(StructuredLoggerMiddleware)
 app.add_middleware(RequestIdMiddleware)
-
-# CORS must be added LAST so it runs as the OUTERMOST layer.
-# In Starlette, middleware added last = executed first (outermost wrapper).
-app.add_middleware(_CORSMiddleware)
 
 
 # ============================================================

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "regulayer"
-version = "2.0.1"
+version = "2.0.2"
 description = "Record provable AI decisions with tamper-detectable audit trails"
 readme = "README.md"
 license = {text = "MIT"}
@@ -38,9 +38,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://regulayer.tech"
-Documentation = "https://docs.regulayer.tech/python"
-Repository = "https://github.com/regulayer/regulayer-python"
-"Bug Tracker" = "https://github.com/regulayer/regulayer-python/issues"
+Documentation = "https://regulayer.tech/docs"
+Repository = "https://github.com/regulayer/regulayer-sdk.git"
+"Bug Tracker" = "https://github.com/regulayer/regulayer-sdk/issues"
 
 [tool.setuptools.packages.find]
 include = ["regulayer*"]
