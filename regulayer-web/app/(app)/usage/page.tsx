@@ -131,7 +131,7 @@ export default function UsagePage() {
                             </div>
                             <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-500 ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-primary' : 'bg-slate-700'}`}
+                                    className={`h-full rounded-full transition-all duration-500 ${percentage > 90 ? 'bg-red-500' : percentage > 70 ? 'bg-amber-500' : 'bg-primary'}`}
                                     style={{ width: `${percentage}%` }}
                                 />
                             </div>
@@ -296,7 +296,7 @@ export default function UsagePage() {
                             <p className="font-medium text-foreground">Upcoming Pro Tier</p>
                             <p className="text-sm text-muted-foreground">Pro plans with up to 50,000 decisions/mo are coming soon.</p>
                         </div>
-                        <a href="/billing" className="flex items-center gap-1 bg-slate-800 hover:bg-slate-900 font-medium text-sm">
+                        <a href="/billing" className="flex items-center gap-1 text-primary hover:text-brand-700 font-medium text-sm">
                             View plans <ArrowUpRight className="w-4 h-4" />
                         </a>
                     </div>

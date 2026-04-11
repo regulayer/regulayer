@@ -52,7 +52,7 @@ function CreateKeyModal({ onClose, onCreate, projects }: { onClose: () => void; 
                     <div className="flex justify-end gap-3 mt-6">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground">Cancel</button>
                         <button type="submit" disabled={loading || !name.trim() || !projectId}
-                            className="px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+                            className="px-4 py-2 text-sm bg-primary hover:bg-brand-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
                             {loading && <IconLoader2 className="animate-spin" size={16} />}
                             Create Key
                         </button>
@@ -157,7 +157,7 @@ export default function ApiKeysPage() {
                         <button
                             onClick={() => setShowCreateModal(true)}
                             disabled={projects.length === 0}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-brand-700 text-white rounded-lg font-medium shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                         >
                             <IconPlus size={18} /> Create Key
                         </button>
@@ -218,7 +218,7 @@ export default function ApiKeysPage() {
                             <div>
                                 <h3 className="font-medium text-foreground">{key.name}</h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 bg-slate-800 rounded text-xs font-medium border text-zinc-200">
+                                    <span className="px-2 py-0.5 bg-primary/10 rounded text-xs font-medium border border-primary/20 text-primary">
                                         {(key as any)._projectName || 'Unknown Project'}
                                     </span>
                                     <code className="text-xs bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-mono">

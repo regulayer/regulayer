@@ -68,7 +68,7 @@ export default function TeamPage() {
 
     const roleBadgeClass = (role: string) => {
         switch (role) {
-            case 'owner': return 'bg-slate-900 text-white border-zinc-800';
+            case 'owner': return 'bg-primary text-white border-primary/20';
             case 'admin': return 'bg-zinc-100 text-zinc-900 border-zinc-200';
             case 'editor': return 'bg-blue-50 text-blue-700 border-blue-100';
             default: return 'bg-zinc-50 text-slate-800 border-zinc-200';
@@ -88,7 +88,7 @@ export default function TeamPage() {
                 </div>
                 <button
                     onClick={scrollToInvite}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-all shadow-lg active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg active:scale-95"
                 >
                     <IconUserPlus size={18} />
                     Add Member
@@ -138,7 +138,7 @@ export default function TeamPage() {
                             <button
                                 type="submit"
                                 disabled={inviting || !email}
-                                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold shadow-lg shadow-zinc-900/10 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
+                                className="w-full py-2.5 bg-primary hover:bg-brand-700 text-white rounded-xl font-semibold shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
                             >
                                 {inviting ? <IconLoader2 className="animate-spin" size={18} /> : <IconUserPlus size={18} />}
                                 Send Invite

@@ -362,7 +362,7 @@ export default function GovernanceDocsPage() {
           <Link href="/docs" className="text-sm text-slate-500 hover:text-slate-500 transition flex items-center gap-1.5">
             <ArrowLeft size={14} /> Back to Docs
           </Link>
-          <Link href="/governance/rules" className="text-sm bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg transition font-medium">
+          <Link href="/governance/rules" className="text-sm bg-primary hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition font-medium">
             Create a Rule →
           </Link>
         </div>

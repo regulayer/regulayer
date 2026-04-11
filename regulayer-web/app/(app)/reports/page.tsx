@@ -178,7 +178,7 @@ function ReportCard({ report }: { report: ReportOption }) {
                         <button
                             onClick={() => downloadFile('pdf')}
                             disabled={downloadingPdf}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-700 disabled:opacity-50 transition-all shadow-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-brand-700 text-white rounded-lg font-medium disabled:opacity-50 transition-all shadow-sm"
                         >
                             {downloadingPdf ? <IconLoader2 className="animate-spin" size={18} /> : <IconFileAnalytics size={18} />}
                             {downloadingPdf ? 'Generating...' : 'Download PDF'}
@@ -527,7 +527,7 @@ export default function ReportsPage() {
                 </div>
                 <Link
                     href="/governance"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg font-medium shadow-sm hover:shadow-md hover:bg-slate-700 transition-all whitespace-nowrap"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-brand-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all whitespace-nowrap"
                 >
                     Go to Governance <IconChevronRight size={18} />
                 </Link>
