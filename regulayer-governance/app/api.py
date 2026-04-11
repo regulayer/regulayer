@@ -584,7 +584,15 @@ async def intake_decision(
 
     # Check for existing state (in case intake/action ran first)
     current_state = await get_current_review_state(session, decision_uuid)
-    new_state = current_state.value if current_state != GovernanceReviewState.UNREVIEWED else GovernanceReviewState.UNREVIEWED.value
+    
+    # Auto-approve low-risk decisions that haven't been escalated by strict policies
+    requires_manual_review = True
+    if current_state == GovernanceReviewState.UNREVIEWED and risk_level.lower() == "low":
+        new_state = GovernanceReviewState.APPROVED.value
+        action_reason = f"Auto-approved by AI (Low Risk): {action_reason}"
+        requires_manual_review = False
+    else:
+        new_state = current_state.value if current_state != GovernanceReviewState.UNREVIEWED else GovernanceReviewState.UNREVIEWED.value
 
     # Initial History Entry
     history_entry = GovernanceReviewHistoryDB(
@@ -601,20 +609,21 @@ async def intake_decision(
     session.add(history_entry)
 
     # Assignment Queue — check for existing entry to avoid unique constraint violation
-    priority = "high" if risk_level == "high" else "normal"
-    existing_queue = await session.execute(
-        select(GovernanceAssignmentQueueDB).where(
-            GovernanceAssignmentQueueDB.decision_id == decision_uuid
+    if requires_manual_review:
+        priority = "high" if risk_level == "high" else "normal"
+        existing_queue = await session.execute(
+            select(GovernanceAssignmentQueueDB).where(
+                GovernanceAssignmentQueueDB.decision_id == decision_uuid
+            )
         )
-    )
-    if not existing_queue.scalars().first():
-        queue_entry = GovernanceAssignmentQueueDB(
-            decision_id=decision_uuid,
-            assigned_to=None,
-            priority=priority,
-            assigned_at=datetime.now(timezone.utc)
-        )
-        session.add(queue_entry)
+        if not existing_queue.scalars().first():
+            queue_entry = GovernanceAssignmentQueueDB(
+                decision_id=decision_uuid,
+                assigned_to=None,
+                priority=priority,
+                assigned_at=datetime.now(timezone.utc)
+            )
+            session.add(queue_entry)
 
     try:
         await session.commit()
