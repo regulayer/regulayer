@@ -7,7 +7,6 @@ This is the SaaS entry point. The recorder is NEVER exposed directly.
 """
 
 from fastapi import FastAPI, Request, HTTPException, Response, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import settings
