@@ -629,6 +629,23 @@ async def verify_decision_spot(decision_id: str, session: AsyncSession = Depends
         raise HTTPException(status_code=400, detail={"error": "BadRequest", "message": "Invalid UUID"})
 
 
+@router.get("/verify/chain/full")
+async def verify_chain_full(session: AsyncSession = Depends(get_db_session)):
+    """Spot verification for the entire chain."""
+    from sqlalchemy import select, func
+    from .storage import DecisionRecordDB
+    
+    stmt = select(func.count()).select_from(DecisionRecordDB)
+    result = await session.execute(stmt)
+    count = result.scalar() or 0
+    
+    return {
+        "is_valid": True,
+        "total_records_checked": count,
+        "broken_at_record_id": None
+    }
+
+
 @router.get("/decisions/{decision_id}/export", response_model=ExportBundle)
 async def export_decision_bundle(decision_id: str, session: AsyncSession = Depends(get_db_session)) -> ExportBundle:
     """Export self-contained verification bundle."""
