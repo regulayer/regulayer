@@ -78,13 +78,15 @@ class _CORSMiddleware:
 
         await self.app(scope, receive, send_with_cors)
 
-app.add_middleware(_CORSMiddleware)
-
 from .observability import RequestIdMiddleware, StructuredLoggerMiddleware, SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(StructuredLoggerMiddleware)
 app.add_middleware(RequestIdMiddleware)
+
+# CORS must be added LAST so it runs as the OUTERMOST layer.
+# In Starlette, middleware added last = executed first (outermost wrapper).
+app.add_middleware(_CORSMiddleware)
 
 
 # ============================================================
