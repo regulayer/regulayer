@@ -1297,6 +1297,7 @@ async def change_user_role(
 def create_invitation(
     org_id: UUID,
     request: InvitationCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
@@ -1342,16 +1343,16 @@ def create_invitation(
         expiry_date = invite.expires_at.strftime("%B %d, %Y") if invite.expires_at else "7 days from now"
         
         # Send invitation email (non-blocking)
-        import asyncio
         from .mailer import send_invitation_email
-        asyncio.create_task(send_invitation_email(
+        background_tasks.add_task(
+            send_invitation_email,
             to_email=request.email,
             inviter_name=inviter_name,
             org_name=org_name,
             role=role_display,
             invite_link=invite_link,
             expiry_date=expiry_date
-        ))
+        )
         
         return invite
     except ValueError as e:
