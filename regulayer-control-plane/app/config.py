@@ -29,9 +29,9 @@ class Settings(BaseSettings):
     ]
     governance_url: str = "http://governance:8002"
     internal_secret: str = "dev_internal_secret"
-    stripe_api_key: str = os.getenv("STRIPE_SECRET_KEY", "mock_key")
-    stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-    stripe_price_id_pro: str = os.getenv("STRIPE_PRICE_ID_PRO", "price_mock_pro")
+    stripe_api_key: str = os.getenv("STRIPE_SECRET_KEY") or "mock_key"
+    stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET") or ""
+    stripe_price_id_pro: str = os.getenv("STRIPE_PRICE_ID_PRO") or "price_mock_pro"
 
     # Email (SMTP)
     smtp_host: str = os.getenv("SMTP_HOST", "")
