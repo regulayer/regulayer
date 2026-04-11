@@ -2,23 +2,19 @@
 
 # Route API Gateway Traffic
 api.{$REGULAYER_DOMAIN} {
-    # CORS — handled here at the outermost layer so every response
-    # (including error pages) gets correct headers. No downstream
-    # service should add its own Access-Control-* headers.
-    @cors_preflight method OPTIONS
-    handle @cors_preflight {
-        header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
-        header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        header Access-Control-Allow-Headers "*"
-        header Access-Control-Max-Age "600"
-        respond "" 204
-    }
+    # CORS headers on ALL responses (preflight + normal)
+    header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
+    header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "*"
+    header Access-Control-Expose-Headers "*"
+    header Access-Control-Max-Age "600"
 
-    handle {
-        reverse_proxy gateway:8080
-        header Access-Control-Allow-Origin "https://{$REGULAYER_DOMAIN}"
-        header Access-Control-Expose-Headers "*"
-    }
+    # Preflight: return 204 immediately (headers already set above)
+    @options method OPTIONS
+    respond @options 204
+
+    # Everything else: proxy to gateway
+    reverse_proxy gateway:8080
 }
 
 # Route Frontend Web Traffic
