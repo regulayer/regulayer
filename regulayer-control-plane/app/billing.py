@@ -57,7 +57,7 @@ class BillingService:
         if plan_id != "pro":
             raise ValueError("Only 'pro' plan is currently supported for checkout")
 
-        if "mock" in settings.stripe_api_key:
+        if "mock" in settings.stripe_api_key or not settings.stripe_api_key.strip():
              return f"{success_url}?session_id=mock_session_{plan_id}"
 
         try:

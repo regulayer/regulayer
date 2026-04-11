@@ -75,7 +75,7 @@ def generate_governance_pdf(data: Dict[str, Any]) -> bytes:
         for i, item in enumerate(evidence[:20]):  # Cap at 20
             pdf.section_body(f"#{i+1}: {json.dumps(item, default=str)[:200]}")
 
-    return pdf.output()
+    return bytes(pdf.output())
 
 
 def generate_incidents_pdf(data: Dict[str, Any]) -> bytes:
@@ -101,7 +101,7 @@ def generate_incidents_pdf(data: Dict[str, Any]) -> bytes:
         for i, item in enumerate(evidence[:20]):
             pdf.section_body(f"#{i+1}: {json.dumps(item, default=str)[:200]}")
 
-    return pdf.output()
+    return bytes(pdf.output())
 
 
 def generate_usage_pdf(data: Dict[str, Any]) -> bytes:
@@ -120,7 +120,7 @@ def generate_usage_pdf(data: Dict[str, Any]) -> bytes:
     pdf.key_value("API Calls:", str(data.get("api_calls", 0)))
     pdf.key_value("Storage (bytes):", str(data.get("storage_bytes", 0)))
 
-    return pdf.output()
+    return bytes(pdf.output())
 
 
 def generate_sla_pdf(data: Dict[str, Any]) -> bytes:
@@ -138,4 +138,26 @@ def generate_sla_pdf(data: Dict[str, Any]) -> bytes:
     pdf.key_value("Uptime:", f"{data.get('uptime_percentage', 0)}%")
     pdf.key_value("P99 Latency:", f"{data.get('p99_latency_ms', 0)} ms")
 
-    return pdf.output()
+    return bytes(pdf.output())
+
+
+def generate_chain_pdf(data: Dict[str, Any]) -> bytes:
+    """Generate Chain Integrity Summary PDF."""
+    pdf = RegulayerPDF()
+    pdf.alias_nb_pages()
+    pdf.add_page()
+
+    pdf.section_title("Chain Integrity Report")
+    pdf.key_value("Chain ID:", data.get("chain_id", "default"))
+    pdf.key_value("Generated:", datetime.now(timezone.utc).isoformat())
+    pdf.ln(5)
+
+    pdf.section_title("Integrity Metrics")
+    pdf.key_value("Total Records:", str(data.get("total_records", 0)))
+    is_valid = data.get("is_valid", False)
+    pdf.key_value("Status:", "Valid and Immutable" if is_valid else "Tampering Detected")
+    
+    if not is_valid and data.get("broken_at") is not None:
+        pdf.key_value("Broken At Record Index:", str(data.get("broken_at")))
+
+    return bytes(pdf.output())

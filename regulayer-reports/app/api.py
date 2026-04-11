@@ -150,7 +150,7 @@ async def get_decision_report(
 )
 async def get_chain_report(
     chain_id: str,
-    format: Literal["json"] = "json"
+    format: Literal["json", "pdf"] = "json"
 ) -> Response:
     """
     Generate a Chain Integrity Report.
@@ -192,6 +192,16 @@ async def get_chain_report(
             content=content,
             media_type="application/json"
         )
+    
+    if format == "pdf":
+        from .renderers.pdf import generate_chain_pdf
+        pdf_bytes = generate_chain_pdf({
+            "chain_id": chain_id,
+            "total_records": total_records,
+            "is_valid": is_valid,
+            "broken_at": broken_at
+        })
+        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=chain_report.pdf"})
     
     return report
 
