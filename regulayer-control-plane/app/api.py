@@ -1992,6 +1992,9 @@ async def create_checkout_session(
         return {"url": url}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[billing] Checkout error: {e}")
+        raise HTTPException(status_code=502, detail=f"Billing provider error: {str(e)}")
 
 
 @app.post("/v1/billing/portal", tags=["billing"])
@@ -2013,6 +2016,9 @@ async def create_portal_session(
         return {"url": url}
     except ValueError as e:
          raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[billing] Portal error: {e}")
+        raise HTTPException(status_code=502, detail=f"Billing provider error: {str(e)}")
 
 
 # ============================================================

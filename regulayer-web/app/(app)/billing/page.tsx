@@ -143,7 +143,7 @@ export default function BillingPage() {
                 <button
                     onClick={handlePortal}
                     disabled={portalLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium shadow-lg bg-slate-700/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-brand-700 text-white rounded-lg font-medium shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                 >
                     {portalLoading ? <IconLoader2 className="animate-spin" size={18} /> : <IconCreditCard size={18} />}
                     Manage Subscription
@@ -157,7 +157,7 @@ export default function BillingPage() {
                 <div className="p-8 grid md:grid-cols-2 gap-8 relative z-10">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <span className="px-3 py-1 text-zinc-100 bg-slate-900 rounded-full text-xs font-bold uppercase tracking-wider border text-zinc-200">
+                            <span className="px-3 py-1 text-white bg-primary/80 rounded-full text-xs font-bold uppercase tracking-wider border border-primary/20">
                                 Current Plan
                             </span>
                             {org?.status === 'active' ? (
@@ -185,7 +185,7 @@ export default function BillingPage() {
                         </div>
                         <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                             <div
-                                className="bg-slate-700 h-full rounded-full transition-all duration-1000"
+                                className="bg-primary h-full rounded-full transition-all duration-1000"
                                 style={{ width: `${Math.min(((usage?.decision_count || 0) / (currentPlanKey === 'starter' ? 1000 : 50000)) * 100, 100)}%` }}
                             />
                         </div>
@@ -206,7 +206,7 @@ export default function BillingPage() {
                             key={key}
                             className={cn(
                                 "flex flex-col p-6 h-full transition-all duration-300 hover:translate-y-[-4px]",
-                                isCurrent && "bg-slate-700/50 ring-1 bg-slate-700/20 text-zinc-50/50"
+                                isCurrent && "ring-1 ring-primary/30 bg-primary/5"
                             )}
                         >
                             <div className="mb-4">
@@ -258,7 +258,7 @@ export default function BillingPage() {
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto mt-1">
                     Need SOC2 Type II reports, on-premise deployment, or custom BAA? Contact our sales team for an enterprise agreement.
                 </p>
-                <button className="mt-4 bg-slate-800 text-sm font-medium hover:underline flex items-center justify-center gap-1">
+                <button className="mt-4 text-primary text-sm font-medium hover:underline flex items-center justify-center gap-1">
                     Contact Sales <IconExternalLink size={14} />
                 </button>
             </div>
