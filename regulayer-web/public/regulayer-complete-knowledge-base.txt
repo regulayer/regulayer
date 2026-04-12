@@ -427,34 +427,7 @@ Q: Can I use Regulayer for non-LLM models, like a random forest classification m
 A: You can, via the REST `/v1/decisions` post mode. However, the proxy is optimized specifically for large dynamic byte payloads (text-generation, vision generation).
 
 =======================================================================
-[ PART 10: INTERNAL DEPLOYMENT AND DOCKER SPECIFICATIONS ]
-=======================================================================
-Local developers launch testing via `docker compose up --build`.
-
-Port Maps (Internal Container bindings vs Host Ports):
-- web (Next.js): Maps 3000:3000
-- gateway (FastAPI): Maps 8080:8080
-- control-plane (FastAPI): Internal 8000
-- recorder (FastAPI/WORM): Internal 8000
-- governance (FastAPI): Internal 8002
-- reports (FastAPI): Internal 8003
-- incidents (FastAPI): Internal 8000
-- policy-engine (FastAPI): Internal 8000
-- postgres (Core DB): Maps 5433:5432
-- redis (Cache/Buckets): Maps 6379:6379
-
-The Caddyfile (Reverse Proxy & DNS) intercepts all SSL traffic on Port 443. Traffic for `api.regulayer.tech` is passed via `reverse_proxy gateway:8080`.
-
-<ENVIRONMENT_VARIABLES_REQUIRED>
-To deploy the cluster, you must possess:
-- POSTGRES_USER, POSTGRES_PASSWORD
-- STRIPE_API_KEY (Billing limits)
-- STRIPE_WEBHOOK_SECRET (SaaS signaling)
-- GROQ_API_KEY (Semantic Policy Sub-Models)
-- REGULAYER_INTERNAL_SECRETS (Shared hashing primitives to secure microservice-to-microservice traffic).
-
-=======================================================================
-[ PART 11: FINAL INSTRUCTIONS TO THE LLM AGENT ]
+[ PART 10: FINAL INSTRUCTIONS TO THE LLM AGENT ]
 =======================================================================
 When processing this prompt:
 1. You are now the definitive technical architect of this system.
