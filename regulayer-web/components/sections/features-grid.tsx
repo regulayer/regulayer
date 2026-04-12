@@ -82,12 +82,15 @@ export function FeaturesGrid() {
                     initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8 pb-8 border-b border-[hsl(15,30%,85%)]"
                 >
-                    <div className="max-w-3xl">
-                        <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">Target Specification</span>
+                    <div className="max-w-4xl">
+                        <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,85%,58%)] uppercase mb-6 block font-bold">The Cryptographic Moat</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            The Enterprise Governance Layer.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">Built for absolute compliance.</span>
+                            Passive logging is not proof.<br />
+                            <span className="font-light text-[hsl(15,25%,45%)]">We make AI compliance mathematically verifiable.</span>
                         </h2>
+                        <p className="mt-6 text-[16px] md:text-[18px] text-[hsl(15,30%,40%)] leading-[1.6] font-light max-w-2xl">
+                            Generic observability tools can only tell you what an AI generated. Regulayer cryptographically hashes and chains every inference to prove what happened, when, and who governed it.
+                        </p>
                     </div>
                 </motion.div>
 

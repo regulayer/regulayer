@@ -64,20 +64,20 @@ export default function DocsPage() {
   const [activeDoc, setActiveDoc] = useState("quickstart");
 
   return (
-    <div className="min-h-screen bg-background text-slate-900 font-sans selection:bg-brand-100">
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[hsl(15,85%,58%,0.2)] selection:text-[hsl(15,45%,15%)] flex flex-col">
       <Navbar />
 
       <div className="pt-16 max-w-[90rem] mx-auto flex">
 
         {/* ─── SIDEBAR NAV ─── */}
-        <aside className="fixed top-16 bottom-0 w-64 border-r border-slate-200 bg-slate-50 overflow-y-auto hidden md:block">
-          <div className="p-4 border-b border-slate-200">
+        <aside className="fixed top-16 bottom-0 w-64 border-r border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] overflow-y-auto hidden md:block z-10">
+          <div className="p-5 border-b border-[hsl(15,30%,85%)]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search documentation..."
-                className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-sm text-slate-600 placeholder-slate-400 focus:border-slate-300 outline-none transition-colors"
+                className="w-full bg-white border border-[hsl(15,30%,85%)] rounded-[4px] py-2.5 pl-9 pr-3 text-[13px] text-[hsl(15,45%,15%)] placeholder-[hsl(15,30%,60%)] focus:border-[hsl(15,85%,58%)] focus:ring-1 focus:ring-[hsl(15,85%,58%,0.2)] outline-none transition-all shadow-sm font-mono"
               />
             </div>
           </div>
@@ -94,12 +94,13 @@ export default function DocsPage() {
                     <li key={item.id}>
                       <button
                         onClick={() => setActiveDoc(item.id)}
-                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeDoc === item.id
-                          ? 'bg-slate-100 text-slate-900 font-medium'
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/50'
+                        className={`w-full flex items-center justify-between text-left px-3 py-2 rounded-[4px] text-[13px] transition-all duration-200 ${activeDoc === item.id
+                          ? 'bg-[hsl(15,45%,15%)] text-white shadow-[0_2px_10px_rgb(0,0,0,0.1)] font-medium'
+                          : 'text-[hsl(15,30%,45%)] hover:text-[hsl(15,45%,15%)] hover:bg-[hsl(15,30%,85%,0.3)]'
                           }`}
                       >
                         {item.title}
+                        {activeDoc === item.id && <ChevronRight className="w-3.5 h-3.5 opacity-70" />}
                       </button>
                     </li>
                   ))}
@@ -109,36 +110,44 @@ export default function DocsPage() {
           </nav>
 
           {/* Knowledge Base Download */}
-          <div className="px-4 pb-6 mt-2">
+          <div className="px-5 pb-8 mt-4 border-t border-[hsl(15,30%,85%)] pt-5">
+            <span className="text-[10px] font-mono tracking-widest text-[hsl(15,85%,58%)] uppercase mb-3 block font-bold">LLM Injection</span>
             <a
               href="/regulayer-complete-knowledge-base.txt"
               download="regulayer-complete-knowledge-base.txt"
-              className="flex items-center gap-2 px-3 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition-colors w-full"
+              className="flex items-center justify-between px-4 py-3 bg-[hsl(15,45%,15%)] text-white rounded-[4px] text-[12px] font-bold tracking-wide hover:bg-[hsl(15,85%,58%)] transition-colors w-full shadow-md group"
             >
-              <Download className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Download AI Knowledge Base</span>
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                <span>AI Fine-Tuning Doc</span>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </a>
-            <p className="text-[10px] text-slate-400 mt-1.5 px-1 leading-relaxed">
-              Complete reference file for AI assistants. Feed to any LLM for instant Regulayer expertise.
+            <p className="text-[11px] text-[hsl(15,30%,50%)] mt-2.5 px-0.5 leading-relaxed">
+              Feed this .txt to ChatGPT, Claude, or Cursor to instantly train it on Regulayer's core proxy architecture.
             </p>
           </div>
         </aside>
 
         {/* ─── MAIN CONTENT AREA ─── */}
-        <main className="flex-1 md:ml-64 bg-background">
-          <div className="max-w-4xl mx-auto py-12 px-6 lg:px-12">
+        <main className="flex-1 md:ml-64 bg-white min-h-screen border-l border-[hsl(15,30%,85%)]">
+          <div className="max-w-[50rem] mx-auto py-16 px-6 lg:px-16 xl:px-20 relative">
+            
+            {/* Subtle Gradient Glow Background */}
+            <div className="absolute top-0 left-0 right-0 h-[500px] pointer-events-none opacity-40" style={{ background: "radial-gradient(ellipse at 50% 0%, hsla(15, 85%, 58%, 0.1), transparent 70%)" }} />
+            <div className="absolute top-0 right-[20%] w-[600px] h-[600px] pointer-events-none opacity-[0.15] blur-[100px]" style={{ background: "radial-gradient(circle, hsl(15,85%,58%) 0%, transparent 70%)" }} />
 
             {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-8 font-medium">
-              <span>Docs</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="text-slate-600">
+            <div className="flex items-center gap-2 text-[12px] font-mono tracking-wider text-[hsl(15,30%,45%)] mb-12 uppercase relative z-10 border-b border-[hsl(15,30%,85%)] pb-4">
+              <span className="text-[hsl(15,30%,60%)]">Docs</span>
+              <ChevronRight className="w-3.5 h-3.5 text-[hsl(15,30%,85%)]" />
+              <span className="font-bold text-[hsl(15,45%,15%)]">
                 {docsGraph.flatMap(g => g.items).find(i => i.id === activeDoc)?.title}
               </span>
             </div>
 
             {/* dynamic active document content */}
-            <article className="prose prose-slate max-w-none">
+            <article className="prose prose-slate max-w-none relative z-10 prose-headings:font-bold prose-headings:tracking-tight prose-a:text-[hsl(15,85%,58%)] prose-a:no-underline hover:prose-a:underline prose-code:text-[hsl(15,45%,15%)] prose-code:bg-[hsl(30,60%,97%)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-[3px] prose-code:border prose-code:border-[hsl(15,30%,85%)] prose-code:font-mono prose-code:text-[13px] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[hsl(15,45%,15%)] prose-pre:text-white prose-pre:border prose-pre:border-[hsl(15,45%,15%)] prose-pre:rounded-[4px] prose-pre:shadow-lg prose-strong:text-[hsl(15,45%,15%)] prose-strong:font-bold text-[16px] leading-[1.75] text-[hsl(15,45%,25%)] tracking-[0.01em]">
               {activeDoc === 'intro' && <IntroDocComponent />}
               {activeDoc === 'quickstart' && <QuickstartDocComponent />}
               {activeDoc === 'architecture' && <ArchitectureDocComponent />}

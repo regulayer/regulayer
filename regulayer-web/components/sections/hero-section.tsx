@@ -73,8 +73,8 @@ export function HeroSection() {
                     className="relative z-10 text-[clamp(4rem,7.5vw,11rem)] leading-[0.84] tracking-[-0.045em] font-bold text-[hsl(15,45%,15%)] max-w-[1400px]" 
                     style={{ fontFamily: "var(--font-space-grotesk)" }}
                 >
-                    Enterprise AI<br/>Compliance &<br/>
-                    <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)] tracking-[-0.01em]">Governance.</span>
+                    Prevent AI<br/>mistakes before<br/>
+                    <span className="premium-serif-italic font-light text-[hsl(15,85%,58%)] tracking-[-0.01em]">they cost millions.</span>
                 </motion.h1>
             </motion.div>
 
@@ -104,7 +104,7 @@ export function HeroSection() {
                 className="w-full h-[30vh] md:h-auto md:col-span-5 md:row-span-2 bg-[hsl(30,60%,99%)] flex items-end p-8 md:p-12 lg:p-14"
             >
                 <motion.p custom={3} variants={textVariants} initial="hidden" animate="visible" className="text-[16px] md:text-[20px] text-[hsl(15,30%,40%)] leading-[1.6] font-light max-w-[500px]">
-                    Regulayer actively intercepts your AI inferences, injecting Human-in-the-Loop workflows and cryptographic audit logging to natively satisfy EU AI Act, SOC2, and proprietary organizational compliance frameworks.
+                    Regulayer is a zero-latency proxy gateway. We sit transparently between your application and your LLM to enforce compliance, inject Human-in-the-Loop workflows, and generate cryptographic audit logs.
                 </motion.p>
             </motion.div>
 

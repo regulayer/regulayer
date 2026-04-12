@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/components/sections/hero-section";
 import { FeaturesGrid } from "@/components/sections/features-grid";
+import { TrustBanner } from "@/components/sections/trust-banner";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { IntegrationsSection } from "@/components/sections/integrations-section";
 import { CodeShowcase } from "@/components/sections/code-showcase";
@@ -40,6 +41,7 @@ export default function LandingPage() {
             >
                 <Navbar />
                 <HeroSection />
+                <TrustBanner />
                 <FeaturesGrid />
                 <HowItWorks />
                 <IntegrationsSection />

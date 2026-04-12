@@ -109,10 +109,10 @@ export function HowItWorks() {
                 {/* Header */}
                 <div className="mb-20 md:mb-32 pb-8 border-b border-[hsl(15,30%,85%)] text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-8">
                     <div>
-                        <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">System Architecture</span>
+                        <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">The Trust Layer Flow</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                            Enterprise-grade workflow.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">Zero algorithmic friction.</span>
+                            You build the AI app.<br />
+                            <span className="font-light text-[hsl(15,25%,45%)]">We inject the compliance.</span>
                         </h2>
                     </div>
                 </div>

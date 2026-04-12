@@ -4,94 +4,68 @@ import { Globe, Database, Shield, Cpu, Server, Activity, ArrowRight } from "luci
 
 export default function ArchitectureDocComponent() {
   return (
-    <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Architecture Overview</h1>
-      <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        Regulayer is a distributed microservice platform built for enterprise-grade reliability, cryptographic integrity, and regulatory compliance. This page documents the complete system topology, data flow, and security architecture.
-      </p>
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 ease-out">
+      
+      {/* Editorial Header */}
+      <div className="mb-12 border-b border-[hsl(15,30%,85%)] pb-10">
+        <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,85%,58%)] uppercase mb-4 block font-bold">Documentation / Engineering</span>
+        <h1 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
+          System Architecture.
+        </h1>
+        <p className="text-[18px] text-[hsl(15,30%,45%)] leading-relaxed mt-6 max-w-3xl font-light">
+          Regulayer is a zero-latency distributed microservice platform built for enterprise-grade throughput, cryptographic integrity, and EU AI Act compliance. It intercepts layer-7 transit without adding meaningful latency overhead.
+        </p>
+      </div>
 
-      <h2 className="text-2xl font-semibold mb-6">System Topology</h2>
-      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
-        Regulayer consists of six purpose-built microservices, connected by an API gateway that handles TLS termination, routing, and rate limiting. Each service has a single responsibility and can scale independently.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+      <h2 className="text-[20px] font-bold text-[hsl(15,45%,15%)] mb-6" style={{ fontFamily: "var(--font-space-grotesk)" }}>Network Topology</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-16">
         {[
-          { icon: Globe, name: "API Gateway", port: "8100", desc: "TLS-terminated entry point. API key validation, rate limiting, CORS, and request routing to downstream services.", color: "text-orange-500" },
-          { icon: Server, name: "Control Plane", port: "8000", desc: "Central orchestration: organization management, billing (Stripe), API key lifecycle, RBAC, project isolation, and the compliance API.", color: "text-amber-500" },
-          { icon: Database, name: "Decision Recorder", port: "8001", desc: "Append-only WORM vault. Ed25519 signing, SHA-256 hash chains, sequence ordering, and immutable decision storage.", color: "text-blue-500" },
-          { icon: Shield, name: "Governance Service", port: "8002", desc: "HITL review queues, RBAC-scoped reviewer assignment, Slack dispatch, annotations, evidence bundles, and decision timelines.", color: "text-purple-500" },
-          { icon: Cpu, name: "Policy Engine", port: "8003", desc: "Real-time rule evaluation: keyword matching, regex, numeric thresholds, semantic analysis (LLaMA 3), and ML anomaly detection.", color: "text-green-500" },
-          { icon: Activity, name: "Reports Service", port: "8005", desc: "Compliance reporting: chain integrity verification, governance summaries, incident reports, usage analytics, and SLA metrics.", color: "text-red-500" },
+          { icon: Globe, name: "SaaS Gateway", port: "8080", desc: "The public edge proxy. Handles TLS termination, multi-tenant API key validation, quota enforcement, and exact byte-for-byte forwarding.", color: "text-[hsl(15,85%,58%)]" },
+          { icon: Server, name: "Control Plane", port: "8000", desc: "Configuration hub. Orchestrates organization accounts, RBAC, API keys, billing webhooks (Stripe), and tenant isolation logic.", color: "text-[hsl(15,45%,15%)]" },
+          { icon: Database, name: "Cryptographic Recorder", port: "8000", desc: "The immutable vault. Re-hashes the payload via SHA-256 and chains it using Ed25519 signatures. Guarantees non-repudiation.", color: "text-[hsl(15,30%,45%)]" },
+          { icon: Shield, name: "Governance Engine", port: "8002", desc: "Human-in-The-Loop execution environment. Holds suspended inference requests while awaiting manual clearance from compliance officers.", color: "text-[hsl(15,85%,58%)]" },
+          { icon: Cpu, name: "Policy Engine", port: "8000", desc: "Deterministic & semantic rule execution. Evaluates output payload for PII, context bounds, or custom triggers before letting it transit.", color: "text-[hsl(15,45%,15%)]" },
+          { icon: Activity, name: "Reports Aggregator", port: "8003", desc: "Compliance PDF generation factory. Transpiles raw crypto-audits into board-ready EU AI Act Conformity Assessments automatically.", color: "text-[hsl(15,30%,45%)]" },
         ].map((service, i) => (
-          <div key={i} className="border border-slate-200 rounded-lg p-5 hover:bg-white/50 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <service.icon className={`w-5 h-5 ${service.color}`} />
-              <span className="text-[10px] font-mono text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">:{service.port}</span>
-            </div>
-            <h3 className="text-sm font-bold text-slate-700 mb-2">{service.name}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{service.desc}</p>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Data Flow Pipeline</h2>
-      <p className="text-slate-500 mb-6 text-sm leading-relaxed">
-        Every AI decision follows a six-step pipeline from proxy interception to conformity documentation:
-      </p>
-
-      <div className="space-y-0 mb-10">
-        {[
-          { step: "01", title: "Proxy Interception", desc: "The Regulayer edge proxy captures the AI model input (prompt), output (response), and all metadata. Sensitive fields can be hashed before leaving the client environment." },
-          { step: "02", title: "Gateway Routing", desc: "The API Gateway validates the API key, checks rate limits, resolves organization/project context, and fans out the payload to the Decision Recorder and Policy Engine simultaneously." },
-          { step: "03", title: "Policy Evaluation", desc: "The Policy Engine evaluates the decision against all active policies (keyword, semantic, numeric, regex rules). Non-compliant decisions trigger FLAG, BLOCK, or REQUIRE_APPROVAL actions." },
-          { step: "04", title: "Cryptographic Sealing", desc: "The Decision Recorder canonicalizes the payload, computes a SHA-256 hash, links it to the previous record's hash (chain), and signs the entire block with Ed25519. WORM enforced." },
-          { step: "05", title: "Governance Dispatch", desc: "If any policy triggers REQUIRE_APPROVAL, the decision enters the HITL governance queue. Slack notifications are dispatched to configured channels. Compliance officers review, approve, or reject." },
-          { step: "06", title: "Conformity Documentation", desc: "All governance actions, human reviews, and decision metadata are continuously compiled into structured data for automated Conformity Assessments, FRIA reports, and regulatory submissions." },
-        ].map((step, i) => (
-          <div key={i} className="flex gap-6">
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full border-2 border-orange-400 flex items-center justify-center text-[11px] font-mono font-bold text-orange-500 flex-shrink-0 bg-white z-10">
-                {step.step}
+          <div key={i} className="bg-[hsl(30,60%,99%)] border border-[hsl(15,30%,85%)] rounded-[3px] p-6 hover:border-[hsl(15,85%,58%)] transition-colors duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-8 h-8 rounded-[2px] bg-white border border-[hsl(15,30%,85%)] flex items-center justify-center">
+                <service.icon className={`w-4 h-4 ${service.color}`} />
               </div>
-              {i < 5 && <div className="w-px flex-1 bg-slate-200 min-h-[30px]" />}
+              <span className="text-[10px] font-mono font-bold text-[hsl(15,30%,60%)]">:{service.port}</span>
             </div>
-            <div className="pb-8">
-              <h3 className="text-sm font-bold text-slate-700 mb-1">{step.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
+            <h3 className="text-[15px] font-bold text-[hsl(15,45%,15%)] mb-2" style={{ fontFamily: "var(--font-space-grotesk)" }}>{service.name}</h3>
+            <p className="text-[12px] text-[hsl(15,30%,45%)] leading-relaxed font-light">{service.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-[20px] font-bold text-[hsl(15,45%,15%)] mb-8 border-t border-[hsl(15,30%,85%)] pt-10" style={{ fontFamily: "var(--font-space-grotesk)" }}>Inference Request Lifecycle</h2>
+
+      <div className="space-y-0 mb-16 relative before:absolute before:inset-0 before:ml-[1.4rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[hsl(15,85%,58%)] before:to-[hsl(15,30%,85%)]">
+        {[
+          { step: "01", title: "Proxy Interception", desc: "App sends OpenAI request to Gateway URL. Gateway intercepts prompt payload before it ever reaches OpenAI." },
+          { step: "02", title: "Vendor Dispatch", desc: "Gateway securely connects to OpenAI over TLS, executing the inference and fetching the AI response payload." },
+          { step: "03", title: "Policy Evaluation", desc: "Before returning the AI response to the App, the Policy Engine inspects the output. If compliant, proceed. If non-compliant, halt transit." },
+          { step: "04", title: "Governance Wait (Conditional)", desc: "If flagged for manual review, the HTTP request enters a 202 Accepted long-polling state while a human officer reviews it in the Dashboard." },
+          { step: "05", title: "Cryptographic Sealing", desc: "The Recorder canonicalizes the prompt+response pair, chains the previous hash, signs with Ed25519, and commits to the SEC 17a-4 compliant database." },
+          { step: "06", title: "Transit Return", desc: "The App receives the exact byte-for-byte AI response, completely unaware that a massive compliance suite fired underneath the proxy." },
+        ].map((step, i) => (
+          <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+            {/* Timeline dot */}
+            <div className="flex items-center justify-center w-12 h-12 rounded-full border-[3px] border-white bg-[hsl(15,85%,58%)] shadow-md text-white font-mono text-[13px] font-bold z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+              {step.step}
+            </div>
+            {/* Content card */}
+            <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] p-6 bg-white border border-[hsl(15,30%,85%)] rounded-[3px] shadow-sm my-4 hover:border-[hsl(15,45%,15%)] transition-colors">
+              <h3 className="font-bold text-[15px] mb-2 text-[hsl(15,45%,15%)]">{step.title}</h3>
+              <p className="text-[13px] text-[hsl(15,30%,45%)] font-light leading-relaxed">{step.desc}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <h2 className="text-2xl font-semibold mb-6 border-t border-slate-200 pt-8">Technology Stack</h2>
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden mb-10">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Layer</th>
-              <th className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">Technology</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {[
-              ["Backend Services", "Python 3.11, FastAPI, Pydantic v2"],
-              ["Database", "PostgreSQL 15 with pgAudit extension"],
-              ["Frontend", "Next.js 14, React 18, TypeScript, Recharts"],
-              ["Auth", "Clerk (SSO, OAuth, MFA) + Custom RBAC"],
-              ["Payments", "Stripe (Subscriptions, Invoicing)"],
-              ["Containerization", "Docker, Docker Compose"],
-              ["API Gateway", "Caddy (TLS, reverse proxy, rate limiting)"],
-              ["Cryptography", "Ed25519 (signing), SHA-256 (hashing), AES-256-GCM (encryption at rest)"],
-            ].map(([layer, tech], i) => (
-              <tr key={i}>
-                <td className="px-4 py-3 font-medium text-slate-700">{layer}</td>
-                <td className="px-4 py-3 text-slate-500">{tech}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
