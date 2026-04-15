@@ -60,12 +60,12 @@ class Settings(BaseSettings):
         elif domain == "localhost":
             self.frontend_url = "http://localhost:3000"
         else:
-            self.frontend_url = f"https://app.{domain}"
+            self.frontend_url = f"https://{domain}"
         
         # Compute CORS origins from domain
         self.cors_origins = [
             "http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000",
-            f"https://{domain}", f"https://app.{domain}", f"http://{domain}:3000"
+            f"https://{domain}", f"https://www.{domain}", f"http://{domain}:3000"
         ]
         
         # No auto-conversion to async driver here as we use synchronous SQLAlchemy
