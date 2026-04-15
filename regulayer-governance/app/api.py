@@ -174,7 +174,8 @@ async def get_review_queue(
     params = {"lim": limit, "off": offset}
     
     # Build optional WHERE clauses
-    where_clauses = []
+    # Safe-guard: guarantee we don't return decisions whose latest state is terminal
+    where_clauses = ["(h.review_state IS NULL OR h.review_state NOT IN ('approved', 'rejected'))"]
     
     if x_org_id:
         try:
@@ -247,7 +248,11 @@ async def get_review_history(
     from sqlalchemy import text
 
     params = {"lim": limit, "off": offset}
-    where_clauses = ["h.review_state IN ('approved', 'reviewed', 'rejected', 'frozen')"]
+    # Only show history of decisions that required human intervention (exclude auto-approvals from system)
+    where_clauses = [
+        "h.review_state IN ('approved', 'reviewed', 'rejected', 'frozen')",
+        "h.actor_role != 'system'"
+    ]
 
     if x_org_id:
         try:
@@ -543,6 +548,13 @@ async def update_review_state(
         details=json.dumps({"old_state": current_state.value, "new_state": new_state.value, "actor_id": str(actor_uuid)})
     )
     
+    # Remove from assignment queue if it's a terminal state
+    if new_state.value in ["approved", "rejected"]:
+        from sqlalchemy import delete
+        from .storage import GovernanceAssignmentQueueDB
+        queue_del_stmt = delete(GovernanceAssignmentQueueDB).where(GovernanceAssignmentQueueDB.decision_id == decision_id)
+        await session.execute(queue_del_stmt)
+
     await session.commit()
     
     # Emit Incident on Rejection

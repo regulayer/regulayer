@@ -43,7 +43,8 @@ async def dispatch_audit_log(
     resource_type: str,
     org_id: str = None,
     resource_id: str = None,
-    details: dict = None
+    details: dict = None,
+    actor_email: str = None
 ):
     """Fire-and-forget audit log to control plane's internal audit endpoint."""
     import httpx
@@ -55,6 +56,7 @@ async def dispatch_audit_log(
                 json={
                     "organization_id": org_id,
                     "action": action,
+                    "actor_email": actor_email,
                     "resource_type": resource_type,
                     "resource_id": resource_id,
                     "details": details or {}
@@ -350,6 +352,7 @@ async def process_decision_intake(
 async def create_policy(
     body: GovernancePolicyCreate,
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id"),
+    x_actor_email: Optional[str] = Header(None, alias="X-Actor-Email"),
     session: AsyncSession = Depends(get_policy_session)
 ) -> GovernancePolicy:
     """
@@ -406,6 +409,7 @@ async def create_policy(
             action="policy.created",
             resource_type="governance_policy",
             org_id=str(org_uuid),
+            actor_email=x_actor_email,
             resource_id=str(policy_db.policy_id),
             details={"name": body.name, "conditions_count": len(body.conditions), "actions_count": len(body.actions)}
         ))
@@ -458,6 +462,7 @@ async def toggle_policy(
     policy_id: UUID,
     enabled: bool,
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id"),
+    x_actor_email: Optional[str] = Header(None, alias="X-Actor-Email"),
     session: AsyncSession = Depends(get_policy_session)
 ):
     """Enable or disable a policy."""
@@ -488,6 +493,7 @@ async def toggle_policy(
             action="policy.enabled" if enabled else "policy.disabled",
             resource_type="governance_policy",
             org_id=org_id_str,
+            actor_email=x_actor_email,
             resource_id=str(policy_id),
             details={"name": policy_db.name, "enabled": enabled}
         ))
@@ -499,6 +505,7 @@ async def toggle_policy(
 async def delete_policy(
     policy_id: UUID,
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id"),
+    x_actor_email: Optional[str] = Header(None, alias="X-Actor-Email"),
     session: AsyncSession = Depends(get_policy_session)
 ):
     """Delete a governance policy."""
@@ -531,6 +538,7 @@ async def delete_policy(
             action="policy.deleted",
             resource_type="governance_policy",
             org_id=org_id_str,
+            actor_email=x_actor_email,
             resource_id=str(policy_id),
             details={"name": deleted_name}
         ))

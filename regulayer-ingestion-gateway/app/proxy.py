@@ -97,7 +97,8 @@ async def validate_user_session(auth_header: str) -> dict:
             return {
                 "role": data.get("role", "member"),
                 "org_status": data.get("org", {}).get("status", "active"),
-                "org_id": data.get("org", {}).get("id")
+                "org_id": data.get("org", {}).get("id"),
+                "email": data.get("email")
             }
             
         except httpx.RequestError:
@@ -212,15 +213,19 @@ async def proxy_handler(request: Request, path: str):
         # We enforce internal/external auth later inside the policy service, but proxy just passes it through
         auth_header = request.headers.get("Authorization")
         org_id = None
+        actor_email = None
         if auth_header:
             ctx = await validate_user_session(auth_header)
             org_id = ctx.get("org_id")
+            actor_email = ctx.get("email")
             
         extra_headers = {
             "X-Internal-Auth": settings.governance_internal_secret  # Reusing governance secret since they talk closely
         }
         if org_id:
             extra_headers["X-Org-Id"] = org_id
+        if actor_email:
+            extra_headers["X-Actor-Email"] = actor_email
             
         return await forward_request(request, settings.policy_url, extra_headers=extra_headers)
 
@@ -242,6 +247,8 @@ async def proxy_handler(request: Request, path: str):
         }
         if context.get("org_id"):
             extra_headers["X-Org-Id"] = context["org_id"]
+        if context.get("email"):
+            extra_headers["X-Actor-Email"] = context["email"]
             
         return await forward_request(
             request, 
