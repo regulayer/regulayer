@@ -148,6 +148,7 @@ def update_organization(
     org_id: UUID,
     request: OrganizationUpdate,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """Update organization details (Name, Logo)."""
@@ -164,14 +165,29 @@ def update_organization(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
     
+    changes = {}
     if request.name is not None:
+        changes["name"] = {"from": org.name, "to": request.name}
         org.name = request.name
     
     if request.logo_url is not None:
+        changes["logo_url"] = {"from": org.logo_url, "to": request.logo_url}
         org.logo_url = request.logo_url
         
     db.commit()
     db.refresh(org)
+    
+    # Audit log
+    if changes:
+        audit.log(
+            organization_id=org_id,
+            action="org.update",
+            resource_type="organization",
+            actor_id=tenant.user_id,
+            actor_email=tenant.email,
+            resource_id=org_id,
+            details={"changes": changes}
+        )
     
     return Organization(
         id=org.id,
@@ -372,6 +388,7 @@ def change_org_member_role(
     user_id: UUID,
     request: RoleUpdate,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """Change the role of an existing organization member."""
@@ -391,8 +408,21 @@ def change_org_member_role(
     if not check_manage_hierarchy(tenant.role, request.role):
         raise HTTPException(status_code=403, detail=f"Cannot assign role {request.role.value}")
 
+    old_role = target_user.role.value
     target_user.role = request.role
     db.commit()
+    
+    # Audit log
+    audit.log(
+        organization_id=org_id,
+        action="member.role_change",
+        resource_type="user",
+        actor_id=tenant.user_id,
+        actor_email=tenant.email,
+        resource_id=user_id,
+        details={"target_email": target_user.email, "old_role": old_role, "new_role": request.role.value}
+    )
+    
     return {"status": "success"}
 
 @app.delete("/v1/orgs/{org_id}/members/{user_id}", tags=["organizations"])
@@ -400,6 +430,7 @@ def remove_org_member(
     org_id: UUID,
     user_id: UUID,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """Remove a member from the organization."""
@@ -416,6 +447,10 @@ def remove_org_member(
     if not check_manage_hierarchy(tenant.role, target_user.role):
         raise HTTPException(status_code=403, detail=f"Cannot remove user with role {target_user.role.value}")
 
+    # Capture details before deletion
+    removed_email = target_user.email
+    removed_role = target_user.role.value
+
     # Remove user's pending invitations sent by them
     from .storage import InvitationDB, SessionDB
     db.query(InvitationDB).filter(InvitationDB.inviter_id == user_id).delete()
@@ -426,6 +461,17 @@ def remove_org_member(
     # Finally, remove the user
     db.delete(target_user)
     db.commit()
+    
+    # Audit log
+    audit.log(
+        organization_id=org_id,
+        action="member.removed",
+        resource_type="user",
+        actor_id=tenant.user_id,
+        actor_email=tenant.email,
+        resource_id=user_id,
+        details={"removed_email": removed_email, "removed_role": removed_role}
+    )
     
     return {"status": "success"}
 
@@ -518,13 +564,12 @@ def get_project(
 def update_project(
     project_id: UUID,
     request: ProjectUpdate,
+    http_request: Request,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """Update project details (Name)."""
-    # 1. Verify project belongs to tenant app context?
-    # require_tenant_context gives us the Org ID.
-    
     project = db.query(ProjectDB).filter(ProjectDB.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -535,18 +580,36 @@ def update_project(
     # Enforce Role - RBAC
     if not has_permission(tenant.role, Permission.PROJECTS_EDIT):
         raise HTTPException(status_code=403, detail="Permission denied: projects:edit")
-        
+
+    changes = {}
     if request.name is not None:
+        changes["name"] = {"from": project.name, "to": request.name}
         project.name = request.name
         
     if request.governance_mode is not None:
+        changes["governance_mode"] = {"from": project.governance_mode, "to": request.governance_mode}
         project.governance_mode = request.governance_mode
         
     if request.gate_decline_message is not None:
+        changes["gate_decline_message"] = {"from": project.gate_decline_message, "to": request.gate_decline_message}
         project.gate_decline_message = request.gate_decline_message
         
     db.commit()
     db.refresh(project)
+    
+    # Audit log
+    if changes:
+        audit.log(
+            organization_id=tenant.organization_id,
+            action="project.update",
+            resource_type="project",
+            actor_id=tenant.user_id if hasattr(tenant, 'user_id') else None,
+            actor_email=tenant.email if hasattr(tenant, 'email') else None,
+            resource_id=project.id,
+            details={"changes": changes},
+            ip_address=http_request.client.host if http_request.client else None,
+            user_agent=http_request.headers.get("user-agent")
+        )
     
     return Project(
         id=project.id,
@@ -595,7 +658,9 @@ def list_org_projects(
 def create_api_key(
     project_id: UUID,
     request: ApiKeyCreate,
+    http_request: Request,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """
@@ -615,7 +680,20 @@ def create_api_key(
     auth_service = AuthService(db)
     
     try:
-        return auth_service.create_api_key(project_id, request)
+        result = auth_service.create_api_key(project_id, request)
+        # Audit log
+        audit.log(
+            organization_id=tenant.organization_id,
+            action="api_key.create",
+            resource_type="api_key",
+            actor_id=tenant.user_id if hasattr(tenant, 'user_id') else None,
+            actor_email=tenant.email if hasattr(tenant, 'email') else None,
+            resource_id=result.id if hasattr(result, 'id') else None,
+            details={"key_name": request.name, "project_id": str(project_id), "scopes": request.scopes or ["ingest"]},
+            ip_address=http_request.client.host if http_request.client else None,
+            user_agent=http_request.headers.get("user-agent")
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -639,7 +717,9 @@ def list_project_keys(
 @app.post("/v1/keys/{key_id}/revoke", tags=["api-keys"])
 def revoke_api_key(
     key_id: UUID,
+    http_request: Request,
     db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service),
     tenant: TenantContext = Depends(require_tenant_context)
 ):
     """Revoke an API key."""
@@ -661,6 +741,19 @@ def revoke_api_key(
     
     if not auth_service.revoke_api_key(key_id):
         raise HTTPException(status_code=404, detail="Key not found")
+    
+    # Audit log
+    audit.log(
+        organization_id=tenant.organization_id,
+        action="api_key.revoke",
+        resource_type="api_key",
+        actor_id=tenant.user_id if hasattr(tenant, 'user_id') else None,
+        actor_email=tenant.email if hasattr(tenant, 'email') else None,
+        resource_id=key_id,
+        details={"key_name": key.name, "key_prefix": key.key_prefix, "project_id": str(key.project_id)},
+        ip_address=http_request.client.host if http_request.client else None,
+        user_agent=http_request.headers.get("user-agent")
+    )
     
     return {"status": "revoked", "key_id": str(key_id)}
 
@@ -1385,7 +1478,8 @@ async def validate_invitation(
 @app.post("/v1/auth/invitations/accept", response_model=LoginResponse, tags=["auth"])
 def accept_invitation(
     request: InvitationAccept,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    audit: AuditService = Depends(get_audit_service)
 ):
     """Accept invitation and set password (Public)."""
 
@@ -1393,15 +1487,22 @@ def accept_invitation(
     try:
         token, user = service.accept_invitation(request.token, request.password)
         
+        # Audit log: new member joined
+        audit.log(
+            organization_id=user.organization_id,
+            action="member.joined",
+            resource_type="user",
+            actor_id=user.id,
+            actor_email=user.email,
+            resource_id=user.id,
+            details={"email": user.email, "role": user.role.value if hasattr(user.role, 'value') else str(user.role)}
+        )
+        
         # Populate UserWithOrg
         org = db.query(OrganizationDB).filter(OrganizationDB.id == user.organization_id).first()
         
         user_with_org = UserWithOrg(
-            **user.dict(), # User model logic might need .from_orm or similar if it was Pydantic, but here user is DB model?
-            # UserDB is SQLAlchmey model, not Pydantic. user_auth.login returns (token, UserDB) or (token, User) Pydantic?
-            # Checking Login: returns (token, User(Pydantic))
-            # Checks user_auth.py: accept_invitation returns auth.create_session(user) which returns (token, User(Pydantic))
-            # So `user` here is Pydantic `User`. Good.
+            **user.dict(),
             org=Organization(
                 id=org.id,
                 name=org.name,
@@ -1917,6 +2018,41 @@ async def get_audit_logs(
 
     return audit.get_logs(org_id, limit, offset)
 
+
+class AuditLogCreate(BaseModel):
+    """Request body for internal audit log creation."""
+    organization_id: UUID
+    action: str
+    resource_type: str
+    actor_id: Optional[UUID] = None
+    actor_email: Optional[str] = None
+    resource_id: Optional[UUID] = None
+    details: Optional[dict] = None
+
+
+@app.post("/v1/internal/audit-logs", tags=["audit"])
+def create_internal_audit_log(
+    entry: AuditLogCreate,
+    db: Session = Depends(get_db),
+    internal_check: None = Depends(require_internal_secret)
+):
+    """
+    Allow internal microservices to write audit entries.
+    
+    Secured by X-Internal-Secret header. Used by governance-policy
+    and other services to log administrative actions centrally.
+    """
+    audit_service = AuditService(db)
+    audit_service.log(
+        organization_id=entry.organization_id,
+        action=entry.action,
+        resource_type=entry.resource_type,
+        actor_id=entry.actor_id,
+        actor_email=entry.actor_email,
+        resource_id=entry.resource_id,
+        details=entry.details
+    )
+    return {"status": "logged"}
 
 # ============================================================
 # Real Billing Endpoints (Stripe)

@@ -103,6 +103,12 @@ class GovernanceMetadata(BaseModel):
     tags: List[GovernanceTag]
     annotations: List[GovernanceAnnotation]
     last_updated: datetime
+    risk_level: Optional[str] = None
+    reviewer: Optional[str] = None
+    reviewer_email: Optional[str] = None
+    system_name: Optional[str] = None
+    assigned_to: Optional[str] = None
+    sla_deadline: Optional[str] = None
 
 
 class ReviewStateUpdate(BaseModel):

@@ -204,6 +204,7 @@ class TenantContext(BaseModel):
     project_id: Optional[UUID] = None
     api_key_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
+    email: Optional[str] = None
     role: Optional[UserRole] = None
     org_status: Optional[OrgStatus] = None
     scopes: List[ApiKeyScope] = Field(default_factory=list)

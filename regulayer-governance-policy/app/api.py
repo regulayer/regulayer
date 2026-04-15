@@ -38,6 +38,33 @@ from .anomaly import anomaly_detector
 router = APIRouter(prefix="/v1", tags=["policies"])
 
 
+async def dispatch_audit_log(
+    action: str,
+    resource_type: str,
+    org_id: str = None,
+    resource_id: str = None,
+    details: dict = None
+):
+    """Fire-and-forget audit log to control plane's internal audit endpoint."""
+    import httpx
+    import logging
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            await client.post(
+                f"{settings.control_plane_url}/v1/internal/audit-logs",
+                json={
+                    "organization_id": org_id,
+                    "action": action,
+                    "resource_type": resource_type,
+                    "resource_id": resource_id,
+                    "details": details or {}
+                },
+                headers={"X-Internal-Secret": settings.internal_secret}
+            )
+    except Exception as e:
+        logging.error(f"Audit dispatch failed for {action}: {e}")
+
+
 # ============ Policy Management ============
 
 @router.get("/policies", response_model=List[GovernancePolicy])
@@ -372,6 +399,17 @@ async def create_policy(
     await session.commit()
     await session.refresh(policy_db)
     
+    # Audit log: policy created
+    if org_uuid:
+        import asyncio
+        asyncio.create_task(dispatch_audit_log(
+            action="policy.created",
+            resource_type="governance_policy",
+            org_id=str(org_uuid),
+            resource_id=str(policy_db.policy_id),
+            details={"name": body.name, "conditions_count": len(body.conditions), "actions_count": len(body.actions)}
+        ))
+    
     return GovernancePolicy(
         policy_id=policy_db.policy_id,
         name=policy_db.name,
@@ -442,6 +480,18 @@ async def toggle_policy(
     policy_db.updated_at = datetime.now(timezone.utc)
     await session.commit()
     
+    # Audit log: policy toggled
+    org_id_str = str(policy_db.org_id) if policy_db.org_id else x_org_id
+    if org_id_str:
+        import asyncio
+        asyncio.create_task(dispatch_audit_log(
+            action="policy.enabled" if enabled else "policy.disabled",
+            resource_type="governance_policy",
+            org_id=org_id_str,
+            resource_id=str(policy_id),
+            details={"name": policy_db.name, "enabled": enabled}
+        ))
+    
     return {"policy_id": str(policy_id), "enabled": enabled}
 
 
@@ -467,8 +517,23 @@ async def delete_policy(
         except ValueError:
             pass
         
+    # Capture details before deletion
+    deleted_name = policy_db.name
+    org_id_str = str(policy_db.org_id) if policy_db.org_id else x_org_id
+        
     await session.delete(policy_db)
     await session.commit()
+    
+    # Audit log: policy deleted
+    if org_id_str:
+        import asyncio
+        asyncio.create_task(dispatch_audit_log(
+            action="policy.deleted",
+            resource_type="governance_policy",
+            org_id=org_id_str,
+            resource_id=str(policy_id),
+            details={"name": deleted_name}
+        ))
 
 
 # ============ Workflow Actions ============

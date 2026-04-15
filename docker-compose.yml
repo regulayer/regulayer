@@ -135,6 +135,8 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - DOMAIN=${DOMAIN:-localhost}
+      - FROM_EMAIL=${FROM_EMAIL:-no-reply@regulayer.tech}
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 10s

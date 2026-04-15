@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { GlazedCard } from '@/components/ui/glazed-card';
 import { cn } from '@/lib/utils';
-import { getGovernanceQueue, listProposals } from '@/lib/api';
+import { getGovernanceQueue, getGovernanceHistory, listProposals } from '@/lib/api';
 
 interface GovernanceItem {
     id?: string;
@@ -20,6 +20,7 @@ interface GovernanceItem {
     last_updated: string;
     risk_level?: string;
     reviewer?: string;
+    reviewer_email?: string;
     assigned_to?: string;
     system_name?: string;
     sla_deadline?: string;
@@ -47,6 +48,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function GovernancePage() {
     const [items, setItems] = useState<GovernanceItem[]>([]);
+    const [historyItems, setHistoryItems] = useState<GovernanceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -59,9 +61,10 @@ export default function GovernancePage() {
         const fetchData = () => {
             Promise.all([
                 getGovernanceQueue().catch(() => ({ data: [] })),
-                listProposals().catch(() => ({ data: [] }))
+                listProposals().catch(() => ({ data: [] })),
+                getGovernanceHistory().catch(() => ({ data: [] }))
             ])
-                .then(([queueRes, proposalsRes]) => {
+                .then(([queueRes, proposalsRes, historyRes]) => {
                     const mappedProposals: GovernanceItem[] = proposalsRes.data.map(p => ({
                         id: p.id,
                         is_proposal: true,
@@ -74,6 +77,19 @@ export default function GovernancePage() {
                     }));
                     const allItems = [...queueRes.data, ...mappedProposals];
                     setItems(allItems.sort((a, b) => new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime()));
+                    
+                    // History items come from the dedicated /history endpoint
+                    const mappedHistory: GovernanceItem[] = (historyRes.data || []).map((h: any) => ({
+                        decision_id: h.decision_id,
+                        review_state: h.review_state,
+                        tags: h.tags || [],
+                        last_updated: h.last_updated,
+                        risk_level: h.risk_level || 'unknown',
+                        reviewer: h.reviewer,
+                        reviewer_email: h.reviewer_email,
+                        system_name: h.system_name
+                    }));
+                    setHistoryItems(mappedHistory);
                     setError(null);
                 })
                 .catch(err => {
@@ -84,26 +100,21 @@ export default function GovernancePage() {
         };
 
         fetchData();
-        const intervalId = setInterval(fetchData, 3000); // 3s auto-refresh
+        const intervalId = setInterval(fetchData, 5000); // 5s auto-refresh
         return () => clearInterval(intervalId);
     }, []);
 
     // Computed stats
     const underReview = items.filter(i => i.review_state === 'in_review' || i.review_state === 'unreviewed').length;
-    const approved = items.filter(i => i.review_state === 'reviewed' || i.review_state === 'approved').length;
-    const rejected = items.filter(i => i.review_state === 'rejected').length;
+    const approved = historyItems.filter(i => i.review_state === 'reviewed' || i.review_state === 'approved').length;
+    const rejected = historyItems.filter(i => i.review_state === 'rejected').length;
     const flagged = items.filter(i => i.review_state === 'flagged' || i.review_state === 'escalated').length;
-    const frozen = items.filter(i => i.review_state === 'frozen').length;
+    const frozen = historyItems.filter(i => i.review_state === 'frozen').length;
     const assigned = items.filter(i => i.assigned_to).length;
 
     const filteredItems = useMemo(() => {
-        // Tab filtering logic
-        let result = items;
-        if (activeTab === 'pending') {
-            result = result.filter(i => !['approved', 'rejected', 'frozen'].includes(i.review_state));
-        } else {
-            result = result.filter(i => ['approved', 'rejected', 'frozen'].includes(i.review_state));
-        }
+        // Tab filtering: pending tab uses queue items, history tab uses history endpoint data
+        let result = activeTab === 'pending' ? items : historyItems;
 
         if (search) {
             const q = search.toLowerCase();
@@ -112,7 +123,7 @@ export default function GovernancePage() {
         if (filterRisk !== 'all') result = result.filter(i => i.risk_level === filterRisk);
         if (filterStatus !== 'all') result = result.filter(i => i.review_state === filterStatus);
         return result;
-    }, [items, search, filterRisk, filterStatus, activeTab]);
+    }, [items, historyItems, search, filterRisk, filterStatus, activeTab]);
 
     if (loading) {
         return (
@@ -249,7 +260,7 @@ export default function GovernancePage() {
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Risk Level</th>
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</th>
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Review State</th>
-                                    <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assigned To</th>
+                                    <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{activeTab === 'history' ? 'Reviewed By' : 'Assigned To'}</th>
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">SLA Remaining</th>
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tags</th>
                                     <th className="text-left py-3 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Updated</th>
@@ -276,7 +287,16 @@ export default function GovernancePage() {
                                             <td className="py-3 px-5 text-foreground text-xs">{item.system_name || '—'}</td>
                                             <td className="py-3 px-5"><StatusBadge status={item.review_state} /></td>
                                             <td className="py-3 px-5 text-foreground text-xs">
-                                                {item.assigned_to ? (
+                                                {activeTab === 'history' ? (
+                                                    item.reviewer_email ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <div className="w-5 h-5 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-[10px] text-indigo-600 uppercase font-semibold">{item.reviewer_email.charAt(0)}</div>
+                                                            {item.reviewer_email}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">{item.reviewer || 'System'}</span>
+                                                    )
+                                                ) : item.assigned_to ? (
                                                     <span className="flex items-center gap-1">
                                                         <div className="w-5 h-5 rounded-full bg-slate-200 border border-border flex items-center justify-center text-[10px] text-muted-foreground uppercase">{item.assigned_to.charAt(0)}</div>
                                                         {item.assigned_to}

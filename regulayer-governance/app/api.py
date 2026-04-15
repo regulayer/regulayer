@@ -226,6 +226,70 @@ async def get_review_queue(
 
 
 @router.get(
+    "/history",
+    response_model=List[GovernanceMetadata],
+    summary="Get resolved governance decisions (approved, rejected, frozen)"
+)
+async def get_review_history(
+    limit: int = 50,
+    offset: int = 0,
+    x_org_id: Optional[str] = Header(None, alias="X-Org-Id"),
+    session: AsyncSession = Depends(get_governance_session)
+) -> List[GovernanceMetadata]:
+    """
+    Returns resolved decisions from governance_review_history.
+    
+    The /queue endpoint only returns items in the active assignment_queue.
+    Once a decision is approved/rejected, its queue entry is deleted.
+    This endpoint queries the history table directly to surface those
+    resolved items for the History tab.
+    """
+    from sqlalchemy import text
+
+    params = {"lim": limit, "off": offset}
+    where_clauses = ["h.review_state IN ('approved', 'reviewed', 'rejected', 'frozen')"]
+
+    if x_org_id:
+        try:
+            import uuid as _uuid
+            org_uuid = _uuid.UUID(x_org_id)
+            where_clauses.append("(h.org_id = :org_id OR h.org_id IS NULL)")
+            params["org_id"] = str(org_uuid)
+        except ValueError:
+            pass
+
+    where_sql = " WHERE " + " AND ".join(where_clauses)
+
+    # Use a DISTINCT ON to get only the latest state per decision_id 
+    raw_sql = text(
+        f'SELECT DISTINCT ON (h.decision_id) h.decision_id, h.review_state, h.risk_level, h.timestamp, h.actor_role, h.actor_email'
+        f' FROM governance_review_history h'
+        f'{where_sql}'
+        f' ORDER BY h.decision_id, h.timestamp DESC, h.id DESC'
+        f' LIMIT :lim OFFSET :off'
+    )
+    result = await session.execute(raw_sql, params)
+    rows = result.all()
+
+    full_results = []
+    for r in rows:
+        full_results.append(GovernanceMetadata(
+            decision_id=r.decision_id,
+            review_state=GovernanceReviewState(r.review_state),
+            tags=[],
+            annotations=[],
+            last_updated=r.timestamp or datetime.now(timezone.utc),
+            risk_level=r.risk_level,
+            reviewer=r.actor_role,
+            reviewer_email=r.actor_email
+        ))
+
+    # Sort by most recent first
+    full_results.sort(key=lambda x: x.last_updated, reverse=True)
+    return full_results
+
+
+@router.get(
     "/{decision_id:uuid}",
     response_model=GovernanceMetadata,
     summary="Get governance metadata for a decision"
@@ -410,6 +474,7 @@ async def update_review_state(
     body: ReviewStateUpdate,
     x_actor_role: str = Header(..., alias="X-Actor-Role"), # Required for review
     x_actor_id: Optional[str] = Header(None, alias="X-Actor-Id"),
+    x_actor_email: Optional[str] = Header(None, alias="X-Actor-Email"),
     background_tasks: BackgroundTasks = None,
     session: AsyncSession = Depends(get_governance_session)
 ) -> GovernanceMetadata:
@@ -462,6 +527,7 @@ async def update_review_state(
         review_state=new_state.value,
         actor_role=role.value,
         actor_id=actor_uuid,
+        actor_email=x_actor_email,
         action_reason=body.action_reason,
         risk_level=body.risk_level,
         timestamp=datetime.now(timezone.utc)

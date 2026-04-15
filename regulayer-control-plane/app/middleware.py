@@ -58,6 +58,7 @@ def get_tenant_context(
                 organization_id=user.organization_id,
                 project_id=None, # Users are org-scoped, not project-bound in context
                 user_id=user.id,
+                email=user.email,
                 role=user.role,
                 # We could fetch org status here if needed, but for now we trust session validity
             )

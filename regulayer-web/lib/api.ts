@@ -330,6 +330,9 @@ export interface GovernanceMetadata {
     tags: GovernanceTag[];
     annotations: GovernanceAnnotation[];
     last_updated: string;
+    risk_level?: string;
+    reviewer?: string;
+    reviewer_email?: string;
 }
 
 export const getGovernance = (decisionId: string) => api.get<GovernanceMetadata>(`/v1/governance/${decisionId}`);
@@ -338,6 +341,7 @@ export const addGovernanceTag = (decisionId: string, name: string, category: str
 export const updateReviewState = (decisionId: string, state: string, comment?: string) => api.post(`/v1/governance/${decisionId}/reviews`, { state, comment });
 export const resolveGateDecision = (decisionId: string, status: "approved" | "declined", decline_message?: string, edited_output?: any) => api.post(`/v1/governance/${decisionId}/resolve`, { status, decline_message, edited_output });
 export const getGovernanceQueue = (status?: string) => api.get(`/v1/governance/queue?status=${status || 'all'}`);
+export const getGovernanceHistory = (limit: number = 50, offset: number = 0) => api.get(`/v1/governance/history?limit=${limit}&offset=${offset}`);
 
 export interface GovernanceProposal {
     id: string;

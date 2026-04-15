@@ -94,6 +94,7 @@ class GovernanceReviewHistoryDB(Base):
     review_state = Column(String, nullable=False) # e.g., "pending", "approved", "rejected", "escalated"
     actor_role = Column(String, nullable=False) # "owner", "admin", "reviewer"
     actor_id = Column(PGUUID(as_uuid=True), index=True, nullable=False)
+    actor_email = Column(String(255), nullable=True) # Email of the person who approved/rejected
     action_reason = Column(Text, nullable=True)
     risk_level = Column(String(50), nullable=True) # "low", "medium", "high"
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -278,6 +279,12 @@ async def init_governance_db():
                         ) THEN
                             ALTER TABLE governance_rules ADD COLUMN org_id UUID;
                             CREATE INDEX IF NOT EXISTS ix_governance_rules_org_id ON governance_rules(org_id);
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name = 'governance_review_history' AND column_name = 'actor_email'
+                        ) THEN
+                            ALTER TABLE governance_review_history ADD COLUMN actor_email VARCHAR(255);
                         END IF;
                     END $$;
                     """
