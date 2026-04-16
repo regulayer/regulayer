@@ -891,4 +891,9 @@ export const suspendAdminOrg = (orgId: string) => api.post(`/v1/admin/organizati
 export const activateAdminOrg = (orgId: string) => api.post(`/v1/admin/organizations/${orgId}/activate`);
 export const deleteAdminOrg = (orgId: string) => api.delete(`/v1/admin/organizations/${orgId}`);
 
+// --- EU AI Act Assessment APIs ---
+export const updateOrgLogo = (orgId: string, logoUrl: string) => api.patch<{ logo_url: string }>(`/v1/orgs/${orgId}`, { logo_url: logoUrl });
+export const draftAiActReport = (data: { ai_api_key: string, provider: string, project_id: string, system_name: string }) => api.post<{ markdown: string }>("/v1/reports/ai-act/draft", data);
+export const sealAiActReport = (data: { project_id: string, system_name: string, final_document_markdown: string, attester_name: string, attester_title: string }) => api.post<{ status: string, sealed_document_markdown: string, cryptographic_hash: string, timestamp: string }>("/v1/reports/ai-act/attest", data);
+
 export default api;

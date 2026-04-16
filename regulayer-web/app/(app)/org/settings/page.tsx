@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     Building2, Copy, CheckCircle, Shield, Key,
-    FileText, AlertTriangle, ExternalLink, Lock, Loader2
+    FileText, AlertTriangle, ExternalLink, Lock, Loader2, ImagePlus
 } from 'lucide-react';
-import { getMe, requestDeleteOtp, confirmDeleteOrg } from '@/lib/api';
+import { getMe, requestDeleteOtp, confirmDeleteOrg, updateOrgLogo } from '@/lib/api';
 import { removeToken } from '@/lib/auth';
 
 // ============================================================
@@ -20,8 +20,12 @@ export default function OrgSettingsPage() {
     const [loading, setLoading] = useState(true);
     const [orgId, setOrgId] = useState('');
     const [orgName, setOrgName] = useState('');
+    const [orgLogoUrl, setOrgLogoUrl] = useState('');
     const [createdAt, setCreatedAt] = useState('');
     const [userRole, setUserRole] = useState('');
+
+    // Logo Upload State
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     // Deletion states
     const [deleteStep, setDeleteStep] = useState<'otp' | ''>('');
@@ -39,6 +43,7 @@ export default function OrgSettingsPage() {
                         setOrgId(me.data.org.id);
                         setOrgName(me.data.org.name);
                         setCreatedAt(me.data.org.created_at);
+                        setOrgLogoUrl((me.data.org as any).logo_url || '');
                     }
                 }
             } catch (err) {
@@ -53,6 +58,27 @@ export default function OrgSettingsPage() {
         navigator.clipboard.writeText(orgId);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        if (file.size > 2000000) { alert("File too large (max 2MB)"); return; }
+        
+        setIsUploadingLogo(true);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            try {
+                await updateOrgLogo(orgId, base64String);
+                setOrgLogoUrl(base64String);
+            } catch (err: any) {
+                alert(err.response?.data?.detail || "Failed to upload logo.");
+            } finally {
+                setIsUploadingLogo(false);
+            }
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleRequestDeleteOtp = async () => {
@@ -133,6 +159,21 @@ export default function OrgSettingsPage() {
                                         {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-b border-border">
+                            <span className="text-muted-foreground">Organization Logo</span>
+                            <div className="flex items-center gap-4">
+                                {orgLogoUrl ? (
+                                    <img src={orgLogoUrl} alt="Org Logo" className="h-10 object-contain rounded bg-white p-1" />
+                                ) : (
+                                    <span className="text-sm text-muted-foreground mr-2">No logo</span>
+                                )}
+                                <label className="cursor-pointer px-3 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium rounded-md transition-colors flex items-center gap-2">
+                                    {isUploadingLogo ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImagePlus className="w-3 h-3" />}
+                                    Upload
+                                    <input type="file" accept="image/png, image/jpeg, image/svg+xml" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+                                </label>
                             </div>
                         </div>
                         <div className="flex justify-between items-center py-3">

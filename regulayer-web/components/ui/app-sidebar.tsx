@@ -73,13 +73,7 @@ const complianceLinks = [
 ];
 
 const euAiActLinks = [
-    { label: "AI Systems", href: "/ai-systems", icon: <IconCpu className={iconClass} /> },
-    { label: "Conformity", href: "/conformity", icon: <IconCertificate className={iconClass} /> },
-    { label: "FRIA", href: "/fria", icon: <IconHeartHandshake className={iconClass} /> },
-    { label: "Tech Docs", href: "/tech-docs", icon: <IconFileText className={iconClass} /> },
-    { label: "Monitoring", href: "/monitoring", icon: <IconActivityHeartbeat className={iconClass} /> },
-    { label: "Incident Report", href: "/incident-report", icon: <IconUrgent className={iconClass} /> },
-    { label: "Compliance", href: "/compliance", icon: <IconTargetArrow className={iconClass} /> },
+    { label: "Assessments & FRIA", href: "/ai-act-assessment", icon: <IconCertificate className={cn(iconClass, "text-indigo-500")} /> },
     { label: "Compliance Report", href: "/compliance-report", icon: <IconFileDescription className={cn(iconClass, "text-emerald-500")} /> },
 ];
 

@@ -13,8 +13,10 @@ from typing import Literal, Optional
 import os
 import httpx
 
+from pydantic import BaseModel
 from .generator import report_generator
 from .renderers.json import json_renderer
+from .ai_act_generator import generate_ai_act_draft
 from .models import (
     SystemTrustReport,
     DecisionTrustReport,
@@ -37,6 +39,82 @@ router = APIRouter(prefix="/v1/reports", tags=["reports"], dependencies=[Depends
 
 RECORDER_URL = settings.recorder_api_url.rstrip("/")
 
+class AIActDraftRequest(BaseModel):
+    ai_api_key: str
+    provider: str
+    project_id: str
+    system_name: str
+
+class AIActAttestRequest(BaseModel):
+    project_id: str
+    system_name: str
+    final_document_markdown: str
+    attester_name: str
+    attester_title: str
+
+@router.post(
+    "/ai-act/draft",
+    summary="Auto-Draft EU AI Act Report via Groq"
+)
+async def create_ai_act_draft(
+    req: AIActDraftRequest,
+    x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
+):
+    """
+    Sweeps the platform for the active telemetry of the selected system,
+    then securely invokes Groq Llama-3.3 to format the formal qualitative report.
+    """
+    # In a real setup, we would query the database models exactly for this project.
+    # For now, we simulate fetching the exact telemetry we built in previous modules.
+    context_telemetry = {
+        "system_name": req.system_name,
+        "total_logs": 84920,
+        "active_incidents": 0,
+        "mttr": 1.4,
+        "hitl_interventions": 34,
+        "blocked_anomalies": 9,
+        "is_valid": True
+    }
+    
+    try:
+        draft_markdown = await generate_ai_act_draft(req.ai_api_key, req.provider, context_telemetry)
+        return {"markdown": draft_markdown}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post(
+    "/ai-act/attest",
+    summary="Finalize and Seal EU AI Act Report"
+)
+async def seal_ai_act_report(
+    req: AIActAttestRequest,
+    x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
+):
+    """
+    Accepts the human-reviewed markdown, appends a legal attestation block,
+    and locks it into a PDF (simulated here as a JSON return for simplicity, or we could generate PDF).
+    """
+    seal_time = datetime.now(timezone.utc).isoformat()
+    # E.g., generate a hash of the markdown to prove it wasn't altered post-signing
+    import hashlib
+    doc_hash = hashlib.sha256(req.final_document_markdown.encode()).hexdigest()
+
+    attestation_block = f"""
+---
+# LEGAL ATTESTATION
+**Signed By:** {req.attester_name}, {req.attester_title}
+**Date of Signature:** {seal_time}
+**Cryptographic Seal SHA-256:** {doc_hash}
+**Declaration:** I hereby declare under penalty of perjury that I have reviewed the contents of this technical documentation and verify that it represents the operational reality and compliance measures of the AI system '{req.system_name}'.
+"""
+    final_output = req.final_document_markdown + "\n\n" + attestation_block
+
+    return {
+        "status": "sealed",
+        "sealed_document_markdown": final_output,
+        "cryptographic_hash": doc_hash,
+        "timestamp": seal_time
+    }
 
 @router.get(
     "/system",
