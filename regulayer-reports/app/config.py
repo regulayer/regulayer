@@ -17,9 +17,13 @@ class ReportsSettings(BaseSettings):
     internal_secret: str = ""
     env: str = "production"
     
+    # Cross-service secrets
+    governance_internal_secret: str = os.getenv("GOVERNANCE_INTERNAL_SECRET", "")
+    incidents_internal_secret: str = os.getenv("INCIDENTS_INTERNAL_SECRET", "")
+    control_plane_internal_secret: str = os.getenv("CONTROL_PLANE_INTERNAL_SECRET", "")
+
     class Config:
         env_prefix = "REPORTS_"
         env_file = ".env"
-
 
 settings = ReportsSettings()

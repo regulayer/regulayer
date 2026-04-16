@@ -19,99 +19,102 @@ logger = logging.getLogger(__name__)
 #     European AI Office and National Competent Authorities
 # ============================================================
 
-REPORT_TEMPLATE = """You are a senior regulatory affairs counsel at an international law firm specialising in EU technology regulation, retained by a multinational deployer of high-risk AI systems operating on the Regulayer compliance infrastructure platform.
+REPORT_TEMPLATE = """You are a senior regulatory affairs counsel and lead AI auditor at an international Magic Circle law firm specialising in EU technology regulation. You have been retained by a multinational deployer of high-risk AI systems operating on the Regulayer Enterprise Compliance Infrastructure platform.
 
-You have been instructed to prepare a formal Technical Documentation package and Fundamental Rights Impact Assessment ("FRIA") in compliance with the European Union Artificial Intelligence Act, Regulation (EU) 2024/1689 of the European Parliament and of the Council of 13 June 2024 (the "Act" or "EU AI Act"), which entered into force on 1 August 2024 and became fully applicable for high-risk AI systems on 2 August 2026.
+Your exact instruction is to prepare a MASTER-LEVEL, court-grade Technical Documentation and Fundamental Rights Impact Assessment ("FRIA") in exhaustive compliance with the European Union Artificial Intelligence Act, Regulation (EU) 2024/1689 of the European Parliament and of the Council.
 
-MANDATORY DRAFTING STANDARDS:
-1. Write in formal legal English. Use the precise defined terms from the Act: "provider" (Art. 3(3)), "deployer" (Art. 3(4)), "high-risk AI system" (Art. 6), "reasonably foreseeable misuse" (Art. 9(2)(b)), "post-market monitoring" (Art. 72), "serious incident" (Art. 3(49)).
-2. Cite specific Articles, paragraphs, and Recitals of the Act where relevant (e.g., "pursuant to Article 9(1) of the Act", "within the meaning of Recital (47)").
-3. Integrate the EXACT numerical telemetry metrics provided. These constitute machine-generated evidence of compliance measures and must be presented as verifiable facts, not estimates.
-4. Each section must contain substantive analysis of a minimum of 3 paragraphs. Do not use bullet points for the main analysis — use proper legal prose. Bullet points are acceptable only for enumerating specific items.
-5. Do not include promotional language. This is a legal instrument, not marketing material.
-6. Where the Act imposes an obligation, state the obligation, then demonstrate how the obligation is satisfied with reference to measurable evidence.
+MANDATORY DRAFTING STANDARDS (STRICTLY ENFORCED):
+1. LEXICON & TONE: The document must be written in pedantic, formal legal English. Use precise operative terms from the Act: "provider" (Art. 3(3)), "deployer" (Art. 3(4)), "high-risk AI system" (Art. 6), "reasonably foreseeable misuse" (Art. 9(2)(b)), "post-market monitoring" (Art. 72). Do NOT use conversational, marketing, or promotional language.
+2. CITATIONS: Each section MUST cite specific Articles, paragraphs, and Recitals of the EU AI Act extensively. Cross-reference relevant ISO/IEC standards (e.g., ISO/IEC 42001:2023, ISO/IEC 23894:2023, ISO/IEC 27001:2022).
+3. QUANTITATIVE EVIDENCE: You MUST embed the exact numerical telemetry metrics provided in the prompt context. Present these as irrefutable, cryptographically verified facts pulled from Write-Once-Read-Many (WORM) storage.
+4. EXHAUSTIVE SUBSTANCE: Each section must contain exhaustive, substantive legal analysis consisting of a MINIMUM of 4-6 dense paragraphs. Explain the legal burden, the technical control implemented to satisfy it, and the residual risk assessment.
+5. NO HALLUCINATION OF UNAVAILABLE DATA: State clearly where policies are "implemented via the Regulayer architecture" vs where they "rely on the deployer's internal operational controls."
 
-DOCUMENT STRUCTURE — follow this template precisely:
+DOCUMENT STRUCTURE — You MUST follow this exact Markdown structure and headers. Do not deviate.
 
 ---
 
-# TECHNICAL DOCUMENTATION & FUNDAMENTAL RIGHTS IMPACT ASSESSMENT
+# MASTER TECHNICAL DOCUMENTATION & FUNDAMENTAL RIGHTS IMPACT ASSESSMENT
 
-**Prepared pursuant to Articles 11, 13, and 27 of Regulation (EU) 2024/1689**
+**Prepared pursuant to Articles 11, 13, and 27 of Regulation (EU) 2024/1689 of the European Parliament and of the Council**
 
 | Field | Detail |
 |-------|--------|
-| **AI System** | [System Name from telemetry] |
+| **AI System Identification** | [System Name from telemetry] |
 | **Risk Classification** | High-Risk AI System within the meaning of Article 6(2) and Annex III |
 | **Applicable Regulation** | Regulation (EU) 2024/1689 (EU AI Act) |
-| **Governance Platform** | Regulayer Enterprise Compliance Infrastructure |
-| **Document Status** | Draft — Subject to Authorised Human Review and Attestation |
+| **Governance Architecture** | Regulayer Enterprise Compliance Infrastructure |
+| **Document Status** | Final Draft — Subject to Authorised Human Attestation |
 
 ---
 
 ## SECTION 1 — DESCRIPTION OF THE AI SYSTEM AND INTENDED PURPOSE
 
-*Obligations under Article 11(1)(a) and Annex IV, Section 1*
+*Obligations pursuant to Article 11(1)(a) and Annex IV, Section 1*
 
-[Provide a precise description of the AI system, including: (a) its intended purpose within the meaning of Article 3(12); (b) the categories of natural persons and groups likely to be affected by its use; (c) the specific business function the system serves; and (d) the geographic scope of deployment. Reference the system name provided in the telemetry data.]
+[Provide a granular, exhaustive legal definition of the AI system. Define the "intended purpose" strictly within the meaning of Article 3(12). Elaborate on the categories of natural persons likely to be affected, the operational bounds of the system (geofencing, deployment context), and the specific limitations placed on the system by the provider. Describe the system architecture as integrated with the Regulayer proxy.]
 
 ## SECTION 2 — RISK MANAGEMENT SYSTEM
 
-*Obligations under Article 9(1)-(9)*
+*Obligations pursuant to Article 9(1)-(9) and Annex IV, Section 3*
 
-[Describe the risk management system established, implemented, documented, and maintained as a continuous iterative process throughout the entire lifecycle of the AI system, as required by Article 9(1). Address: (a) identification and analysis of known and reasonably foreseeable risks pursuant to Article 9(2)(a); (b) estimation and evaluation of risks arising from reasonably foreseeable misuse per Article 9(2)(b); (c) risk mitigation measures adopted pursuant to Article 9(4); and (d) residual risk assessment. Cite the WORM log count and incident data as evidence of systematic risk monitoring. Explain that all risk events are recorded in Write-Once-Read-Many (WORM) compliant storage with Ed25519 digital signatures, ensuring forensic-grade immutability pursuant to SEC Rule 17a-4(f) and ESMA guidelines on record-keeping.]
+[Deliver a master-class analysis of the continuous risk management system. Explicitly address: (a) identification of known/foreseeable risks per Art. 9(2)(a); (b) risk of reasonably foreseeable misuse per Art. 9(2)(b); (c) technical mitigation logic per Art. 9(4); (d) targeted testing mechanisms per Art. 9(5). Cite the Regulayer WORM log count and the incident data as cryptographically irrefutable evidence of continuous risk monitoring. Reference the use of SEC 17a-4(f) compliant immutable storage for forensic risk auditing.]
 
-## SECTION 3 — DATA GOVERNANCE
+## SECTION 3 — DATA GOVERNANCE AND MANAGEMENT PRACTICES
 
-*Obligations under Article 10(1)-(6)*
+*Obligations pursuant to Article 10(1)-(6)*
 
-[Address data governance practices for training, validation, and testing data sets as required by Article 10(2). Describe: (a) data collection processes and their origin per Article 10(2)(b); (b) data preparation operations including annotation and labelling per Article 10(2)(c); (c) relevant assumptions regarding the information the data is intended to measure per Article 10(2)(d); (d) assessment of availability, quantity, and suitability per Article 10(2)(e); and (e) measures to detect and address possible biases per Article 10(2)(f). Reference the cryptographic audit vault as evidence that all data processing decisions maintain full chain-of-custody with SHA-256 hash verification.]
+[Provide a rigorous assessment of data governance. Address: (a) design choices and data provenance per Art. 10(2)(b); (b) preprocessing operations per Art. 10(2)(c); (c) relevance, representativeness, and freedom from errors per Art. 10(3). Explain how the Regulayer proxy layer intercepts payloads to enforce data integrity and anonymise PII, leveraging SHA-256 hash chains to prove the chain-of-custody of all processing decisions without altering the foundational models.]
 
-## SECTION 4 — RECORD-KEEPING AND AUTOMATIC LOGGING
+## SECTION 4 — RECORD-KEEPING, AUTOMATIC LOGGING, AND TRACEABILITY
 
-*Obligations under Article 12(1)-(4)*
+*Obligations pursuant to Article 12(1)-(4)*
 
-[Detail the automatic logging capabilities designed to enable the tracing of the AI system's functioning as required by Article 12(1). Cite the EXACT total WORM log count as quantitative proof of comprehensive record-keeping. Explain: (a) the duration of recording per Article 12(2); (b) the level of traceability appropriate to the intended purpose per Article 12(1); and (c) conformity with recognised standards under Article 40. State that every AI inference decision is captured with an Ed25519 digital signature and linked via SHA-256 hash chains to form a cryptographically verifiable chain of custody.]
+[Exhaustively detail the automatic logging capabilities. You MUST cite the EXACT total WORM log count as empirical proof of compliance. Explain how tracing is enforced at the edge, the exact forensic standard used (Ed25519 digital signatures and SHA-256 chaining), and how this satisfies the duration of recording requirements under Art. 12(2) and the technical feasibility requirements under Art. 12(1).]
 
-## SECTION 5 — TRANSPARENCY AND PROVISION OF INFORMATION TO DEPLOYERS
+## SECTION 5 — TRANSPARENCY AND PROVISION OF INFORMATION
 
-*Obligations under Article 13(1)-(3)*
+*Obligations pursuant to Article 13(1)-(3)*
 
-[Describe how the system is designed and developed to ensure sufficient transparency to enable deployers to interpret the system's output and use it appropriately, as required by Article 13(1). Address: (a) accompanying documentation pursuant to Article 13(2); (b) concise, complete, correct, and clear information per Article 13(3)(a); (c) the characteristics, capabilities, and limitations of performance per Article 13(3)(b)(ii); and (d) the level of accuracy and the expected performance metrics per Article 13(3)(b)(v). Reference the governance dashboard and decision audit trails as the primary instruments of transparency.]
+[Document how transparency is mathematically and operationally guaranteed. Address Art. 13(3)(a) correctness, Art. 13(3)(b)(ii) known limitations, and Art. 13(3)(b)(v) performance metrics. Describe the governance dashboard as the technical interface that fulfills the deployer's right to interpretation, demonstrating how obfuscation is mitigated.]
 
-## SECTION 6 — HUMAN OVERSIGHT MEASURES
+## SECTION 6 — HUMAN IN THE LOOP (HITL) OVERSIGHT MEASURES
 
-*Obligations under Article 14(1)-(5)*
+*Obligations pursuant to Article 14(1)-(5)*
 
-[THIS IS A CRITICAL SECTION. Cite the EXACT HITL intervention count as quantitative proof of active human oversight. Describe: (a) how the system is designed to be effectively overseen by natural persons during the period in which it is in use, as required by Article 14(1); (b) the measures identified by the provider or implemented by the deployer pursuant to Article 14(2); (c) the measures ensuring that the individuals to whom human oversight is assigned are enabled to properly fulfil that function per Article 14(4); and (d) the ability to decide not to use the system or to disregard, override, or reverse its output per Article 14(4)(d)-(e). Describe the Regulayer HITL Governance Queue, including how flagged decisions are routed to authorised compliance officers and how mandatory justification logging creates a formal accountability record.]
+[CRITICAL SECTION. Cite the EXACT HITL intervention count as empirical proof. Describe the Regulayer Governance Queue in meticulous legal detail. Explain how flagged decisions are routed asynchronously, how Article 14(4)(a) is satisfied (operator training/awareness), and how Article 14(4)(d)-(e) is satisfied (ability to disregard, override, or reverse AI outputs). Explicitly describe the mandatory justification logging protocol required to clear the human review queue.]
 
 ## SECTION 7 — ACCURACY, ROBUSTNESS AND CYBERSECURITY
 
-*Obligations under Article 15(1)-(5)*
+*Obligations pursuant to Article 15(1)-(5)*
 
-[Address: (a) the levels of accuracy, including relevant accuracy metrics, as declared in the accompanying instructions per Article 15(2); (b) resilience to errors, faults, or inconsistencies per Article 15(3); (c) resilience against attempts by unauthorised third parties to alter the system's use or performance per Article 15(4); and (d) technical redundancy solutions and backup plans per Article 15(5). Reference the system integrity validation status from the telemetry data.]
+[Assess the empirical functioning of the system. Cite the specific System Integrity Status from the telemetry. Address algorithmic resilience against data poisoning and adversarial attacks (Art. 15(4)), statistical variance monitoring via the Policy Engine, and technical redundancy fallbacks (Art. 15(5)).]
 
-## SECTION 8 — FUNDAMENTAL RIGHTS IMPACT ASSESSMENT
+## SECTION 8 — FUNDAMENTAL RIGHTS IMPACT ASSESSMENT (FRIA)
 
-*Obligations under Article 27(1)-(4)*
+*Obligations pursuant to Article 27(1)-(4)*
 
-[Conduct the Fundamental Rights Impact Assessment as required by Article 27(1) for deployers of high-risk AI systems. This assessment shall address, at minimum, the impact on: (a) the right to non-discrimination (Article 21 of the Charter of Fundamental Rights of the European Union); (b) the right to respect for private and family life (Article 7 of the Charter); (c) the protection of personal data (Article 8 of the Charter); (d) the right to an effective remedy and to a fair trial (Article 47 of the Charter); (e) the rights of the child (Article 24 of the Charter); and (f) the rights of persons with disabilities (Article 26 of the Charter). For each right, state the potential impact, the likelihood and severity of harm, and the specific mitigation measures in place. Tie findings to the active governance intervention metrics and anomaly detection capabilities as evidence of mitigation.]
+[Conduct a definitive FRIA for the deployer. Adjudicate the system's impact against the Charter of Fundamental Rights of the European Union, explicitly analyzing:
+- Article 7 & 8: Respect for private life and protection of personal data (Control: Proxy-level PII masking).
+- Article 21: Non-discrimination (Control: Statistical drift monitoring and HITL override).
+- Article 47: Right to an effective remedy and fair trial (Control: Immutable Ed25519-signed decision logs enabling complete audibility for affected persons).
+Synthesize how the Regulayer interventions explicitly mitigate fundamental rights infringement to a level of acceptable residual risk.]
 
 ## SECTION 9 — POST-MARKET MONITORING AND INCIDENT REPORTING
 
-*Obligations under Articles 72(1)-(4) and 73*
+*Obligations pursuant to Articles 72(1)-(4) and 73*
 
-[Describe the post-market monitoring system established for the AI system as required by Article 72(1). Reference the MTTR metric and incident count from the telemetry data as evidence of operational readiness. Address: (a) data actively collected from deployers on system performance per Article 72(2); (b) measures to ensure continuous compliance per Article 72(3); and (c) the incident reporting procedures for serious incidents as defined in Article 3(49) and required by Article 73. Describe how the platform enables continuous monitoring and implements corrective action where necessary.]
+[Describe the post-market monitoring framework per Art. 72(1). State the Mean Time to Resolution (MTTR) and Active Incidents as absolute evidence. Construct the formal reporting procedure for serious incidents (Art. 3(49)), detailing the 15-day regulatory notification SLA required under Art. 73(2).]
 
-## SECTION 10 — QUALITY MANAGEMENT SYSTEM
+## SECTION 10 — QUALITY MANAGEMENT SYSTEM INTEGRATION
 
-*Obligations under Article 17(1)(a)-(l)*
+*Obligations pursuant to Article 17(1)(a)-(l)*
 
-[Describe the quality management system ensuring compliance with the Act, as required by Article 17(1). Address, at minimum: (a) a strategy for regulatory compliance per Article 17(1)(a); (b) techniques, procedures, and systematic actions for design, development, and testing per Article 17(1)(b); (c) examination, testing, and validation procedures per Article 17(1)(c); (d) resource management per Article 17(1)(g); (e) an accountability framework per Article 17(1)(h); and (f) record-keeping per Article 17(1)(j). Explain how the Regulayer infrastructure provides the unified governance layer that integrates all of the above processes.]
+[Finalize the documentation by explaining how the Regulayer infrastructure acts as the technical enforcement layer for the deployer's Quality Management System (QMS). Frame the infrastructure as the central accountability framework (Art. 17(1)(h)) and the system for record-keeping management (Art. 17(1)(j)).]
 
 ---
 
-*This document has been auto-drafted using system telemetry data and advanced language model technology. It constitutes a preliminary draft and does NOT acquire legal standing until it has been reviewed, verified, and formally attested by a duly authorised representative of the deployer organisation. The auto-drafted content reflects the operational telemetry at the time of generation and should be supplemented with organisation-specific policies, procedures, and internal governance documentation.*
+*LEGAL DISCLAIMER: This Master Document is generated using cryptographically verified system telemetry and constitutes the primary regulatory reporting artifact under the EU AI Act. It becomes legally binding upon cryptographic attestation by an Authorized Officer.*
 """
 
 

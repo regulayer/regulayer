@@ -327,7 +327,7 @@ async def get_governance_report(
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
 ) -> Response:
     # 1. Fetch from Governance service
-    headers = {"X-Internal-Auth": settings.internal_secret}
+    headers = {"X-Internal-Auth": settings.governance_internal_secret}
     if x_org_id:
         headers["X-Org-Id"] = x_org_id
         
@@ -374,12 +374,14 @@ async def get_incidents_report(
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
 ) -> Response:
     incidents = []
+    headers = {"X-Internal-Auth": settings.incidents_internal_secret}
+    if x_org_id:
+        headers["X-Org-Id"] = x_org_id
+        
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/incidents"
-            if x_org_id:
-                url += f"?org_id={x_org_id}"
-            resp = await client.get(url)
+            resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 incidents = resp.json()
     except Exception as e:
@@ -414,17 +416,20 @@ async def get_usage_report(
     format: Literal["json", "pdf"] = "json",
     x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
 ) -> Response:
-    usage_data = {}
     total_decisions = 0
     limit = 0
     
     if x_org_id:
+        headers = {"X-Internal-Auth": settings.control_plane_internal_secret}
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                url = f"{os.getenv('CONTROL_PLANE_URL', 'http://control-plane:8000')}/v1/usage/{x_org_id}"
-                pass
-        except Exception:
-            pass
+                url = f"{os.getenv('CONTROL_PLANE_URL', 'http://control-plane:8000')}/v1/usage/orgs/{x_org_id}"
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    usage_data = resp.json()
+                    total_decisions = usage_data.get("decisions_recorded", 0)
+        except Exception as e:
+            print(f"Failed to fetch usage data: {e}")
 
     data = {
         "report_id": f"usg-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
@@ -453,16 +458,18 @@ async def get_sla_report(
 ) -> Response:
     uptime = 100.0
     try:
+        # Public status endpoint doesn't need auth, but we pass headers just in case
+        headers = {"X-Internal-Auth": settings.incidents_internal_secret}
         async with httpx.AsyncClient(timeout=5.0) as client:
             url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/public/status"
-            resp = await client.get(url)
+            resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 if resp.json().get("status") == "critical":
                     uptime = 98.5
                 elif resp.json().get("status") == "degraded":
                     uptime = 99.5
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Failed to fetch SLA data: {e}")
 
     data = {
         "report_id": f"sla-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",

@@ -116,10 +116,65 @@ export default function AiActAssessmentPage() {
         setAttesterTitle("");
     };
 
+    const mdToHtml = (md: string): string => {
+        let html = md;
+        // Horizontal rules
+        html = html.replace(/^---+$/gm, '<hr>');
+        // Headers
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        // Bold + Italic
+        html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Tables: convert markdown tables to HTML
+        html = html.replace(/(\|.+\|[\r\n]+\|[-| :]+\|[\r\n]+((?:\|.+\|[\r\n]*)+))/g, (match) => {
+            const rows = match.trim().split('\n').filter(r => r.trim());
+            if (rows.length < 2) return match;
+            const parseRow = (row: string) => row.split('|').filter(c => c.trim() !== '').map(c => c.trim());
+            const headers = parseRow(rows[0]);
+            const dataRows = rows.slice(2); // skip separator
+            let table = '<table><thead><tr>';
+            headers.forEach(h => { table += '<th>' + h + '</th>'; });
+            table += '</tr></thead><tbody>';
+            dataRows.forEach(r => {
+                const cells = parseRow(r);
+                table += '<tr>';
+                cells.forEach(c => { table += '<td>' + c + '</td>'; });
+                table += '</tr>';
+            });
+            table += '</tbody></table>';
+            return table;
+        });
+        // Ordered lists
+        html = html.replace(/(^|\n)((?:\d+\. .+\n?)+)/g, (_, pre, block) => {
+            const items = block.trim().split('\n').map((l: string) => '<li>' + l.replace(/^\d+\.\s*/, '') + '</li>').join('');
+            return pre + '<ol>' + items + '</ol>';
+        });
+        // Unordered lists
+        html = html.replace(/(^|\n)((?:[-*] .+\n?)+)/g, (_, pre, block) => {
+            const items = block.trim().split('\n').map((l: string) => '<li>' + l.replace(/^[-*]\s*/, '') + '</li>').join('');
+            return pre + '<ul>' + items + '</ul>';
+        });
+        // Paragraphs - wrap loose text in <p> tags
+        html = html.split('\n\n').map(block => {
+            const trimmed = block.trim();
+            if (!trimmed) return '';
+            if (/^<(h[1-3]|hr|table|ol|ul|li|thead|tbody|tr)/.test(trimmed)) return trimmed;
+            if (trimmed.startsWith('<')) return trimmed;
+            return '<p>' + trimmed.replace(/\n/g, ' ') + '</p>';
+        }).join('\n');
+        return html;
+    };
+
     const handlePrint = () => {
         if (!sealedDoc) return;
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+        const renderedBody = mdToHtml(sealedDoc.markdown);
         printWindow.document.write(`
 <!DOCTYPE html>
 <html>
@@ -128,59 +183,69 @@ export default function AiActAssessmentPage() {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Source Serif 4', Georgia, serif; color: #111827; background: #fff; padding: 60px 72px; max-width: 900px; margin: 0 auto; line-height: 1.8; font-size: 13.5px; }
-.doc-header { border-bottom: 3px double #111827; padding-bottom: 20px; margin-bottom: 12px; }
-.doc-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+body { font-family: 'Source Serif 4', Georgia, serif; color: #111827; background: #fff; padding: 56px 64px; max-width: 900px; margin: 0 auto; line-height: 1.85; font-size: 13px; }
+.doc-header { border-bottom: 3px double #111827; padding-bottom: 20px; margin-bottom: 32px; }
+.doc-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.org-brand { display: flex; align-items: center; gap: 12px; }
+.org-logo { height: 40px; width: auto; object-fit: contain; }
 .org-name { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; text-transform: uppercase; }
-.platform-mark { font-family: 'Inter', sans-serif; text-align: right; font-size: 9px; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; line-height: 1.8; }
-.classification { font-family: 'Inter', sans-serif; text-align: center; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #6B7280; border: 1px solid #D1D5DB; padding: 4px 16px; display: inline-block; margin-top: 8px; }
-.doc-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin: 24px 0 6px; line-height: 1.3; }
-.doc-subtitle { font-size: 13px; color: #6B7280; margin-bottom: 32px; font-style: italic; }
-.doc-body { white-space: pre-wrap; word-wrap: break-word; }
-.doc-body h1 { font-size: 20px; font-weight: 700; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB; }
-.doc-body h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; }
-.doc-body h3 { font-size: 14px; font-weight: 700; margin: 20px 0 8px; }
-.doc-body p { margin-bottom: 12px; }
-.doc-body table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
-.doc-body th, .doc-body td { border: 1px solid #D1D5DB; padding: 8px 12px; text-align: left; }
-.doc-body th { background: #F9FAFB; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.platform-mark { font-family: 'Inter', sans-serif; text-align: right; font-size: 8.5px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.7; }
+.doc-meta { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 12px; }
+.meta-left { font-family: 'Inter', sans-serif; font-size: 8px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; }
+.classification { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #6B7280; border: 1px solid #D1D5DB; padding: 3px 14px; }
+.doc-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin: 28px 0 4px; line-height: 1.3; }
+.doc-subtitle { font-size: 12px; color: #6B7280; margin-bottom: 36px; font-style: italic; }
+.doc-body h1 { font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #111827; letter-spacing: -0.3px; text-transform: uppercase; }
+.doc-body h2 { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; margin: 32px 0 10px; color: #1F2937; }
+.doc-body h3 { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; margin: 24px 0 8px; color: #374151; }
+.doc-body p { margin-bottom: 14px; text-align: justify; }
 .doc-body strong { font-weight: 700; }
 .doc-body em { font-style: italic; color: #4B5563; }
-.doc-body code { font-family: 'Courier New', monospace; font-size: 11px; background: #F3F4F6; padding: 2px 6px; border-radius: 3px; }
-.doc-body hr { border: none; border-top: 1px solid #E5E7EB; margin: 32px 0; }
-.doc-body ol, .doc-body ul { margin: 8px 0 16px 24px; }
-.doc-body li { margin-bottom: 6px; }
-.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #D1D5DB; font-family: 'Inter', sans-serif; font-size: 8px; color: #9CA3AF; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
+.doc-body code { font-family: 'Courier New', monospace; font-size: 10px; background: #F3F4F6; padding: 2px 6px; border-radius: 2px; letter-spacing: 0.3px; }
+.doc-body hr { border: none; border-top: 1px solid #D1D5DB; margin: 36px 0; }
+.doc-body table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 11.5px; }
+.doc-body th { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: #F9FAFB; border: 1px solid #D1D5DB; padding: 10px 14px; text-align: left; }
+.doc-body td { border: 1px solid #D1D5DB; padding: 10px 14px; vertical-align: top; }
+.doc-body ol, .doc-body ul { margin: 8px 0 18px 28px; }
+.doc-body li { margin-bottom: 8px; }
+.doc-body ol { list-style-type: decimal; }
+.footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid #D1D5DB; font-family: 'Inter', sans-serif; font-size: 7.5px; color: #9CA3AF; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
 @media print {
-  body { padding: 40px; }
-  .doc-header, .doc-body h1, .doc-body h2, .seal-box { break-inside: avoid; }
+  body { padding: 36px; }
+  .doc-header, .doc-body h1, .doc-body h2 { break-inside: avoid; }
 }
 </style>
 </head>
 <body>
 <div class="doc-header">
   <div class="doc-header-top">
-    <div class="org-name">${orgName}</div>
-    <div class="platform-mark">
-      Regulayer Compliance Infrastructure<br>
-      Document Ref: ${selectedSystemId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}<br>
-      Generated: ${new Date(sealedDoc.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
-      Regulation: EU AI Act (2024/1689)
+    <div class="org-brand">
+      ${orgLogoUrl ? `<img src="${orgLogoUrl}" class="org-logo" alt="${orgName}" />` : ''}
+      <div class="org-name">${orgName}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="platform-mark">
+        Regulayer Compliance Infrastructure<br>
+        Document Ref: ${selectedSystemId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}<br>
+        ${new Date(sealedDoc.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
+        Regulation (EU) 2024/1689
+      </div>
     </div>
   </div>
-  <div style="text-align:center;">
+  <div class="doc-meta">
+    <div class="meta-left">AI System: ${selectedSystem?.name || 'System'} &nbsp;|&nbsp; High-Risk Classification (Art. 6(2))</div>
     <span class="classification">Confidential — Regulatory Compliance Document</span>
   </div>
 </div>
 
-<div class="doc-title">Technical Documentation & Fundamental Rights Impact Assessment</div>
+<div class="doc-title">Technical Documentation &amp;<br>Fundamental Rights Impact Assessment</div>
 <div class="doc-subtitle">Prepared pursuant to Articles 11, 13, and 27 of Regulation (EU) 2024/1689 of the European Parliament and of the Council</div>
 
-<div class="doc-body">${sealedDoc.markdown}</div>
+<div class="doc-body">${renderedBody}</div>
 
 <div class="footer">
-  <span>© ${new Date().getFullYear()} ${orgName} — Prepared via Regulayer Enterprise Compliance Infrastructure</span>
-  <span>SHA-256: ${sealedDoc.hash.slice(0, 24)}...</span>
+  <span>&copy; ${new Date().getFullYear()} ${orgName} — Prepared via Regulayer Enterprise Compliance Infrastructure</span>
+  <span>Document Integrity Seal (SHA-256): ${sealedDoc.hash.slice(0, 32)}…</span>
 </div>
 </body>
 </html>
@@ -233,9 +298,10 @@ body { font-family: 'Source Serif 4', Georgia, serif; color: #111827; background
                     </div>
 
                     <div className="p-6">
-                        <div className="bg-secondary/30 rounded-xl p-6 text-sm text-foreground font-mono whitespace-pre-wrap leading-relaxed max-h-[600px] overflow-y-auto">
-                            {sealedDoc.markdown}
-                        </div>
+                        <div
+                            className="bg-secondary/30 rounded-xl p-6 text-sm text-foreground leading-relaxed max-h-[600px] overflow-y-auto prose prose-sm dark:prose-invert prose-headings:font-semibold prose-headings:tracking-tight prose-p:text-foreground/80 prose-strong:text-foreground prose-td:text-xs prose-th:text-xs"
+                            dangerouslySetInnerHTML={{ __html: mdToHtml(sealedDoc.markdown) }}
+                        />
                     </div>
 
                     {/* Attestation Footer */}
