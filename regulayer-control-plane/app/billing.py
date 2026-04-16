@@ -166,6 +166,7 @@ class BillingService:
                     "pdf": inv.invoice_pdf
                 }
                 for inv in invoices.data
+            ]
             
             # Override custom cap again inside the try block (since plan might be overwritten)
             if getattr(org, "custom_decision_cap", None) is not None:
