@@ -853,6 +853,39 @@ export interface AdminUserListItem {
 export const getAdminOverview = () => api.get<AdminOverview>("/v1/admin/overview");
 export const getAdminOrgs = () => api.get<AdminOrgListItem[]>("/v1/admin/organizations");
 export const getAdminOrgUsers = (orgId: string) => api.get<AdminUserListItem[]>(`/v1/admin/organizations/${orgId}/users`);
+
+export interface AdminProjectItem {
+    id: string;
+    name: string;
+    governance_mode: string;
+    created_at: string;
+}
+
+export interface AdminApiKeyItem {
+    id: string;
+    name: string;
+    key_prefix: string;
+    scopes: string[];
+    created_at: string;
+}
+
+export interface AdminAuditLogItem {
+    id: string;
+    actor_email: string | null;
+    action: string;
+    resource_type: string;
+    ip_address: string | null;
+    created_at: string;
+}
+
+export interface AdminOrgDetails {
+    organization: AdminOrgListItem;
+    projects: AdminProjectItem[];
+    api_keys: AdminApiKeyItem[];
+    audit_logs: AdminAuditLogItem[];
+}
+
+export const getAdminOrgDetails = (orgId: string) => api.get<AdminOrgDetails>(`/v1/admin/organizations/${orgId}/details`);
 export const updateAdminOrgQuota = (orgId: string, cap: number | null) => api.post(`/v1/admin/organizations/${orgId}/quota`, { custom_decision_cap: cap });
 export const suspendAdminOrg = (orgId: string) => api.post(`/v1/admin/organizations/${orgId}/suspend`);
 export const activateAdminOrg = (orgId: string) => api.post(`/v1/admin/organizations/${orgId}/activate`);

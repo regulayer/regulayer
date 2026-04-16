@@ -13,7 +13,10 @@ import {
     IconLock,
     IconLockOpen,
     IconRefresh,
-    IconActivity
+    IconActivity,
+    IconListDetails,
+    IconKey,
+    IconCode
 } from "@tabler/icons-react";
 import {
     getAdminOverview,
@@ -23,9 +26,11 @@ import {
     suspendAdminOrg,
     activateAdminOrg,
     deleteAdminOrg,
+    getAdminOrgDetails,
     AdminOverview,
     AdminOrgListItem,
-    AdminUserListItem
+    AdminUserListItem,
+    AdminOrgDetails
 } from "@/lib/api";
 
 export default function SuperAdminPage() {
@@ -44,6 +49,11 @@ export default function SuperAdminPage() {
     const [quotaModalOrg, setQuotaModalOrg] = useState<AdminOrgListItem | null>(null);
     const [customCapInput, setCustomCapInput] = useState<string>("");
     const [isUnlimited, setIsUnlimited] = useState(false);
+
+    // Inspector Modal
+    const [inspectOrgId, setInspectOrgId] = useState<string | null>(null);
+    const [orgDetails, setOrgDetails] = useState<AdminOrgDetails | null>(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -81,6 +91,20 @@ export default function SuperAdminPage() {
             console.error(err);
         } finally {
             setUsersLoading(false);
+        }
+    };
+
+    const handleInspectOrg = async (orgId: string) => {
+        setInspectOrgId(orgId);
+        setDetailsLoading(true);
+        try {
+            const res = await getAdminOrgDetails(orgId);
+            setOrgDetails(res.data);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load details");
+        } finally {
+            setDetailsLoading(false);
         }
     };
 
@@ -256,6 +280,9 @@ export default function SuperAdminPage() {
                                         </td>
                                         <td className="py-4 px-5 text-right">
                                             <div className="flex justify-end gap-2 text-muted-foreground">
+                                                <button onClick={() => handleInspectOrg(org.id)} className="p-1.5 hover:bg-secondary rounded hover:text-foreground text-blue-500" title="Deep Inspect Tenant">
+                                                    <IconListDetails size={16} />
+                                                </button>
                                                 <button onClick={() => openQuotaModal(org)} className="p-1.5 hover:bg-secondary rounded hover:text-foreground" title="Override Quota">
                                                     <IconEdit size={16} />
                                                 </button>
@@ -349,6 +376,103 @@ export default function SuperAdminPage() {
                                         ))}
                                     </tbody>
                                 </table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Deep Inspect Modal */}
+            {inspectOrgId && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                    <div className="bg-card w-full max-w-5xl rounded-xl shadow-xl overflow-hidden border border-border flex flex-col h-[90vh]">
+                        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-secondary/30">
+                            <div>
+                                <h2 className="font-semibold text-lg flex items-center gap-2"><IconListDetails size={20}/> Tenant Inspector</h2>
+                                {!detailsLoading && orgDetails && <p className="text-sm text-muted-foreground">{orgDetails.organization.name} ({orgDetails.organization.id})</p>}
+                            </div>
+                            <button onClick={() => setInspectOrgId(null)} className="text-muted-foreground hover:text-foreground bg-secondary p-1 rounded-md">✕</button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1 bg-background space-y-8">
+                            {detailsLoading || !orgDetails ? (
+                                <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center">
+                                    <IconRefresh className="animate-spin mb-4" size={32}/>
+                                    Gathering tenant telemetry...
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Projects Section */}
+                                    <div>
+                                        <h3 className="font-semibold text-md border-b border-border pb-2 mb-4 flex items-center gap-2"><IconCode size={18}/> Active Projects</h3>
+                                        {orgDetails.projects.length === 0 ? <p className="text-sm text-muted-foreground">No projects found.</p> : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {orgDetails.projects.map(p => (
+                                                    <div key={p.id} className="p-4 rounded-lg border border-border bg-card">
+                                                        <div className="font-medium">{p.name}</div>
+                                                        <div className="text-xs text-muted-foreground font-mono mt-1">ID: {p.id}</div>
+                                                        <div className="mt-2 text-xs">
+                                                            <span className="bg-secondary px-2 py-1 rounded">Mode: {p.governance_mode}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* API Keys Section */}
+                                    <div>
+                                        <h3 className="font-semibold text-md border-b border-border pb-2 mb-4 flex items-center gap-2"><IconKey size={18}/> Provisioned API Keys</h3>
+                                        {orgDetails.api_keys.length === 0 ? <p className="text-sm text-muted-foreground">No API keys provisioned.</p> : (
+                                            <table className="w-full text-left text-sm whitespace-nowrap bg-card border border-border rounded-lg overflow-hidden">
+                                                <thead className="bg-secondary/50">
+                                                    <tr>
+                                                        <th className="py-2 px-4 font-semibold text-muted-foreground">Name</th>
+                                                        <th className="py-2 px-4 font-semibold text-muted-foreground">Prefix (First 16)</th>
+                                                        <th className="py-2 px-4 font-semibold text-muted-foreground">Capabilities</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-border">
+                                                    {orgDetails.api_keys.map(k => (
+                                                        <tr key={k.id} className="hover:bg-secondary/20 font-mono text-xs">
+                                                            <td className="py-2 px-4">{k.name}</td>
+                                                            <td className="py-2 px-4">{k.key_prefix}...</td>
+                                                            <td className="py-2 px-4 text-emerald-500">{k.scopes.join(', ')}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+
+                                    {/* Audit Logs Section */}
+                                    <div>
+                                        <h3 className="font-semibold text-md border-b border-border pb-2 mb-4 flex items-center gap-2"><IconActivity size={18}/> Recent Audit Trail</h3>
+                                        {orgDetails.audit_logs.length === 0 ? <p className="text-sm text-muted-foreground">No recent activity.</p> : (
+                                            <div className="bg-card border border-border rounded-lg overflow-hidden">
+                                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                                    <thead className="bg-secondary/50">
+                                                        <tr>
+                                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Timestamp</th>
+                                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Actor</th>
+                                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Resource</th>
+                                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-border text-xs">
+                                                        {orgDetails.audit_logs.map(log => (
+                                                            <tr key={log.id} className="hover:bg-secondary/20">
+                                                                <td className="py-2 px-4 text-muted-foreground">{new Date(log.created_at).toLocaleString()}</td>
+                                                                <td className="py-2 px-4 font-medium">{log.actor_email || "System"}</td>
+                                                                <td className="py-2 px-4"><span className="bg-secondary px-1.5 py-0.5 rounded">{log.resource_type}</span></td>
+                                                                <td className="py-2 px-4">{log.action}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>

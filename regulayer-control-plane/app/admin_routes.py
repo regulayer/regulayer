@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from .storage import (
     get_db, UserDB, OrganizationDB, ProjectDB, SessionDB, 
-    UsageMeterDB, OrgStatus
+    UsageMeterDB, OrgStatus, ApiKeyDB, AuditLogDB
 )
 from .user_auth import UserAuthService
 from .models import UserRole
@@ -64,6 +64,33 @@ class AdminUserListItem(BaseModel):
     role: UserRole
     created_at: datetime
     last_login_at: Optional[datetime]
+
+class AdminProjectItem(BaseModel):
+    id: UUID
+    name: str
+    governance_mode: str
+    created_at: datetime
+
+class AdminApiKeyItem(BaseModel):
+    id: UUID
+    name: str
+    key_prefix: str
+    scopes: List[str]
+    created_at: datetime
+
+class AdminAuditLogItem(BaseModel):
+    id: UUID
+    actor_email: Optional[str]
+    action: str
+    resource_type: str
+    ip_address: Optional[str]
+    created_at: datetime
+
+class AdminOrgDetails(BaseModel):
+    organization: AdminOrgListItem
+    projects: List[AdminProjectItem]
+    api_keys: List[AdminApiKeyItem]
+    audit_logs: List[AdminAuditLogItem]
 
 class SetQuotaRequest(BaseModel):
     custom_decision_cap: Optional[int] = None
@@ -145,6 +172,55 @@ def list_organization_users(
             last_login_at=u.last_login_at
         ) for u in users
     ]
+
+@router.get("/organizations/{org_id}/details", response_model=AdminOrgDetails)
+def get_organization_details(
+    org_id: UUID,
+    admin: UserDB = Depends(verify_superadmin),
+    db: Session = Depends(get_db)
+):
+    """Deep inspect an organization."""
+    org = db.query(OrganizationDB).filter(OrganizationDB.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    member_count = db.query(UserDB).filter(UserDB.organization_id == org.id).count()
+    owner = db.query(UserDB).filter(UserDB.organization_id == org.id, UserDB.role == UserRole.OWNER).first()
+    
+    projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org.id).all()
+    project_ids = [p.id for p in projects]
+    
+    decisions_ingested = 0
+    proofs_exported = 0
+    if project_ids:
+        decisions_ingested = db.query(func.sum(UsageMeterDB.decisions_ingested)).filter(UsageMeterDB.project_id.in_(project_ids)).scalar() or 0
+        proofs_exported = db.query(func.sum(UsageMeterDB.proofs_exported)).filter(UsageMeterDB.project_id.in_(project_ids)).scalar() or 0
+
+    org_summary = AdminOrgListItem(
+        id=org.id,
+        name=org.name,
+        status=org.status,
+        environment=org.environment,
+        owner_email=owner.email if owner else None,
+        member_count=member_count,
+        decisions_ingested=int(decisions_ingested),
+        proofs_exported=int(proofs_exported),
+        custom_decision_cap=getattr(org, 'custom_decision_cap', None),
+        created_at=org.created_at
+    )
+
+    api_keys = []
+    if project_ids:
+        api_keys = db.query(ApiKeyDB).filter(ApiKeyDB.project_id.in_(project_ids)).all()
+
+    audit_logs = db.query(AuditLogDB).filter(AuditLogDB.organization_id == org.id).order_by(AuditLogDB.created_at.desc()).limit(50).all()
+
+    return AdminOrgDetails(
+        organization=org_summary,
+        projects=[AdminProjectItem(id=p.id, name=p.name, governance_mode=p.governance_mode, created_at=p.created_at) for p in projects],
+        api_keys=[AdminApiKeyItem(id=k.id, name=k.name, key_prefix=k.key_prefix, scopes=k.scopes, created_at=k.created_at) for k in api_keys],
+        audit_logs=[AdminAuditLogItem(id=log.id, actor_email=log.actor_email, action=log.action, resource_type=log.resource_type, ip_address=log.ip_address, created_at=log.created_at) for log in audit_logs]
+    )
 
 @router.post("/organizations/{org_id}/quota")
 def update_organization_quota(
