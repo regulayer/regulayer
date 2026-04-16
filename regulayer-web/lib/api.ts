@@ -821,4 +821,41 @@ export const saveIncidentReport = async (r: IncidentReportData): Promise<Inciden
 
 export const deleteIncidentReportRecord = async (id: string): Promise<void> => {};
 
+// --- Super Admin Capabilities ---
+
+export interface AdminOverview {
+    total_organizations: number;
+    total_users: number;
+    total_decisions: number;
+}
+
+export interface AdminOrgListItem {
+    id: string;
+    name: string;
+    status: string;
+    environment: string;
+    owner_email: string | null;
+    member_count: number;
+    decisions_ingested: number;
+    proofs_exported: number;
+    custom_decision_cap: number | null;
+    created_at: string;
+}
+
+export interface AdminUserListItem {
+    id: string;
+    email: string;
+    role: string;
+    created_at: string;
+    last_login_at: string | null;
+}
+
+export const getAdminOverview = () => api.get<AdminOverview>("/v1/admin/overview");
+export const getAdminOrgs = () => api.get<AdminOrgListItem[]>("/v1/admin/organizations");
+export const getAdminOrgUsers = (orgId: string) => api.get<AdminUserListItem[]>(`/v1/admin/organizations/${orgId}/users`);
+export const updateAdminOrgQuota = (orgId: string, cap: number | null) => api.post(`/v1/admin/organizations/${orgId}/quota`, { custom_decision_cap: cap });
+export const suspendAdminOrg = (orgId: string) => api.post(`/v1/admin/organizations/${orgId}/suspend`);
+export const activateAdminOrg = (orgId: string) => api.post(`/v1/admin/organizations/${orgId}/activate`);
+export const deleteAdminOrg = (orgId: string) => api.delete(`/v1/admin/organizations/${orgId}`);
+
 export default api;
