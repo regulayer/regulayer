@@ -22,7 +22,7 @@ def run_migration():
 
             # Check and add is_superadmin to users
             try:
-                conn.execute(text("ALTER TABLE users ADD COLUMN is_superadmin BOOLEAN DEFAULT 0;"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_superadmin BOOLEAN DEFAULT false;"))
                 print("Added is_superadmin to users.")
             except Exception as e:
                 print(f"Skipping users alter (likely already exists): {e}")
