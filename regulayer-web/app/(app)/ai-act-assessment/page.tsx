@@ -124,50 +124,63 @@ export default function AiActAssessmentPage() {
 <!DOCTYPE html>
 <html>
 <head>
-<title>EU AI Act Assessment — ${selectedSystem?.name || 'System'}</title>
+<title>EU AI Act — Technical Documentation & FRIA — ${selectedSystem?.name || 'System'}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; color: #111827; background: #fff; padding: 60px; max-width: 850px; margin: 0 auto; line-height: 1.7; }
-.header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111827; padding-bottom: 24px; margin-bottom: 40px; }
-.logo { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-.meta { text-align: right; font-size: 10px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.8; }
-h1 { font-size: 28px; font-weight: 600; letter-spacing: -1px; margin-bottom: 8px; }
-.subtitle { font-size: 14px; color: #6B7280; margin-bottom: 40px; }
-.body { white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
-.seal-box { border: 2px solid #111827; padding: 32px; margin-top: 60px; position: relative; }
-.seal-label { position: absolute; top: -12px; left: 24px; background: #111827; color: #F59E0B; font-size: 9px; font-weight: 700; padding: 4px 12px; text-transform: uppercase; letter-spacing: 1px; }
-.attestation-text { font-size: 11px; color: #6B7280; font-style: italic; margin-bottom: 16px; max-width: 480px; }
-.attester-name { font-size: 16px; font-weight: 700; }
-.attester-title { font-size: 13px; color: #6B7280; }
-.hash { font-family: monospace; font-size: 10px; color: #6B7280; margin-top: 16px; background: #F3F4F6; padding: 6px 12px; display: inline-block; border-radius: 4px; }
-.footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #E5E7EB; font-size: 9px; color: #9CA3AF; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
-@media print { body { padding: 0; } }
+body { font-family: 'Source Serif 4', Georgia, serif; color: #111827; background: #fff; padding: 60px 72px; max-width: 900px; margin: 0 auto; line-height: 1.8; font-size: 13.5px; }
+.doc-header { border-bottom: 3px double #111827; padding-bottom: 20px; margin-bottom: 12px; }
+.doc-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.org-name { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; text-transform: uppercase; }
+.platform-mark { font-family: 'Inter', sans-serif; text-align: right; font-size: 9px; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; line-height: 1.8; }
+.classification { font-family: 'Inter', sans-serif; text-align: center; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #6B7280; border: 1px solid #D1D5DB; padding: 4px 16px; display: inline-block; margin-top: 8px; }
+.doc-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin: 24px 0 6px; line-height: 1.3; }
+.doc-subtitle { font-size: 13px; color: #6B7280; margin-bottom: 32px; font-style: italic; }
+.doc-body { white-space: pre-wrap; word-wrap: break-word; }
+.doc-body h1 { font-size: 20px; font-weight: 700; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB; }
+.doc-body h2 { font-size: 16px; font-weight: 700; margin: 28px 0 10px; }
+.doc-body h3 { font-size: 14px; font-weight: 700; margin: 20px 0 8px; }
+.doc-body p { margin-bottom: 12px; }
+.doc-body table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+.doc-body th, .doc-body td { border: 1px solid #D1D5DB; padding: 8px 12px; text-align: left; }
+.doc-body th { background: #F9FAFB; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.doc-body strong { font-weight: 700; }
+.doc-body em { font-style: italic; color: #4B5563; }
+.doc-body code { font-family: 'Courier New', monospace; font-size: 11px; background: #F3F4F6; padding: 2px 6px; border-radius: 3px; }
+.doc-body hr { border: none; border-top: 1px solid #E5E7EB; margin: 32px 0; }
+.doc-body ol, .doc-body ul { margin: 8px 0 16px 24px; }
+.doc-body li { margin-bottom: 6px; }
+.footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #D1D5DB; font-family: 'Inter', sans-serif; font-size: 8px; color: #9CA3AF; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
+@media print {
+  body { padding: 40px; }
+  .doc-header, .doc-body h1, .doc-body h2, .seal-box { break-inside: avoid; }
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="logo">${orgName}</div>
-  <div class="meta">
-    REGULAYER CERTIFIED<br>
-    System ID: ${selectedSystemId.slice(0, 8).toUpperCase()}<br>
-    Date: ${new Date(sealedDoc.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
-    Framework: EU AI Act (2024/1689)
+<div class="doc-header">
+  <div class="doc-header-top">
+    <div class="org-name">${orgName}</div>
+    <div class="platform-mark">
+      Regulayer Compliance Infrastructure<br>
+      Document Ref: ${selectedSystemId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}<br>
+      Generated: ${new Date(sealedDoc.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
+      Regulation: EU AI Act (2024/1689)
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <span class="classification">Confidential — Regulatory Compliance Document</span>
   </div>
 </div>
-<h1>Technical Documentation & FRIA</h1>
-<p class="subtitle">Pursuant to EU AI Act — Articles 9, 12, 14, 27</p>
-<div class="body">${sealedDoc.markdown}</div>
-<div class="seal-box">
-  <div class="seal-label">Binding Legal Attestation</div>
-  <p class="attestation-text">"I hereby declare that I have reviewed the contents of this technical documentation and verify that it represents the objective operational reality and compliance measures of the active AI system."</p>
-  <div class="attester-name">${attesterName}</div>
-  <div class="attester-title">${attesterTitle} — ${orgName}</div>
-  <div class="hash">SHA-256: ${sealedDoc.hash}</div>
-</div>
+
+<div class="doc-title">Technical Documentation & Fundamental Rights Impact Assessment</div>
+<div class="doc-subtitle">Prepared pursuant to Articles 11, 13, and 27 of Regulation (EU) 2024/1689 of the European Parliament and of the Council</div>
+
+<div class="doc-body">${sealedDoc.markdown}</div>
+
 <div class="footer">
-  <span>© ${new Date().getFullYear()} Regulayer • Enterprise AI Governance</span>
-  <span>regulayer.tech</span>
+  <span>© ${new Date().getFullYear()} ${orgName} — Prepared via Regulayer Enterprise Compliance Infrastructure</span>
+  <span>SHA-256: ${sealedDoc.hash.slice(0, 24)}...</span>
 </div>
 </body>
 </html>

@@ -95,17 +95,55 @@ async def seal_ai_act_report(
     and locks it into a PDF (simulated here as a JSON return for simplicity, or we could generate PDF).
     """
     seal_time = datetime.now(timezone.utc).isoformat()
-    # E.g., generate a hash of the markdown to prove it wasn't altered post-signing
+    seal_date_formatted = datetime.now(timezone.utc).strftime("%d %B %Y at %H:%M UTC")
     import hashlib
     doc_hash = hashlib.sha256(req.final_document_markdown.encode()).hexdigest()
 
     attestation_block = f"""
+
 ---
-# LEGAL ATTESTATION
-**Signed By:** {req.attester_name}, {req.attester_title}
-**Date of Signature:** {seal_time}
-**Cryptographic Seal SHA-256:** {doc_hash}
-**Declaration:** I hereby declare under penalty of perjury that I have reviewed the contents of this technical documentation and verify that it represents the operational reality and compliance measures of the AI system '{req.system_name}'.
+
+# ATTESTATION AND CERTIFICATION
+
+## Declaration of the Authorised Representative
+
+I, **{req.attester_name}**, holding the position of **{req.attester_title}**, acting in my capacity as the duly authorised representative of the deployer organisation, do hereby make the following declaration in connection with the AI system designated as **"{req.system_name}"**:
+
+### Recitals
+
+**WHEREAS** the European Union Artificial Intelligence Act, Regulation (EU) 2024/1689 of the European Parliament and of the Council of 13 June 2024 (the "Act"), imposes obligations on deployers of high-risk AI systems to maintain technical documentation (Article 11), ensure human oversight (Article 14), and conduct fundamental rights impact assessments (Article 27);
+
+**WHEREAS** Article 26(1) of the Act requires deployers of high-risk AI systems to take appropriate technical and organisational measures to ensure they use such systems in accordance with the instructions of use accompanying the systems;
+
+**WHEREAS** the foregoing Technical Documentation and Fundamental Rights Impact Assessment (the "Document") has been prepared using verifiable system telemetry data extracted from the Regulayer compliance infrastructure platform and drafted with the assistance of advanced language model technology;
+
+### Declarations
+
+1. **Review and Verification.** I confirm that I have personally reviewed the contents of this Document in its entirety and have satisfied myself that, to the best of my knowledge and belief, it accurately represents the operational reality, technical architecture, and compliance measures of the AI system as of the date of this attestation.
+
+2. **Accuracy of Telemetry Data.** The system telemetry metrics cited throughout this Document are machine-generated records extracted from the Regulayer platform's cryptographic audit infrastructure. I have no reason to believe these records have been altered or falsified.
+
+3. **Completeness.** I acknowledge that this Document may require supplementation with additional organisation-specific policies, procedures, and internal governance documentation to constitute a complete compliance file within the meaning of Article 18 of the Act.
+
+4. **Ongoing Obligation.** I acknowledge the continuing obligation under Article 72 of the Act to maintain and update this documentation to reflect material changes to the AI system, its risk profile, or the regulatory environment.
+
+5. **Legal Standing.** This attestation is made voluntarily and in good faith. Upon execution, this Document is intended to form part of the deployer's compliance file and may be presented to national competent authorities, market surveillance authorities, and the European AI Office in connection with any inquiry, audit, or enforcement action under the Act.
+
+### Execution
+
+| Field | Detail |
+|-------|--------|
+| **Attester Name** | {req.attester_name} |
+| **Title** | {req.attester_title} |
+| **AI System** | {req.system_name} |
+| **Date of Attestation** | {seal_date_formatted} |
+| **Document Integrity Seal (SHA-256)** | `{doc_hash}` |
+
+*This document has been cryptographically sealed. Any modification to the document content after the date of attestation will produce a different SHA-256 hash, thereby evidencing tampering. The original hash value above constitutes the authoritative reference for verifying document integrity.*
+
+---
+
+*Generated and sealed by Regulayer Enterprise Compliance Infrastructure.*
 """
     final_output = req.final_document_markdown + "\n\n" + attestation_block
 
