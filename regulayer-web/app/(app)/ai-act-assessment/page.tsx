@@ -1,25 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-    IconTargetArrow, IconBrain, IconShieldCheck, IconLock, 
-    IconFileText, IconCheck, IconRefresh, IconFileCheck
+import {
+    IconTargetArrow, IconBrain, IconShieldCheck, IconLock,
+    IconFileText, IconRefresh, IconFileCheck, IconAlertTriangle,
+    IconChevronDown, IconDownload
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { 
+import {
     getAISystems,
-    getMe, 
-    draftAiActReport, 
-    sealAiActReport, 
-    AISystem 
+    getMe,
+    draftAiActReport,
+    sealAiActReport,
+    AISystem
 } from "@/lib/api";
+
+const PROVIDERS = [
+    { value: "groq", label: "Groq", model: "Llama 3.3 70B" },
+    { value: "openai", label: "OpenAI", model: "GPT-4o" },
+    { value: "anthropic", label: "Anthropic", model: "Claude 3.5 Sonnet" },
+];
 
 export default function AiActAssessmentPage() {
     const [systems, setSystems] = useState<AISystem[]>([]);
     const [loadingSystems, setLoadingSystems] = useState(true);
     const [orgLogoUrl, setOrgLogoUrl] = useState('');
     const [orgName, setOrgName] = useState('');
-    
+
     // Form State
     const [selectedSystemId, setSelectedSystemId] = useState<string>("");
     const [provider, setProvider] = useState<string>("groq");
@@ -31,10 +38,10 @@ export default function AiActAssessmentPage() {
     const [isDrafting, setIsDrafting] = useState(false);
     const [draftError, setDraftError] = useState("");
     const [draftMarkdown, setDraftMarkdown] = useState("");
-    
+
     // Attestation State
     const [isSealing, setIsSealing] = useState(false);
-    const [sealedDoc, setSealedDoc] = useState<{status: string, markdown: string, hash: string, timestamp: string} | null>(null);
+    const [sealedDoc, setSealedDoc] = useState<{ status: string, markdown: string, hash: string, timestamp: string } | null>(null);
 
     useEffect(() => {
         Promise.all([
@@ -43,12 +50,15 @@ export default function AiActAssessmentPage() {
         ]).then(([systemsRes, meRes]) => {
             setSystems(systemsRes);
             if (meRes.data?.org) {
-                setOrgLogoUrl(meRes.data.org.logo_url || '');
+                setOrgLogoUrl((meRes.data.org as any).logo_url || '');
                 setOrgName(meRes.data.org.name || 'Organization');
             }
             setLoadingSystems(false);
         }).catch(() => setLoadingSystems(false));
     }, []);
+
+    const selectedSystem = systems.find(s => s.id === selectedSystemId);
+    const selectedProvider = PROVIDERS.find(p => p.value === provider);
 
     const handleDraft = async () => {
         if (!selectedSystemId || !aiApiKey) return;
@@ -57,19 +67,18 @@ export default function AiActAssessmentPage() {
         setDraftMarkdown("");
         setSealedDoc(null);
 
-        const system = systems.find(s => s.id === selectedSystemId);
-        if (!system) return;
+        if (!selectedSystem) return;
 
         try {
             const res = await draftAiActReport({
                 ai_api_key: aiApiKey,
                 provider: provider,
-                project_id: system.id,
-                system_name: system.name
+                project_id: selectedSystem.id,
+                system_name: selectedSystem.name
             });
             setDraftMarkdown(res.data.markdown);
         } catch (err: any) {
-            setDraftError(err.response?.data?.detail || "Failed to generate draft. Please check your Groq API Key.");
+            setDraftError(err.response?.data?.detail || "Failed to generate draft. Please verify your API key and try again.");
         } finally {
             setIsDrafting(false);
         }
@@ -78,12 +87,11 @@ export default function AiActAssessmentPage() {
     const handleSeal = async () => {
         if (!attesterName || !attesterTitle || !draftMarkdown) return;
         setIsSealing(true);
-        const system = systems.find(s => s.id === selectedSystemId);
 
         try {
             const res = await sealAiActReport({
                 project_id: selectedSystemId,
-                system_name: system?.name || "Unknown System",
+                system_name: selectedSystem?.name || "Unknown System",
                 final_document_markdown: draftMarkdown,
                 attester_name: attesterName,
                 attester_title: attesterTitle
@@ -101,237 +109,341 @@ export default function AiActAssessmentPage() {
         }
     };
 
-    return (
-        <div className="p-6 md:p-10 pb-32 space-y-8 text-foreground max-w-6xl mx-auto">
-            <div className="flex items-center justify-between border-b border-border pb-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-indigo-500 flex items-center gap-2">
-                        <IconBrain size={32} />
-                        Automated AI Act Assessment
-                    </h1>
-                    <p className="text-muted-foreground text-sm mt-2 max-w-3xl">
-                        Enterprise-grade compliance pipeline. This engine automatically sweeps your cryptographic telemetry 
-                        and utilizes Llama-3.3 to draft your mandatory EU AI Act Technical Documentation and FRIA.
-                    </p>
-                </div>
-            </div>
+    const handleReset = () => {
+        setSealedDoc(null);
+        setDraftMarkdown("");
+        setAttesterName("");
+        setAttesterTitle("");
+    };
 
-            {sealedDoc ? (
-                <div className="bg-card border border-border rounded-xl shadow-2xl p-0 animate-in fade-in slide-in-from-bottom-4 overflow-hidden max-w-4xl mx-auto">
-                    {/* Premium Legal Document Header */}
-                    <div className="bg-white text-slate-900 border-b-4 border-slate-900 p-10 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            {orgLogoUrl ? (
-                                <img src={orgLogoUrl} alt="Org Logo" className="h-16 object-contain" />
-                            ) : (
-                                <div className="h-16 flex items-center text-xl font-bold uppercase tracking-widest">{orgName}</div>
-                            )}
+    const handlePrint = () => {
+        if (!sealedDoc) return;
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+        printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>EU AI Act Assessment — ${selectedSystem?.name || 'System'}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; color: #111827; background: #fff; padding: 60px; max-width: 850px; margin: 0 auto; line-height: 1.7; }
+.header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111827; padding-bottom: 24px; margin-bottom: 40px; }
+.logo { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.meta { text-align: right; font-size: 10px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.8; }
+h1 { font-size: 28px; font-weight: 600; letter-spacing: -1px; margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: #6B7280; margin-bottom: 40px; }
+.body { white-space: pre-wrap; font-size: 13px; line-height: 1.8; }
+.seal-box { border: 2px solid #111827; padding: 32px; margin-top: 60px; position: relative; }
+.seal-label { position: absolute; top: -12px; left: 24px; background: #111827; color: #F59E0B; font-size: 9px; font-weight: 700; padding: 4px 12px; text-transform: uppercase; letter-spacing: 1px; }
+.attestation-text { font-size: 11px; color: #6B7280; font-style: italic; margin-bottom: 16px; max-width: 480px; }
+.attester-name { font-size: 16px; font-weight: 700; }
+.attester-title { font-size: 13px; color: #6B7280; }
+.hash { font-family: monospace; font-size: 10px; color: #6B7280; margin-top: 16px; background: #F3F4F6; padding: 6px 12px; display: inline-block; border-radius: 4px; }
+.footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #E5E7EB; font-size: 9px; color: #9CA3AF; display: flex; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
+@media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">${orgName}</div>
+  <div class="meta">
+    REGULAYER CERTIFIED<br>
+    System ID: ${selectedSystemId.slice(0, 8).toUpperCase()}<br>
+    Date: ${new Date(sealedDoc.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
+    Framework: EU AI Act (2024/1689)
+  </div>
+</div>
+<h1>Technical Documentation & FRIA</h1>
+<p class="subtitle">Pursuant to EU AI Act — Articles 9, 12, 14, 27</p>
+<div class="body">${sealedDoc.markdown}</div>
+<div class="seal-box">
+  <div class="seal-label">Binding Legal Attestation</div>
+  <p class="attestation-text">"I hereby declare that I have reviewed the contents of this technical documentation and verify that it represents the objective operational reality and compliance measures of the active AI system."</p>
+  <div class="attester-name">${attesterName}</div>
+  <div class="attester-title">${attesterTitle} — ${orgName}</div>
+  <div class="hash">SHA-256: ${sealedDoc.hash}</div>
+</div>
+<div class="footer">
+  <span>© ${new Date().getFullYear()} Regulayer • Enterprise AI Governance</span>
+  <span>regulayer.tech</span>
+</div>
+</body>
+</html>
+        `);
+        printWindow.document.close();
+        setTimeout(() => printWindow.print(), 500);
+    };
+
+    // ── Sealed Document View ──
+    if (sealedDoc) {
+        return (
+            <div className="p-6 md:p-8 pb-20 space-y-6 text-foreground">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Assessment Finalized</h1>
+                        <p className="text-muted-foreground text-sm">Your EU AI Act assessment has been cryptographically sealed and is ready for distribution.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button onClick={handlePrint} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors">
+                            <IconDownload size={16} /> Download Report
+                        </button>
+                        <button onClick={handleReset} className="px-4 py-2.5 bg-secondary text-foreground rounded-xl text-sm font-medium hover:bg-secondary/80 transition-colors">
+                            New Assessment
+                        </button>
+                    </div>
+                </div>
+
+                {/* Seal Confirmation Banner */}
+                <div className={cn("bg-card border border-border rounded-2xl shadow-card overflow-hidden")}>
+                    <div className="p-8 text-center bg-emerald-50 dark:bg-emerald-500/5 border-b border-border">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold mb-4">
+                            <IconShieldCheck size={16} /> REGULAYER SEALED
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                            Sealed on {new Date(sealedDoc.timestamp).toLocaleString()} • SHA-256: <code className="font-mono text-[10px]">{sealedDoc.hash.slice(0, 24)}...</code>
+                        </p>
+                    </div>
+
+                    {/* Document Preview */}
+                    <div className="px-6 py-4 border-b border-border bg-background flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold">Technical Documentation & FRIA</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">{selectedSystem?.name || 'System'} • EU AI Act (2024/1689)</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-1 rounded">
+                                ID: {selectedSystemId.slice(0, 8).toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        <div className="bg-secondary/30 rounded-xl p-6 text-sm text-foreground font-mono whitespace-pre-wrap leading-relaxed max-h-[600px] overflow-y-auto">
+                            {sealedDoc.markdown}
+                        </div>
+                    </div>
+
+                    {/* Attestation Footer */}
+                    <div className="px-6 py-5 border-t border-border bg-background flex items-center justify-between">
+                        <div>
+                            <p className="text-xs text-muted-foreground italic mb-1">Attested by:</p>
+                            <p className="text-sm font-semibold">{attesterName}</p>
+                            <p className="text-xs text-muted-foreground">{attesterTitle} — {orgName}</p>
                         </div>
                         <div className="text-right">
-                            <div className="flex items-center justify-end gap-2 text-indigo-700 font-bold text-xl tracking-tighter mb-1">
-                                <IconBrain size={24} /> REGULAYER
-                            </div>
-                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                                Certified Legal Assessment
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white text-slate-900 px-12 py-10">
-                        <div className="border-b border-dashed border-slate-300 pb-6 mb-8 flex justify-between items-end">
-                            <div>
-                                <h2 className="text-3xl font-serif font-bold text-slate-900 tracking-tight leading-none mb-2">Technical Documentation & FRIA</h2>
-                                <p className="text-slate-500 text-sm font-medium">Pursuant to EU AI Act (Req. Articles 9, 12, 14, 27)</p>
-                            </div>
-                            <div className="text-right text-xs font-mono text-slate-500">
-                                <div>SYSTEM ID: {selectedSystemId.slice(0,8).toUpperCase()}</div>
-                                <div>DATE: {new Date(sealedDoc.timestamp).toLocaleDateString()}</div>
-                            </div>
-                        </div>
-
-                        {/* Document Body */}
-                        <div className="prose prose-sm prose-slate max-w-none font-serif leading-relaxed mb-16">
-                            <div dangerouslySetInnerHTML={{ __html: sealedDoc.markdown.replace(/\n/g, '<br/>') }} />
-                        </div>
-
-                        {/* Formal Attestation Seal */}
-                        <div className="border border-slate-900 p-8 relative mt-16 bg-slate-50">
-                            <div className="absolute -top-3 left-6 bg-slate-900 text-amber-400 text-[10px] font-bold px-3 py-1 uppercase tracking-widest">
-                                Binding Legal Attestation
-                            </div>
-                            
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <p className="text-xs text-slate-600 mb-4 max-w-md italic">
-                                        "I hereby declare under penalty of perjury that I have reviewed the contents of this technical documentation and verify that it represents the objective operational reality and compliance measures of the active AI system."
-                                    </p>
-                                    <div className="font-bold text-lg">{attesterName}</div>
-                                    <div className="text-sm text-slate-600">{attesterTitle}</div>
-                                    <div className="text-xs font-semibold text-slate-400 mt-1 uppercase">{orgName}</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="w-24 h-24 rounded-full border-4 border-indigo-700/20 flex flex-col items-center justify-center text-indigo-700 ml-auto mb-2 opacity-80">
-                                        <IconShieldCheck size={32} />
-                                        <div className="text-[8px] font-bold uppercase mt-1">Regulayer</div>
-                                        <div className="text-[7px] font-bold uppercase">Sealed</div>
-                                    </div>
-                                    <div className="text-[10px] font-mono text-slate-500 bg-slate-200 px-2 py-1 rounded">
-                                        SHA-256: {sealedDoc.hash.slice(0, 32)}...
-                                    </div>
-                                </div>
-                            </div>
+                            <p className="text-[10px] font-mono text-muted-foreground bg-secondary px-3 py-1.5 rounded">
+                                SHA-256: {sealedDoc.hash.slice(0, 32)}...
+                            </p>
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Controls Sidebar */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-card border border-border rounded-xl shadow-sm p-6 space-y-4">
-                            <div className="flex items-center gap-2 font-semibold">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">1</div>
-                                Target System
-                            </div>
-                            {loadingSystems ? (
-                                <div className="text-sm text-muted-foreground animate-pulse">Scanning infrastructure...</div>
-                            ) : (
-                                <select 
-                                    className="w-full bg-secondary border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    value={selectedSystemId}
-                                    onChange={e => setSelectedSystemId(e.target.value)}
-                                >
-                                    <option value="" disabled>Select an AI System...</option>
-                                    {systems.map(s => <option key={s.id} value={s.id}>{s.name} (Risk: {(s as any).risk_classification || 'Unclassified'})</option>)}
-                                </select>
-                            )}
 
-                            <div className="flex items-center gap-2 font-semibold mt-6">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs">2</div>
-                                AI Engine Provider
-                            </div>
-                            <div className="flex gap-2">
-                                <select 
-                                    className="w-1/3 bg-secondary border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    value={provider}
-                                    onChange={e => setProvider(e.target.value)}
-                                >
-                                    <option value="groq">Groq</option>
-                                    <option value="openai">OpenAI</option>
-                                    <option value="anthropic">Anthropic</option>
-                                </select>
-                                <input 
-                                    type="password" 
-                                    placeholder="API Key..."
-                                    value={aiApiKey}
-                                    onChange={e => setAiApiKey(e.target.value)}
-                                    className="flex-1 bg-secondary border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                                High-speed enterprise automated reasoning. Keys are executed statelessly and never stored.
-                            </p>
+                <p className="text-xs text-muted-foreground text-center">
+                    This document was auto-drafted by AI and reviewed by a human attester. It is a self-assessment and does not constitute formal legal certification.
+                </p>
+            </div>
+        );
+    }
 
-                            <button 
-                                onClick={handleDraft}
-                                disabled={!selectedSystemId || !aiApiKey || isDrafting}
+    // ── Main Assessment Flow ──
+    return (
+        <div className="p-6 md:p-8 pb-20 space-y-6 text-foreground">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Automated Assessment & FRIA</h1>
+                    <p className="text-muted-foreground text-sm">Generate AI-drafted EU AI Act Technical Documentation from live system telemetry.</p>
+                </div>
+                <IconBrain size={28} className="text-muted-foreground" />
+            </div>
+
+            {/* Step 1: System Selection */}
+            <div className="bg-card border border-border rounded-2xl shadow-card p-6">
+                <h3 className="text-sm font-semibold mb-4">Select AI System</h3>
+                {loadingSystems ? (
+                    <div className="h-20 flex items-center justify-center text-muted-foreground text-sm">Loading systems...</div>
+                ) : systems.length === 0 ? (
+                    <div className="text-center py-8">
+                        <IconTargetArrow size={32} className="mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">No AI systems registered. Go to AI Systems to register one first.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {systems.map(system => (
+                            <button
+                                key={system.id}
+                                onClick={() => setSelectedSystemId(system.id)}
                                 className={cn(
-                                    "w-full py-3 mt-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm",
-                                    selectedSystemId && aiApiKey && !isDrafting
-                                        ? "bg-indigo-600 text-white hover:bg-indigo-500" 
-                                        : "bg-secondary text-muted-foreground cursor-not-allowed"
+                                    "w-full flex items-center justify-between p-4 rounded-xl border transition-all",
+                                    selectedSystemId === system.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30 hover:bg-secondary/30"
                                 )}
                             >
-                                {isDrafting ? <IconRefresh className="animate-spin" size={18} /> : <IconTargetArrow size={18} />}
-                                {isDrafting ? "Sweeping Telemetry..." : "Initiate Forensic Draft"}
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-3 h-3 rounded-full", selectedSystemId === system.id ? "bg-primary" : "bg-muted-foreground/30")} />
+                                    <div className="text-left">
+                                        <p className="font-medium text-sm">{system.name}</p>
+                                        <p className="text-xs text-muted-foreground">{(system as any).risk_classification || 'Unclassified'} risk • ID: {system.id.slice(0, 8)}...</p>
+                                    </div>
+                                </div>
                             </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Step 2: Provider & Key */}
+            <div className="bg-card border border-border rounded-2xl shadow-card p-6">
+                <h3 className="text-sm font-semibold mb-4">AI Engine Configuration</h3>
+                <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4">
+                    <div>
+                        <label className="block text-xs text-muted-foreground font-medium mb-1.5">Provider</label>
+                        <select
+                            className="w-full h-10 px-3 text-sm bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                            value={provider}
+                            onChange={e => setProvider(e.target.value)}
+                        >
+                            {PROVIDERS.map(p => (
+                                <option key={p.value} value={p.value}>{p.label} — {p.model}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs text-muted-foreground font-medium mb-1.5">API Key</label>
+                        <input
+                            type="password"
+                            placeholder={provider === 'groq' ? 'gsk_...' : provider === 'openai' ? 'sk-...' : 'sk-ant-...'}
+                            value={aiApiKey}
+                            onChange={e => setAiApiKey(e.target.value)}
+                            className="w-full h-10 px-4 text-sm bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                        />
+                    </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                    Your key is transmitted statelessly to the {selectedProvider?.label || 'provider'} API for a single inference call. It is never persisted in Regulayer infrastructure.
+                </p>
+
+                <button
+                    onClick={handleDraft}
+                    disabled={!selectedSystemId || !aiApiKey || isDrafting}
+                    className={cn(
+                        "w-full py-3 mt-5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2",
+                        selectedSystemId && aiApiKey && !isDrafting
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "bg-secondary text-muted-foreground cursor-not-allowed"
+                    )}
+                >
+                    {isDrafting ? (
+                        <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Generating Assessment...</>
+                    ) : (
+                        <><IconTargetArrow size={16} /> Generate Assessment Draft</>
+                    )}
+                </button>
+            </div>
+
+            {/* Error State */}
+            {draftError && (
+                <div className="bg-card border border-red-200 dark:border-red-500/20 rounded-2xl shadow-card p-5 flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-500 shrink-0 mt-0.5">
+                        <IconAlertTriangle size={16} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-semibold text-foreground">Generation Failed</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{draftError}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Drafting Animation */}
+            {isDrafting && (
+                <div className="bg-card border border-border rounded-2xl shadow-card p-12 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin mb-6" />
+                    <h3 className="text-sm font-semibold text-foreground mb-1">Synthesizing Compliance Assessment</h3>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                        Correlating WORM log hashes, HITL interventions, and incident data with EU AI Act article requirements via {selectedProvider?.label || 'AI'} ({selectedProvider?.model || 'LLM'})...
+                    </p>
+                </div>
+            )}
+
+            {/* Step 3: Review Draft */}
+            {draftMarkdown && !isDrafting && (
+                <div className="space-y-6">
+                    <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
+                        <div className="px-6 py-4 border-b border-border bg-background flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <IconFileText size={18} className="text-muted-foreground" />
+                                <div>
+                                    <h3 className="text-sm font-semibold">Review & Refine Draft</h3>
+                                    <p className="text-[11px] text-muted-foreground">Edit the generated markdown before attestation. All changes will be included in the final sealed document.</p>
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-1 rounded">
+                                {draftMarkdown.length.toLocaleString()} chars
+                            </span>
                         </div>
+                        <textarea
+                            value={draftMarkdown}
+                            onChange={e => setDraftMarkdown(e.target.value)}
+                            className="w-full h-[500px] bg-background text-foreground text-sm p-6 focus:outline-none resize-y font-mono leading-relaxed border-0"
+                        />
                     </div>
 
-                    {/* Editor & Attestation Pane */}
-                    <div className="lg:col-span-2">
-                        {draftError ? (
-                            <div className="bg-red-500/10 border border-red-500/30 p-6 rounded-xl flex items-start gap-4 text-red-500">
-                                <IconLock className="shrink-0" />
-                                <div>
-                                    <h3 className="font-semibold">Engine Failure</h3>
-                                    <p className="text-sm mt-1">{draftError}</p>
-                                </div>
+                    {/* Step 4: Attestation */}
+                    <div className="bg-card border border-border rounded-2xl shadow-card p-6">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground">
+                                <IconLock size={16} />
                             </div>
-                        ) : isDrafting ? (
-                            <div className="h-full min-h-[400px] border border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-secondary/20">
-                                <IconBrain className="animate-pulse mb-4 text-indigo-500" size={48} />
-                                <p className="font-semibold">Synthesizing Mathematical Proofs</p>
-                                <p className="text-sm mt-2 text-center max-w-sm">
-                                    Correlating WORM hashes mapping to ISO 42001 and EU AI Act constraints. 
-                                    Invoking advanced inference models...
-                                </p>
+                            <div>
+                                <h3 className="text-sm font-semibold">Legal Attestation</h3>
+                                <p className="text-xs text-muted-foreground">Under Article 14, an authorized human representative must assume liability for this documentation.</p>
                             </div>
-                        ) : draftMarkdown ? (
-                            <div className="space-y-6 animate-in fade-in">
-                                <div className="bg-card border border-border rounded-xl shadow-sm flex flex-col overflow-hidden">
-                                    <div className="bg-secondary px-6 py-3 border-b border-border flex items-center gap-2 text-sm font-semibold">
-                                        <IconFileText size={18} /> Review & Refine Technical Documentation
-                                    </div>
-                                    <textarea 
-                                        value={draftMarkdown}
-                                        onChange={e => setDraftMarkdown(e.target.value)}
-                                        className="w-full h-[600px] bg-background text-foreground text-sm p-6 focus:outline-none resize-y font-mono leading-relaxed"
-                                    />
-                                </div>
+                        </div>
 
-                                <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl p-8 text-white relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
-                                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-amber-500">
-                                        <IconLock size={20}/> Legal Attestation Check
-                                    </h3>
-                                    <p className="text-sm text-slate-400 mb-6">
-                                        Under Article 14, an authorized human representative must take ultimate liability for the system's operational documentation. Ensure the drafted text accurately reflects your internal controls before sealing.
-                                    </p>
-
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-400 mb-1">Attester Legal Name</label>
-                                            <input 
-                                                type="text" 
-                                                value={attesterName}
-                                                onChange={e => setAttesterName(e.target.value)}
-                                                placeholder="e.g. Jane Doe"
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-amber-500/50"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-400 mb-1">Corporate Title</label>
-                                            <input 
-                                                type="text" 
-                                                value={attesterTitle}
-                                                onChange={e => setAttesterTitle(e.target.value)}
-                                                placeholder="e.g. Chief Compliance Officer"
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-amber-500/50"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        onClick={handleSeal}
-                                        disabled={!attesterName || !attesterTitle || isSealing}
-                                        className={cn(
-                                            "w-full py-4 rounded-xl font-bold tracking-widest text-sm transition-all flex items-center justify-center gap-2 uppercase",
-                                            attesterName && attesterTitle && !isSealing
-                                                ? "bg-amber-500 text-slate-900 hover:bg-amber-400" 
-                                                : "bg-slate-800 text-slate-500 cursor-not-allowed"
-                                        )}
-                                    >
-                                        {isSealing ? <IconRefresh className="animate-spin" size={20} /> : <IconFileCheck size={20} />}
-                                        {isSealing ? "Applying Cryptographic Seal..." : "Attest & Finalize Legal Document"}
-                                    </button>
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                            <div>
+                                <label className="block text-xs text-muted-foreground font-medium mb-1.5">Attester Full Name</label>
+                                <input
+                                    type="text"
+                                    value={attesterName}
+                                    onChange={e => setAttesterName(e.target.value)}
+                                    placeholder="e.g. Jane Doe"
+                                    className="w-full h-10 px-4 text-sm bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
                             </div>
-                        ) : (
-                            <div className="h-full min-h-[400px] border border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground/50">
-                                <IconFileText size={64} className="mb-4 text-muted-foreground/30" />
-                                <p>Awaiting Target System & API Credential</p>
+                            <div>
+                                <label className="block text-xs text-muted-foreground font-medium mb-1.5">Corporate Title</label>
+                                <input
+                                    type="text"
+                                    value={attesterTitle}
+                                    onChange={e => setAttesterTitle(e.target.value)}
+                                    placeholder="e.g. Chief Compliance Officer"
+                                    className="w-full h-10 px-4 text-sm bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
                             </div>
-                        )}
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground mb-5 leading-relaxed">
+                            By clicking below, you affirm that you have reviewed this document and that it accurately represents the operational reality and compliance controls of the AI system. This action generates a cryptographic SHA-256 seal that cannot be altered.
+                        </p>
+
+                        <button
+                            onClick={handleSeal}
+                            disabled={!attesterName || !attesterTitle || isSealing}
+                            className={cn(
+                                "w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2",
+                                attesterName && attesterTitle && !isSealing
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-secondary text-muted-foreground cursor-not-allowed"
+                            )}
+                        >
+                            {isSealing ? (
+                                <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Sealing Document...</>
+                            ) : (
+                                <><IconFileCheck size={16} /> Attest & Seal Document</>
+                            )}
+                        </button>
                     </div>
                 </div>
             )}
