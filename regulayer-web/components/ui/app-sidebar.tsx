@@ -62,7 +62,6 @@ const iconClass = "text-muted-foreground h-[18px] w-[18px] flex-shrink-0";
 const coreLinks = [
     { label: "Dashboard", href: "/dashboard", icon: <IconLayoutDashboard className={cn(iconClass, "text-foreground")} /> },
     { label: "Projects", href: "/projects", icon: <IconBuildingFactory2 className={iconClass} /> },
-    { label: "AI Systems", href: "/ai-systems", icon: <IconTargetArrow className={iconClass} /> },
     { label: "API Keys", href: "/api-keys", icon: <IconKey className={iconClass} /> },
 ];
 
@@ -74,6 +73,7 @@ const complianceLinks = [
 ];
 
 const euAiActLinks = [
+    { label: "AI Systems", href: "/ai-systems", icon: <IconTargetArrow className={iconClass} /> },
     { label: "Assessments & FRIA", href: "/ai-act-assessment", icon: <IconCertificate className={cn(iconClass, "text-indigo-500")} /> },
     { label: "Compliance Report", href: "/compliance-report", icon: <IconFileDescription className={cn(iconClass, "text-emerald-500")} /> },
 ];
