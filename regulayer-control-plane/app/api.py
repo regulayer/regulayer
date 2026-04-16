@@ -886,6 +886,7 @@ def get_current_user(
         org=Organization(
             id=org.id,
             name=org.name,
+            logo_url=org.logo_url,
             status=org.status,
             created_at=org.created_at,
             updated_at=org.updated_at
