@@ -3,7 +3,7 @@ Regulayer Control Plane - Super Admin API
 
 Endpoints for platform-wide administration, strictly guarded.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -24,7 +24,7 @@ def get_auth_service(db: Session = Depends(get_db)) -> UserAuthService:
     return UserAuthService(db)
 
 def verify_superadmin(
-    authorization: str, 
+    authorization: Optional[str] = Header(None), 
     auth_service: UserAuthService = Depends(get_auth_service),
     db: Session = Depends(get_db)
 ):
