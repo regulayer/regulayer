@@ -146,7 +146,7 @@ async def validate_project_access(auth_header: str, project_id: str):
 
 
 # Catch-all for control plane routes
-PROXY_PREFIXES = ["/v1/auth", "/v1/orgs", "/v1/projects", "/v1/keys", "/v1/users", "/v1/roles", "/v1/usage", "/v1/me", "/v1/plans", "/v1/billing", "/v1/status"]
+PROXY_PREFIXES = ["/v1/auth", "/v1/orgs", "/v1/projects", "/v1/keys", "/v1/users", "/v1/roles", "/v1/usage", "/v1/me", "/v1/plans", "/v1/billing", "/v1/status", "/v1/admin"]
 # Recorder Prefixes excluding decisions (handled separately)
 RECORDER_PREFIXES = ["/v1/verify", "/v1/recorder"]
 GOVERNANCE_PREFIXES = ["/v1/governance"]
