@@ -201,7 +201,7 @@ export default function AiActAssessmentPage() {
                                     onChange={e => setSelectedSystemId(e.target.value)}
                                 >
                                     <option value="" disabled>Select an AI System...</option>
-                                    {systems.map(s => <option key={s.id} value={s.id}>{s.name} (Risk: {s.risk_classification})</option>)}
+                                    {systems.map(s => <option key={s.id} value={s.id}>{s.name} (Risk: {(s as any).risk_classification || 'Unclassified'})</option>)}
                                 </select>
                             )}
 
