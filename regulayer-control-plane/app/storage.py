@@ -29,7 +29,7 @@ class OrganizationDB(Base):
     
     id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
-    logo_url = Column(String(1024), nullable=True) # URL to logo image
+    logo_url = Column(String, nullable=True) # URL to logo image
     status = Column(SQLEnum(OrgStatus), default=OrgStatus.ACTIVE, nullable=False)
     is_demo = Column(Boolean, default=False, nullable=False)
     environment = Column(String(50), default="prod", nullable=False)

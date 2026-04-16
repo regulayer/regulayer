@@ -62,6 +62,7 @@ const iconClass = "text-muted-foreground h-[18px] w-[18px] flex-shrink-0";
 const coreLinks = [
     { label: "Dashboard", href: "/dashboard", icon: <IconLayoutDashboard className={cn(iconClass, "text-foreground")} /> },
     { label: "Projects", href: "/projects", icon: <IconBuildingFactory2 className={iconClass} /> },
+    { label: "AI Systems", href: "/ai-systems", icon: <IconTargetArrow className={iconClass} /> },
     { label: "API Keys", href: "/api-keys", icon: <IconKey className={iconClass} /> },
 ];
 
