@@ -61,6 +61,9 @@ app.add_middleware(RequestIdMiddleware)
 from .compliance_api import router as compliance_router
 app.include_router(compliance_router)
 
+from .admin_routes import router as admin_router
+app.include_router(admin_router)
+
 
 # ============================================================
 # Billing Webhooks (Stripe)

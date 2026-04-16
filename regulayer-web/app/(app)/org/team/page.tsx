@@ -487,15 +487,15 @@ export default function TeamPage() {
                 </div>
 
                 {/* Members Table */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-visible">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-zinc-200 bg-zinc-50">
-                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Member</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4 rounded-tl-xl">Member</th>
                                 <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Role</th>
                                 <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Status</th>
                                 <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Joined</th>
-                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4">Actions</th>
+                                <th className="text-left text-xs font-medium text-muted-foreground uppercase px-6 py-4 rounded-tr-xl">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

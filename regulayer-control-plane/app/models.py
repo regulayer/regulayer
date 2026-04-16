@@ -40,6 +40,7 @@ class Organization(BaseModel):
     data_region: Optional[str] = None
     stripe_customer_id: Optional[str] = None
     subscription_status: Optional[str] = None
+    custom_decision_cap: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -149,6 +150,7 @@ class User(BaseModel):
     email: str
     role: UserRole
     organization_id: UUID
+    is_superadmin: bool = False
     created_at: datetime
     last_login_at: Optional[datetime] = None
 

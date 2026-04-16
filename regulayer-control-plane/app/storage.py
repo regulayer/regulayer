@@ -36,6 +36,7 @@ class OrganizationDB(Base):
     data_region = Column(String(50), nullable=True)
     stripe_customer_id = Column(String(255), nullable=True)
     subscription_status = Column(String(50), nullable=True)
+    custom_decision_cap = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True)
     
@@ -104,6 +105,7 @@ class UserDB(Base):
     email = Column(String(255), nullable=False, unique=True)
     role = Column(SQLEnum(UserRole), default=UserRole.MEMBER, nullable=False)
     password_hash = Column(String(128), nullable=True)  # For future auth
+    is_superadmin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     
