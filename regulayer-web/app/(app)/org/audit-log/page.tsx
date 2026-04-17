@@ -11,7 +11,7 @@ import { getMe, getAuditLogs, AuditLogEntry } from '@/lib/api';
 // Types
 // ============================================================
 
-type AuditEventType = 'invite' | 'role_change' | 'key_revoke' | 'org_freeze' | 'org_unfreeze' | 'member_removed';
+type AuditEventType = 'invite' | 'role_change' | 'key_revoke' | 'org_freeze' | 'org_unfreeze' | 'member_removed' | 'policy_created' | 'policy_enabled' | 'policy_disabled' | 'policy_deleted' | 'unknown';
 
 interface AuditEvent {
     id: string;
@@ -34,9 +34,14 @@ function EventIcon({ type }: { type: AuditEventType }) {
         org_freeze: { icon: <Snowflake className="w-4 h-4" />, bg: 'bg-red-100 text-red-600' },
         org_unfreeze: { icon: <RefreshCw className="w-4 h-4" />, bg: 'bg-green-100 text-green-600' },
         member_removed: { icon: <AlertCircle className="w-4 h-4" />, bg: 'bg-red-100 text-red-600' },
+        policy_created: { icon: <Shield className="w-4 h-4" />, bg: 'bg-indigo-100 text-indigo-600' },
+        policy_enabled: { icon: <Shield className="w-4 h-4" />, bg: 'bg-emerald-100 text-emerald-600' },
+        policy_disabled: { icon: <Shield className="w-4 h-4" />, bg: 'bg-slate-200 text-slate-600' },
+        policy_deleted: { icon: <AlertCircle className="w-4 h-4" />, bg: 'bg-red-100 text-red-600' },
+        unknown: { icon: <FileText className="w-4 h-4" />, bg: 'bg-secondary text-muted-foreground' },
     };
 
-    const config = icons[type];
+    const config = icons[type] || icons.unknown;
 
     return (
         <div className={`p-2 rounded-lg ${config.bg}`}>
@@ -53,11 +58,16 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
         org_freeze: 'Org Frozen',
         org_unfreeze: 'Org Unfrozen',
         member_removed: 'Member Removed',
+        policy_created: 'Policy Created',
+        policy_enabled: 'Policy Enabled',
+        policy_disabled: 'Policy Disabled',
+        policy_deleted: 'Policy Deleted',
+        unknown: 'System Event',
     };
 
     return (
-        <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded">
-            {labels[type] || type}
+        <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded font-medium border border-border">
+            {labels[type] || 'Unknown'}
         </span>
     );
 }
@@ -67,13 +77,17 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
 // ============================================================
 
 const mapAction = (action: string): AuditEventType => {
+    if (action.includes('policy.created')) return 'policy_created';
+    if (action.includes('policy.enabled')) return 'policy_enabled';
+    if (action.includes('policy.disabled')) return 'policy_disabled';
+    if (action.includes('policy.deleted')) return 'policy_deleted';
     if (action.includes('invite') || action.includes('create_user')) return 'invite';
     if (action.includes('role')) return 'role_change';
     if (action.includes('revoke') || action.includes('key')) return 'key_revoke';
     if (action.includes('freeze') || action.includes('frozen')) return 'org_freeze';
     if (action.includes('unfreeze')) return 'org_unfreeze';
     if (action.includes('remove')) return 'member_removed';
-    return 'invite';
+    return 'unknown';
 };
 
 export default function AuditLogPage() {

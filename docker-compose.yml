@@ -232,6 +232,7 @@ services:
       - POLICY_DATABASE_URL=${GOVERNANCE_DB_URL}
       - POLICY_RECORDER_URL=http://recorder:8000
       - POLICY_INTERNAL_SECRET=${GOVERNANCE_INTERNAL_SECRET}
+      - POLICY_CONTROL_PLANE_URL=http://control-plane:8000
       - POLICY_GROQ_API_KEY=${GROQ_API_KEY}
       - ENV=${ENV:-dev}
     healthcheck:
