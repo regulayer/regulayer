@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import {
     FileText, UserPlus, Key, Shield, RefreshCw,
-    Snowflake, AlertCircle, Clock
+    Snowflake, AlertCircle, Clock, Globe, ChevronDown, ChevronUp,
+    Monitor, Info
 } from 'lucide-react';
 import { getMe, getAuditLogs, AuditLogEntry } from '@/lib/api';
 
@@ -20,6 +21,9 @@ interface AuditEvent {
     target?: string;
     details: string;
     timestamp: string;
+    ip_address?: string;
+    resource_id?: string;
+    metadata?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -29,7 +33,7 @@ interface AuditEvent {
 function EventIcon({ type }: { type: AuditEventType }) {
     const icons: Record<AuditEventType, { icon: React.ReactNode; bg: string }> = {
         invite: { icon: <UserPlus className="w-4 h-4" />, bg: 'bg-green-100 text-green-600' },
-        role_change: { icon: <Shield className="w-4 h-4" />, bg: '-zinc-100 bg-slate-800' },
+        role_change: { icon: <Shield className="w-4 h-4" />, bg: 'bg-violet-100 text-violet-600' },
         key_revoke: { icon: <Key className="w-4 h-4" />, bg: 'bg-amber-100 text-amber-600' },
         org_freeze: { icon: <Snowflake className="w-4 h-4" />, bg: 'bg-red-100 text-red-600' },
         org_unfreeze: { icon: <RefreshCw className="w-4 h-4" />, bg: 'bg-green-100 text-green-600' },
@@ -73,6 +77,73 @@ function EventTypeBadge({ type }: { type: AuditEventType }) {
 }
 
 // ============================================================
+// Metadata Panel Component
+// ============================================================
+
+function MetadataPanel({ event }: { event: AuditEvent }) {
+    const metaEntries = event.metadata ? Object.entries(event.metadata) : [];
+
+    return (
+        <div className="mt-3 bg-secondary/60 border border-border rounded-lg p-4 space-y-3 text-xs">
+            {/* IP Address */}
+            <div className="flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground font-medium">IP Address:</span>
+                <span className="font-mono text-foreground">
+                    {event.ip_address || 'Not recorded'}
+                </span>
+            </div>
+
+            {/* Resource ID */}
+            {event.resource_id && (
+                <div className="flex items-center gap-2">
+                    <Monitor className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground font-medium">Resource ID:</span>
+                    <span className="font-mono text-foreground break-all">
+                        {event.resource_id}
+                    </span>
+                </div>
+            )}
+
+            {/* Details / Metadata */}
+            {metaEntries.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground font-medium">Metadata:</span>
+                    </div>
+                    <div className="bg-card border border-border rounded-md overflow-hidden">
+                        <table className="w-full text-xs">
+                            <tbody>
+                                {metaEntries.map(([key, value]) => (
+                                    <tr key={key} className="border-b border-border last:border-b-0">
+                                        <td className="px-3 py-2 font-medium text-muted-foreground whitespace-nowrap bg-secondary/40 w-1/3">
+                                            {key}
+                                        </td>
+                                        <td className="px-3 py-2 font-mono text-foreground break-all">
+                                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Timestamp (precise) */}
+            <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground font-medium">Timestamp:</span>
+                <span className="font-mono text-foreground">
+                    {new Date(event.timestamp).toISOString()}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+// ============================================================
 // Main Audit Log Page
 // ============================================================
 
@@ -90,9 +161,23 @@ const mapAction = (action: string): AuditEventType => {
     return 'unknown';
 };
 
+const humanReadableAction = (action: string): string => {
+    const map: Record<string, string> = {
+        'policy.created': 'Governance policy was created',
+        'policy.enabled': 'Governance policy was enabled',
+        'policy.disabled': 'Governance policy was disabled',
+        'policy.deleted': 'Governance policy was deleted',
+    };
+    for (const [key, label] of Object.entries(map)) {
+        if (action.includes(key)) return label;
+    }
+    return action.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
 export default function AuditLogPage() {
     const [events, setEvents] = useState<AuditEvent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     useEffect(() => {
         loadAuditLogs();
@@ -109,8 +194,11 @@ export default function AuditLogPage() {
                         type: mapAction(entry.action),
                         actor: entry.actor_email || 'system',
                         target: entry.resource_type ? `${entry.resource_type}` : undefined,
-                        details: entry.action + (entry.details ? `: ${JSON.stringify(entry.details)}` : ''),
+                        details: humanReadableAction(entry.action),
                         timestamp: entry.created_at,
+                        ip_address: entry.ip_address,
+                        resource_id: entry.resource_id,
+                        metadata: entry.details as Record<string, unknown> | undefined,
                     })));
                 }
             }
@@ -119,6 +207,10 @@ export default function AuditLogPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpandedId(prev => prev === id ? null : id);
     };
 
     return (
@@ -143,37 +235,68 @@ export default function AuditLogPage() {
 
                 {/* Events List */}
                 <div className="bg-card rounded-xl border border-border">
-                    <div className="p-6 border-b border-border">
+                    <div className="p-6 border-b border-border flex items-center justify-between">
                         <h3 className="font-semibold text-foreground">Recent Events</h3>
+                        <span className="text-xs text-muted-foreground">{events.length} event{events.length !== 1 ? 's' : ''}</span>
                     </div>
 
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-border">
                         {loading ? (
                             <div className="px-6 py-12 text-center text-sm text-muted-foreground">Loading audit log...</div>
                         ) : events.length === 0 ? (
                             <div className="px-6 py-12 text-center text-sm text-muted-foreground">No audit events recorded yet.</div>
                         ) : events.map((event) => (
-                            <div key={event.id} className="px-6 py-4 flex items-start gap-4">
-                                <EventIcon type={event.type} />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <EventTypeBadge type={event.type} />
-                                        {event.target && (
-                                            <span className="text-sm font-medium text-foreground truncate">
-                                                {event.target}
+                            <div key={event.id} className="px-6 py-4">
+                                <div className="flex items-start gap-4">
+                                    <EventIcon type={event.type} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                            <EventTypeBadge type={event.type} />
+                                            {event.target && (
+                                                <span className="text-sm font-medium text-foreground truncate">
+                                                    {event.target}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-foreground">{event.details}</p>
+                                        <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                                            <span>by <span className="font-medium text-foreground">{event.actor}</span></span>
+                                            {event.ip_address && (
+                                                <>
+                                                    <span>&bull;</span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Globe className="w-3 h-3" />
+                                                        {event.ip_address}
+                                                    </span>
+                                                </>
+                                            )}
+                                            <span>&bull;</span>
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(event.timestamp).toLocaleString()}
                                             </span>
+                                        </div>
+                                    </div>
+                                    {/* Expand / Collapse Button */}
+                                    <button
+                                        onClick={() => toggleExpand(event.id)}
+                                        className="p-1.5 rounded-md hover:bg-secondary transition-colors shrink-0"
+                                        title="View metadata"
+                                    >
+                                        {expandedId === event.id ? (
+                                            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                                        ) : (
+                                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                         )}
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{event.details}</p>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                        <span>by {event.actor}</span>
-                                        <span>&bull;</span>
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(event.timestamp).toLocaleString()}
-                                        </span>
-                                    </div>
+                                    </button>
                                 </div>
+
+                                {/* Expandable Metadata Panel */}
+                                {expandedId === event.id && (
+                                    <div className="ml-12">
+                                        <MetadataPanel event={event} />
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -187,4 +310,3 @@ export default function AuditLogPage() {
         </div>
     );
 }
-

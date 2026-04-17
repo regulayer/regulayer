@@ -4,250 +4,415 @@ from .config import settings
 
 
 # ============================================================
-# Shared Logo Block (used in all email templates)
-# Uses a hosted SVG-style logo placeholder. Replace URL with
-# your actual hosted logo when available.
+# Enterprise Email Design System
+# ============================================================
+# All Regulayer transactional emails share a unified visual
+# identity: official logo, consistent header/footer, and
+# a professional dark-on-white layout suitable for regulated
+# enterprise environments.
 # ============================================================
 
-LOGO_BLOCK = """
-<td align="center" style="padding-bottom:24px;">
-  <div style="width:48px;height:48px;border-radius:12px;background:#e85d22;color:#ffffff;
-              font-family: Arial, sans-serif; font-size:24px;font-weight:800;
-              line-height:48px;text-align:center;margin:0 auto;">
-    R
-  </div>
-</td>
-"""
+LOGO_URL = "https://regulayer.tech/_next/image?url=%2Fregulayer_logo.png&w=640&q=75"
+CURRENT_YEAR = "2026"
 
-LOGO_FALLBACK_BLOCK = """
-<td align="center" style="padding-bottom:24px;">
-  <div style="width:48px;height:48px;border-radius:50%;background:#000000;color:#fff;
-              font-size:22px;font-weight:700;line-height:48px;text-align:center;">R</div>
-</td>
-"""
+
+def _base_template(title: str, preheader: str, body_content: str) -> str:
+    """
+    Master email wrapper.
+    All transactional emails are rendered through this single
+    enterprise template.  No template can bypass this function.
+
+    Args:
+        title:        HTML <title> tag text
+        preheader:    Invisible preview text shown in inbox previews
+        body_content: The inner HTML content block
+    """
+    return f"""<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{title}</title>
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body, table, td {{ font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }}
+    a {{ color: #e85d22; text-decoration: none; }}
+    @media only screen and (max-width: 600px) {{
+      .email-wrapper {{ width: 100% !important; padding: 16px !important; }}
+      .email-body {{ padding: 28px 20px !important; }}
+    }}
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f5f7;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;">
+  <!-- Preheader (hidden inbox preview text) -->
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
+    {preheader}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" class="email-wrapper" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- ========== HEADER ========== -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <a href="https://regulayer.tech" target="_blank" style="display:inline-block;">
+                <img src="{LOGO_URL}" alt="Regulayer" width="160" height="auto"
+                     style="display:block;max-width:160px;height:auto;border:0;outline:none;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- ========== MAIN CARD ========== -->
+          <tr>
+            <td>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                     style="background-color:#ffffff;border-radius:16px;overflow:hidden;
+                            box-shadow:0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);">
+
+
+                <!-- Body Content -->
+                <tr>
+                  <td class="email-body" style="padding:40px 40px 36px;">
+                    {body_content}
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding:0 40px;">
+                    <div style="height:1px;background-color:#e8e8eb;"></div>
+                  </td>
+                </tr>
+
+                <!-- Card Footer -->
+                <tr>
+                  <td style="padding:20px 40px 24px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size:12px;color:#9ca3af;line-height:1.5;">
+                          This is an automated message from <a href="https://regulayer.tech" style="color:#e85d22;font-weight:500;">Regulayer</a>.
+                          Please do not reply directly to this email.
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- ========== FOOTER ========== -->
+          <tr>
+            <td style="padding-top:32px;text-align:center;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="font-size:12px;color:#9ca3af;line-height:1.6;">
+                    <strong style="color:#6b7280;">Regulayer</strong> · EU AI Act Compliance Infrastructure
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top:8px;font-size:11px;color:#b0b8c4;line-height:1.5;">
+                    Cryptographic Decision Audit &middot; HITL Governance &middot; Regulatory Reporting
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top:12px;font-size:11px;color:#c8cdd5;">
+                    &copy; {CURRENT_YEAR} Regulayer. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
 
 
 # ============================================================
 # 1. OTP Verification Email
 # ============================================================
 
-OTP_HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Regulayer Verification Code</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Inter,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
-      <td align="center">
-        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;margin-top:40px;padding:40px;border-radius:12px;">
+def _build_otp_html(otp_code: str) -> str:
+    body = f"""
+    <!-- Title -->
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;letter-spacing:-0.3px;">
+      Verify your email
+    </h1>
+    <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.6;">
+      Enter the verification code below to complete your sign-in to Regulayer.
+      This code is valid for <strong style="color:#374151;">10 minutes</strong>.
+    </p>
 
-          <!-- Logo -->
-          <tr>
-            """ + LOGO_BLOCK + """
-          </tr>
+    <!-- OTP Code Block -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:4px 0 28px;">
+          <div style="display:inline-block;font-size:32px;font-weight:700;letter-spacing:8px;
+                      color:#111827;background-color:#f9fafb;border:2px solid #e5e7eb;
+                      padding:16px 32px;border-radius:12px;font-family:'Courier New',monospace;">
+            {otp_code}
+          </div>
+        </td>
+      </tr>
+    </table>
 
-          <!-- Heading -->
-          <tr>
-            <td align="center" style="font-size:20px;font-weight:600;color:#111;">
-              Verify your email address
-            </td>
-          </tr>
-
-          <!-- Message -->
-          <tr>
-            <td style="padding-top:20px;font-size:14px;color:#444;line-height:1.6;">
-              Enter the verification code below to continue signing in to Regulayer.
-              This code will expire in 10 minutes.
-            </td>
-          </tr>
-
-          <!-- OTP Code -->
-          <tr>
-            <td align="center" style="padding:24px 0;">
-              <div style="display:inline-block;font-size:28px;font-weight:700;letter-spacing:6px;
-                          background:#f3f4f6;padding:14px 24px;border-radius:8px;color:#111;">
-                {{otp_code}}
-              </div>
-            </td>
-          </tr>
-
-          <!-- Security Note -->
-          <tr>
-            <td style="font-size:12px;color:#888;">
-              If you did not request this code, you can safely ignore this email.
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:30px;font-size:11px;color:#aaa;text-align:center;">
-              Regulayer · AI Decision Audit Infrastructure
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-"""
+    <!-- Security Notice -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#f9fafb;border-radius:10px;border:1px solid #f3f4f6;">
+      <tr>
+        <td style="padding:14px 16px;font-size:13px;color:#6b7280;line-height:1.6;">
+          <strong style="color:#374151;">&#128274; Security notice:</strong>
+          If you did not initiate this request, please ignore this email.
+          Your account remains secure.
+        </td>
+      </tr>
+    </table>
+    """
+    return _base_template(
+        title="Regulayer – Verification Code",
+        preheader=f"Your Regulayer verification code is {otp_code}",
+        body_content=body,
+    )
 
 
 # ============================================================
 # 2. Team Invitation Email
 # ============================================================
 
-INVITE_HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Regulayer Invitation</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Inter,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
-      <td align="center">
-        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;margin-top:40px;padding:40px;border-radius:12px;">
+def _build_invite_html(inviter_name: str, org_name: str, role: str, invite_link: str, expiry_date: str) -> str:
+    body = f"""
+    <!-- Title -->
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;letter-spacing:-0.3px;">
+      You&rsquo;ve been invited
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.6;">
+      <strong style="color:#111827;">{inviter_name}</strong> has invited you to join
+      <strong style="color:#111827;">{org_name}</strong> on Regulayer.
+    </p>
 
-          <!-- Logo -->
-          <tr>
-            """ + LOGO_BLOCK + """
-          </tr>
+    <!-- Role Badge -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#f9fafb;border-radius:10px;border:1px solid #f3f4f6;margin-bottom:28px;">
+      <tr>
+        <td style="padding:16px;">
+          <table role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;">
+                Your Role
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:16px;font-weight:700;color:#111827;">
+                {role}
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td style="padding:16px;text-align:right;">
+          <table role="presentation" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;">
+                Organization
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size:16px;font-weight:700;color:#111827;">
+                {org_name}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
-          <!-- Heading -->
-          <tr>
-            <td align="center" style="font-size:20px;font-weight:600;color:#111;">
-              You've been invited to Regulayer
-            </td>
-          </tr>
+    <!-- CTA Button -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding-bottom:24px;">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{invite_link}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" strokecolor="#111827" fillcolor="#111827">
+          <w:anchorlock/><center style="color:#ffffff;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;">Accept Invitation</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="{invite_link}"
+             style="display:inline-block;background-color:#111827;color:#ffffff;
+                    padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;
+                    text-decoration:none;line-height:1;mso-padding-alt:0;">
+            Accept Invitation &rarr;
+          </a>
+          <!--<![endif]-->
+        </td>
+      </tr>
+    </table>
 
-          <!-- Message -->
-          <tr>
-            <td style="padding-top:20px;font-size:14px;color:#444;line-height:1.6;">
-              <strong>{{inviter_name}}</strong> has invited you to join
-              <strong>{{org_name}}</strong> as a <strong>{{role}}</strong>.
-            </td>
-          </tr>
-
-          <!-- CTA -->
-          <tr>
-            <td align="center" style="padding-top:30px;">
-              <a href="{{invite_link}}"
-                 style="background:#000;color:#fff;padding:12px 24px;
-                        text-decoration:none;border-radius:8px;
-                        font-size:14px;font-weight:500;">
-                Accept Invitation
-              </a>
-            </td>
-          </tr>
-
-          <!-- Expiry -->
-          <tr>
-            <td style="padding-top:20px;font-size:12px;color:#888;">
-              This invitation expires on {{expiry_date}}.
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:30px;font-size:11px;color:#aaa;text-align:center;">
-              If you did not expect this invitation, you may ignore this email.
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-"""
+    <!-- Expiry + Security -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#fffbeb;border-radius:10px;border:1px solid #fef3c7;">
+      <tr>
+        <td style="padding:14px 16px;font-size:13px;color:#92400e;line-height:1.6;">
+          <strong>&#9200; Expires:</strong> {expiry_date}<br/>
+          If you did not expect this invitation, simply ignore this email.
+        </td>
+      </tr>
+    </table>
+    """
+    return _base_template(
+        title=f"Regulayer – Invitation to {org_name}",
+        preheader=f"{inviter_name} has invited you to join {org_name} on Regulayer",
+        body_content=body,
+    )
 
 
 # ============================================================
 # 3. Password Reset Email
 # ============================================================
 
-RESET_HTML_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Password Reset - Regulayer</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Inter,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
-      <td align="center">
-        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;margin-top:40px;padding:40px;border-radius:12px;">
+def _build_reset_html(reset_link: str, expiry_time: str) -> str:
+    body = f"""
+    <!-- Title -->
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;letter-spacing:-0.3px;">
+      Reset your password
+    </h1>
+    <p style="margin:0 0 12px;font-size:15px;color:#6b7280;line-height:1.6;">
+      We received a request to reset the password for your Regulayer account.
+      If you made this request, click the button below to set a new password.
+    </p>
+    <p style="margin:0 0 28px;font-size:14px;color:#9ca3af;line-height:1.5;">
+      This link is valid for <strong style="color:#374151;">{expiry_time}</strong>.
+    </p>
 
-          <!-- Logo -->
-          <tr>
-            """ + LOGO_BLOCK + """
-          </tr>
+    <!-- CTA Button -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding-bottom:28px;">
+          <!--[if mso]>
+          <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{reset_link}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" strokecolor="#111827" fillcolor="#111827">
+          <w:anchorlock/><center style="color:#ffffff;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;">Reset Password</center>
+          </v:roundrect>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <a href="{reset_link}"
+             style="display:inline-block;background-color:#111827;color:#ffffff;
+                    padding:14px 36px;border-radius:10px;font-size:15px;font-weight:600;
+                    text-decoration:none;line-height:1;mso-padding-alt:0;">
+            Reset Password &rarr;
+          </a>
+          <!--<![endif]-->
+        </td>
+      </tr>
+    </table>
 
-          <!-- Heading -->
-          <tr>
-            <td align="center" style="font-size:20px;font-weight:600;color:#111;">
-              Reset Your Password
-            </td>
-          </tr>
+    <!-- Fallback URL -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#f9fafb;border-radius:10px;border:1px solid #f3f4f6;margin-bottom:20px;">
+      <tr>
+        <td style="padding:14px 16px;">
+          <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">
+            Or copy this link
+          </p>
+          <p style="margin:0;font-size:13px;color:#6b7280;word-break:break-all;line-height:1.5;">
+            {reset_link}
+          </p>
+        </td>
+      </tr>
+    </table>
 
-          <!-- Message -->
-          <tr>
-            <td style="padding-top:20px;font-size:14px;color:#444;line-height:1.6;">
-              We received a request to reset the password for your Regulayer account.
-            </td>
-          </tr>
+    <!-- Security Notice -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#f9fafb;border-radius:10px;border:1px solid #f3f4f6;">
+      <tr>
+        <td style="padding:14px 16px;font-size:13px;color:#6b7280;line-height:1.6;">
+          <strong style="color:#374151;">&#128274; Security notice:</strong>
+          If you did not request a password reset, please disregard this email.
+          No changes have been made to your account.
+        </td>
+      </tr>
+    </table>
+    """
+    return _base_template(
+        title="Regulayer – Password Reset",
+        preheader="Reset the password for your Regulayer account",
+        body_content=body,
+    )
 
-          <tr>
-            <td style="padding-top:10px;font-size:14px;color:#444;line-height:1.6;">
-              If you made this request, click the button below to choose a new password.
-            </td>
-          </tr>
 
-          <!-- CTA Button -->
-          <tr>
-            <td align="center" style="padding-top:30px;">
-              <a href="{{reset_link}}"
-                 style="background:#000;color:#fff;padding:12px 24px;
-                        text-decoration:none;border-radius:8px;
-                        font-size:14px;font-weight:500;">
-                Reset Password
-              </a>
-            </td>
-          </tr>
+# ============================================================
+# 4. Account Deletion OTP Email
+# ============================================================
 
-          <!-- Expiry -->
-          <tr>
-            <td style="padding-top:20px;font-size:12px;color:#888;">
-              This link expires in {{expiry_time}}.
-            </td>
-          </tr>
+def _build_account_delete_html(otp_code: str, org_name: str) -> str:
+    body = f"""
+    <!-- Title -->
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#dc2626;letter-spacing:-0.3px;">
+      &#9888;&#65039; Account Deletion Request
+    </h1>
+    <p style="margin:0 0 20px;font-size:15px;color:#6b7280;line-height:1.6;">
+      A request has been made to permanently delete your organization
+      <strong style="color:#111827;">{org_name}</strong> and all associated data.
+    </p>
 
-          <!-- Security Note -->
-          <tr>
-            <td style="padding-top:20px;font-size:12px;color:#888;">
-              If you did not request a password reset, you can safely ignore this email.
-            </td>
-          </tr>
+    <!-- Danger Banner -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#fef2f2;border-radius:10px;border:1px solid #fecaca;margin-bottom:24px;">
+      <tr>
+        <td style="padding:16px;font-size:13px;color:#991b1b;line-height:1.7;">
+          <strong style="font-size:14px;">This action is irreversible.</strong> The following will be permanently deleted:
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:10px;">
+            <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull;&nbsp; All team members and their accounts</td></tr>
+            <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull;&nbsp; All projects, API keys, and SDK integrations</td></tr>
+            <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull;&nbsp; All governance policies and audit logs</td></tr>
+            <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull;&nbsp; All billing data and subscription records</td></tr>
+            <tr><td style="padding:3px 0;font-size:13px;color:#991b1b;">&bull;&nbsp; The organization <strong>{org_name}</strong> itself</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:30px;font-size:11px;color:#aaa;text-align:center;">
-              Regulayer · AI Decision Audit Infrastructure
-            </td>
-          </tr>
+    <!-- Verification Code -->
+    <p style="margin:0 0 12px;font-size:15px;color:#6b7280;line-height:1.6;">
+      Enter this verification code to confirm. It expires in <strong style="color:#374151;">10 minutes</strong>.
+    </p>
 
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-"""
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:4px 0 28px;">
+          <div style="display:inline-block;font-size:32px;font-weight:700;letter-spacing:8px;
+                      color:#dc2626;background-color:#fef2f2;border:2px solid #fecaca;
+                      padding:16px 32px;border-radius:12px;font-family:'Courier New',monospace;">
+            {otp_code}
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Security Notice -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color:#f9fafb;border-radius:10px;border:1px solid #f3f4f6;">
+      <tr>
+        <td style="padding:14px 16px;font-size:13px;color:#6b7280;line-height:1.6;">
+          <strong style="color:#374151;">&#128274; Didn&rsquo;t request this?</strong>
+          Ignore this email and secure your account immediately by resetting your password.
+        </td>
+      </tr>
+    </table>
+    """
+    return _base_template(
+        title=f"Regulayer – Confirm Account Deletion ({org_name})",
+        preheader=f"Confirm the deletion of {org_name} on Regulayer",
+        body_content=body,
+    )
 
 
 # ============================================================
@@ -283,7 +448,7 @@ async def send_otp_email(to_email: str, otp_code: str):
     message["To"] = to_email
     message["Subject"] = "Your Regulayer Verification Code"
 
-    html_content = OTP_HTML_TEMPLATE.replace("{{otp_code}}", otp_code)
+    html_content = _build_otp_html(otp_code)
     message.set_content(f"Your verification code is: {otp_code}")
     message.add_alternative(html_content, subtype="html")
 
@@ -309,14 +474,7 @@ async def send_invitation_email(
     message["To"] = to_email
     message["Subject"] = f"You've been invited to {org_name} on Regulayer"
 
-    html_content = (
-        INVITE_HTML_TEMPLATE
-        .replace("{{inviter_name}}", inviter_name)
-        .replace("{{org_name}}", org_name)
-        .replace("{{role}}", role)
-        .replace("{{invite_link}}", invite_link)
-        .replace("{{expiry_date}}", expiry_date)
-    )
+    html_content = _build_invite_html(inviter_name, org_name, role, invite_link, expiry_date)
 
     message.set_content(
         f"{inviter_name} has invited you to join {org_name} as a {role}. "
@@ -326,99 +484,6 @@ async def send_invitation_email(
 
     if await _send_email(message):
         print(f"Invitation email sent to {to_email}")
-
-
-# ============================================================
-# 4. Account Deletion OTP Email
-# ============================================================
-
-ACCOUNT_DELETE_OTP_TEMPLATE = """<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Regulayer – Account Deletion Verification</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Inter,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
-      <td align="center">
-        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;margin-top:40px;padding:40px;border-radius:12px;">
-
-          <!-- Logo -->
-          <tr>
-            """ + LOGO_BLOCK + """
-          </tr>
-
-          <!-- Heading -->
-          <tr>
-            <td align="center" style="font-size:20px;font-weight:600;color:#dc2626;">
-              ⚠️ Account Deletion Request
-            </td>
-          </tr>
-
-          <!-- Warning -->
-          <tr>
-            <td style="padding-top:16px;">
-              <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;font-size:13px;color:#991b1b;line-height:1.6;">
-                You have requested to <strong>permanently delete</strong> your organization
-                <strong>{{org_name}}</strong> and all associated data. This action is
-                <strong>irreversible</strong>.
-              </div>
-            </td>
-          </tr>
-
-          <!-- Message -->
-          <tr>
-            <td style="padding-top:16px;font-size:14px;color:#444;line-height:1.6;">
-              Enter the verification code below to confirm the deletion.
-              This code will expire in 10 minutes.
-            </td>
-          </tr>
-
-          <!-- OTP Code -->
-          <tr>
-            <td align="center" style="padding:24px 0;">
-              <div style="display:inline-block;font-size:28px;font-weight:700;letter-spacing:6px;
-                          background:#fef2f2;padding:14px 24px;border-radius:8px;color:#dc2626;
-                          border:2px solid #fecaca;">
-                {{otp_code}}
-              </div>
-            </td>
-          </tr>
-
-          <!-- What gets deleted -->
-          <tr>
-            <td style="font-size:12px;color:#666;line-height:1.6;">
-              <strong>The following will be permanently deleted:</strong><br/>
-              • All team members and their accounts<br/>
-              • All projects and API keys<br/>
-              • All invitations and sessions<br/>
-              • All audit logs<br/>
-              • The organization itself
-            </td>
-          </tr>
-
-          <!-- Security Note -->
-          <tr>
-            <td style="padding-top:16px;font-size:12px;color:#888;">
-              If you did not request this, please ignore this email and secure your account immediately.
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:30px;font-size:11px;color:#aaa;text-align:center;">
-              Regulayer · AI Decision Audit Infrastructure
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-"""
 
 
 async def send_account_deletion_otp_email(to_email: str, otp_code: str, org_name: str):
@@ -432,11 +497,7 @@ async def send_account_deletion_otp_email(to_email: str, otp_code: str, org_name
     message["To"] = to_email
     message["Subject"] = f"⚠️ Confirm Account Deletion – {org_name}"
 
-    html_content = (
-        ACCOUNT_DELETE_OTP_TEMPLATE
-        .replace("{{otp_code}}", otp_code)
-        .replace("{{org_name}}", org_name)
-    )
+    html_content = _build_account_delete_html(otp_code, org_name)
     message.set_content(
         f"Account deletion verification code for {org_name}: {otp_code}. "
         f"This code expires in 10 minutes."
@@ -458,11 +519,7 @@ async def send_password_reset_email(to_email: str, reset_link: str, expiry_time:
     message["To"] = to_email
     message["Subject"] = "Reset Your Regulayer Password"
 
-    html_content = (
-        RESET_HTML_TEMPLATE
-        .replace("{{reset_link}}", reset_link)
-        .replace("{{expiry_time}}", expiry_time)
-    )
+    html_content = _build_reset_html(reset_link, expiry_time)
 
     message.set_content(
         f"You requested a password reset for your Regulayer account. "

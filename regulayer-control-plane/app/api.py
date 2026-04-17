@@ -133,8 +133,18 @@ async def billing_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "error", "message": str(e)}
 
 
-def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
-    return AuditService(db)
+def get_audit_service(request: Request, db: Session = Depends(get_db)) -> AuditService:
+    # Extract client IP from X-Forwarded-For or direct connection
+    client_ip = request.headers.get("x-forwarded-for")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    elif request.client:
+        client_ip = request.client.host
+    else:
+        client_ip = None
+    svc = AuditService(db)
+    svc._request_ip = client_ip
+    return svc
 
 
 @app.on_event("startup")
@@ -2032,7 +2042,8 @@ class AuditLogCreate(BaseModel):
     actor_email: Optional[str] = None
     resource_id: Optional[UUID] = None
     details: Optional[dict] = None
-
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
 
 @app.post("/v1/internal/audit-logs", tags=["audit"])
 def create_internal_audit_log(
@@ -2054,7 +2065,9 @@ def create_internal_audit_log(
         actor_id=entry.actor_id,
         actor_email=entry.actor_email,
         resource_id=entry.resource_id,
-        details=entry.details
+        details=entry.details,
+        ip_address=entry.ip_address,
+        user_agent=entry.user_agent
     )
     return {"status": "logged"}
 

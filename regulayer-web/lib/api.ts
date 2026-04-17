@@ -102,6 +102,7 @@ export interface AuditLogEntry {
     resource_type: string;
     resource_id?: string;
     details?: Record<string, unknown>;
+    ip_address?: string;
     created_at: string;
 }
 

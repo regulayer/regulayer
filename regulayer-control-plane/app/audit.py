@@ -15,6 +15,7 @@ from .models import AuditLog
 class AuditService:
     def __init__(self, db: Session):
         self.db = db
+        self._request_ip: Optional[str] = None
 
     def log(
         self,
@@ -29,6 +30,8 @@ class AuditService:
         user_agent: Optional[str] = None
     ) -> AuditLog:
         """Record an audit log entry."""
+        # Auto-fill IP from captured request if not explicitly provided
+        resolved_ip = ip_address or self._request_ip
         log_entry = AuditLogDB(
             organization_id=organization_id,
             actor_id=actor_id,
@@ -37,7 +40,7 @@ class AuditService:
             resource_type=resource_type,
             resource_id=resource_id,
             details=details or {},
-            ip_address=ip_address,
+            ip_address=resolved_ip,
             user_agent=user_agent,
             created_at=datetime.now(timezone.utc)
         )
