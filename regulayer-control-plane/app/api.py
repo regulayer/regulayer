@@ -1693,18 +1693,23 @@ class UsageStats(BaseModel):
 def get_org_usage(
     org_id: UUID,
     db: Session = Depends(get_db),
-    tenant: TenantContext = Depends(require_tenant_context)
+    tenant: Optional[TenantContext] = Depends(get_tenant_context),
+    x_internal_auth: Optional[str] = Header(None, alias="X-Internal-Auth")
 ) -> UsageStats:
     """
     Get organization usage statistics.
     Aggregates decision counts from Recorder.
     """
     # Authorization
-    if tenant.organization_id != org_id:
-         raise HTTPException(status_code=403, detail="Access denied")
-    
-    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN]:
-         raise HTTPException(status_code=403, detail="Access denied")
+    if x_internal_auth and x_internal_auth == settings.internal_secret:
+        pass # Internal service bypass
+    else:
+        if not tenant:
+             raise HTTPException(status_code=401, detail="API key required")
+        if tenant.organization_id != org_id:
+             raise HTTPException(status_code=403, detail="Access denied")
+        if tenant.role not in [UserRole.OWNER, UserRole.ADMIN]:
+             raise HTTPException(status_code=403, detail="Access denied")
 
     # 1. Get all projects for Org
     projects = db.query(ProjectDB).filter(ProjectDB.organization_id == org_id).all()

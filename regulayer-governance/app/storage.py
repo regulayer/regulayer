@@ -286,6 +286,18 @@ async def init_governance_db():
                         ) THEN
                             ALTER TABLE governance_review_history ADD COLUMN actor_email VARCHAR(255);
                         END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name = 'governance_review_history' AND column_name = 'org_id'
+                        ) THEN
+                            ALTER TABLE governance_review_history ADD COLUMN org_id UUID;
+                        END IF;
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name = 'governance_review_history' AND column_name = 'project_id'
+                        ) THEN
+                            ALTER TABLE governance_review_history ADD COLUMN project_id UUID;
+                        END IF;
                     END $$;
                     """
                 ))

@@ -1,7 +1,9 @@
 from typing import List
 from uuid import UUID, uuid4
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from sqlalchemy.orm import Session
+from typing import List, Optional
+from .config import settings
 
 from .models import (
     AISystemCreate, AISystemModel,
@@ -18,7 +20,7 @@ from .storage import (
     FRIADB, TechDocumentationDB, 
     MonitoringPlanDB, IncidentReportDB
 )
-from .middleware import require_tenant_context
+from .middleware import require_tenant_context, get_tenant_context
 
 router = APIRouter(tags=["compliance"])
 
@@ -49,8 +51,19 @@ def create_ai_system(organization_id: UUID, request: AISystemCreate, db: Session
     return db_item
 
 @router.get("/v1/orgs/{organization_id}/compliance/ai-systems", response_model=List[AISystemModel])
-def list_ai_systems(organization_id: UUID, db: Session = Depends(get_db), tenant: TenantContext = Depends(require_tenant_context)):
-    _verify_org_access(organization_id, tenant, db)
+def list_ai_systems(
+    organization_id: UUID, 
+    db: Session = Depends(get_db), 
+    tenant: Optional[TenantContext] = Depends(get_tenant_context),
+    x_internal_auth: Optional[str] = Header(None, alias="X-Internal-Auth")
+):
+    if x_internal_auth and x_internal_auth == settings.internal_secret:
+        pass # Internal bypass
+    else:
+        if not tenant:
+             raise HTTPException(status_code=401, detail="API key required")
+        _verify_org_access(organization_id, tenant, db)
+        
     return db.query(AISystemDB).filter(AISystemDB.organization_id == organization_id).all()
 
 # ============================================================

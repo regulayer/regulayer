@@ -450,6 +450,8 @@ async def get_incidents_report(
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/incidents"
+            if x_org_id:
+                url += f"?org_id={x_org_id}"
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 incidents = resp.json()
