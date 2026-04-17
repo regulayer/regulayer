@@ -131,6 +131,9 @@ async def generate_ai_act_draft(api_key: str, provider: str, context: Dict[str, 
 
 ┌─────────────────────────────────────────────────────┐
 │ System Name:                {context.get('system_name', 'Enterprise AI Core')}
+│ Intended Purpose:           {context.get('intended_purpose', 'Unspecified')}
+│ System Description:         {context.get('description', 'Unspecified')}
+│ Risk Classification (EU):   {context.get('risk_tier', 'high')} Risk (Category: {context.get('annex_category', 'none')})
 │ Total WORM Audit Logs:      {context.get('total_logs', 0):,} verified entries
 │ Active Security Incidents:  {context.get('active_incidents', 0)}
 │ Mean Time to Resolution:    {context.get('mttr', 0)} hours

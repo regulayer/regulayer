@@ -50,7 +50,7 @@ const reportOptions: ReportOption[] = [
     {
         id: 'chain',
         title: 'Chain Integrity Report',
-        description: 'Cryptographic proof that the historical record chain is intact with hash excerpts and verification status.',
+        description: 'Cryptographic proof of the historical record chain. Download the JSON package to process it in the Offline Verification CLI Tool for regulatory auditing.',
         endpoint: '/v1/reports/chain/default',
         icon: IconLink,
         color: 'text-emerald-500',

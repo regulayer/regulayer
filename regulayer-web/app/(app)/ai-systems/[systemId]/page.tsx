@@ -316,9 +316,9 @@ export default function AISystemDetailPage() {
             {system.risk_tier !== 'unclassified' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Conformity Assessment', desc: 'Start conformity assessment for this system', href: '/conformity', icon: <IconShieldCheck size={20} /> },
-                        { label: 'FRIA', desc: 'Fundamental Rights Impact Assessment', href: '/fria', icon: <IconTarget size={20} /> },
-                        { label: 'Technical Documentation', desc: 'Generate Annex IV documentation', href: '/tech-docs', icon: <IconBuildingFactory2 size={20} /> },
+                        { label: 'Master Reporting Engine', desc: 'Auto-generate EU AI Act documentation', href: '/ai-act-assessment', icon: <IconBuildingFactory2 size={20} /> },
+                        { label: 'Attestation & Compliance', desc: 'Enterprise systemic compliance review', href: '/compliance-report', icon: <IconShieldCheck size={20} /> },
+                        { label: 'Cryptographic Audit Vault', desc: 'View WORM-compliant incident records', href: '/decisions', icon: <IconTarget size={20} /> },
                     ].map(link => (
                         <Link key={link.label} href={link.href}
                             className="bg-card border border-border rounded-2xl shadow-card p-5 hover:shadow-glow-sm hover:-translate-y-1 transition-all duration-300 group">

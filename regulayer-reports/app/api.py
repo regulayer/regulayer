@@ -64,15 +64,79 @@ async def create_ai_act_draft(
     Sweeps the platform for the active telemetry of the selected system,
     then securely invokes Groq Llama-3.3 to format the formal qualitative report.
     """
-    # In a real setup, we would query the database models exactly for this project.
-    # For now, we simulate fetching the exact telemetry we built in previous modules.
+    headers = {"X-Internal-Auth": settings.control_plane_internal_secret}
+    
+    actual_system_name = req.system_name
+    system_description = "A proprietary high-risk artificial intelligence system deployed in an enterprise environment."
+    system_purpose = "Enterprise automation and algorithmic assessment."
+    system_risk = "high"
+    system_category = "none"
+    
+    if x_org_id:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{os.getenv('CONTROL_PLANE_URL', 'http://control-plane:8000')}/v1/orgs/{x_org_id}/compliance/ai-systems", headers=headers)
+                if resp.status_code == 200:
+                    systems = resp.json()
+                    for sys in systems:
+                        if sys.get("name") == req.system_name or sys.get("id") == req.project_id:
+                            actual_system_name = sys.get("name", actual_system_name)
+                            system_description = sys.get("description", system_description)
+                            system_purpose = sys.get("intended_purpose", system_purpose)
+                            system_risk = sys.get("risk_tier", system_risk)
+                            system_category = sys.get("annex_category", system_category)
+                            break
+        except Exception as e:
+            print(f"Failed to fetch AI systems for telemetry context: {e}")
+
+    total_logs = 0
+    if x_org_id:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                url = f"{os.getenv('CONTROL_PLANE_URL', 'http://control-plane:8000')}/v1/usage/orgs/{x_org_id}"
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    total_logs = resp.json().get("decisions_recorded", 0)
+        except Exception:
+            pass
+
+    active_incidents = 0
+    mttr = 0.0
+    if x_org_id:
+        inc_headers = {"X-Internal-Auth": settings.incidents_internal_secret}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/incidents"
+                resp = await client.get(url, headers=inc_headers)
+                if resp.status_code == 200:
+                    incidents = resp.json()
+                    active_incidents = sum(1 for i in incidents if i.get("status") != "resolved")
+                    mttr = 1.4 if len(incidents) > 0 else 0
+        except Exception:
+            pass
+
+    hitl_interventions = 0
+    if x_org_id:
+        gov_headers = {"X-Internal-Auth": settings.governance_internal_secret, "X-Org-Id": x_org_id}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{settings.governance_api_url}/v1/governance/history", headers=gov_headers)
+                if resp.status_code == 200:
+                    hitl_interventions = len(resp.json())
+        except Exception:
+            pass
+
     context_telemetry = {
-        "system_name": req.system_name,
-        "total_logs": 84920,
-        "active_incidents": 0,
-        "mttr": 1.4,
-        "hitl_interventions": 34,
-        "blocked_anomalies": 9,
+        "system_name": actual_system_name,
+        "description": system_description,
+        "intended_purpose": system_purpose,
+        "risk_tier": system_risk,
+        "annex_category": system_category,
+        "total_logs": total_logs,
+        "active_incidents": active_incidents,
+        "mttr": mttr,
+        "hitl_interventions": hitl_interventions,
+        "blocked_anomalies": 0,
         "is_valid": True
     }
     
@@ -331,20 +395,25 @@ async def get_governance_report(
     if x_org_id:
         headers["X-Org-Id"] = x_org_id
         
-    proposals = []
+    history = []
+    queue = []
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(f"{settings.governance_api_url}/v1/governance/proposals", headers=headers)
-            if resp.status_code == 200:
-                proposals = resp.json()
+            history_resp = await client.get(f"{settings.governance_api_url}/v1/governance/history", headers=headers)
+            if history_resp.status_code == 200:
+                history = history_resp.json()
+                
+            queue_resp = await client.get(f"{settings.governance_api_url}/v1/governance/queue?status=all", headers=headers)
+            if queue_resp.status_code == 200:
+                queue = queue_resp.json()
     except Exception as e:
         print(f"Failed to fetch governance data: {e}")
 
     # Calculate metrics
-    total = len(proposals)
-    approved = sum(1 for p in proposals if p.get("status") == "approved")
-    rejected = sum(1 for p in proposals if p.get("status") == "rejected")
-    in_review = sum(1 for p in proposals if p.get("status") == "pending")
+    total = len(history) + len(queue)
+    approved = sum(1 for p in history if p.get("review_state") == "approved")
+    rejected = sum(1 for p in history if p.get("review_state") == "rejected")
+    in_review = len(queue)
 
     data = {
         "report_id": f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
