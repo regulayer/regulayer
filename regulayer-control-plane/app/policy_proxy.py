@@ -28,7 +28,9 @@ async def forward_request(
     # 2. Prepare Headers
     headers = {
         "X-Internal-Auth": getattr(settings, 'internal_secret', "dev_internal_secret"),
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Org-Id": str(tenant.organization_id),
+        "X-Actor-Email": tenant.email or "unknown@user.com"
     }
     
     # 3. Execute Request
