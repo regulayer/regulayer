@@ -61,7 +61,7 @@ async def dispatch_audit_log(
                     "resource_id": resource_id,
                     "details": details or {}
                 },
-                headers={"X-Internal-Secret": settings.internal_secret}
+                headers={"X-Internal-Secret": settings.control_plane_internal_secret}
             )
     except Exception as e:
         logging.error(f"Audit dispatch failed for {action}: {e}")

@@ -15,6 +15,7 @@ class PolicySettings(BaseSettings):
     governance_url: str = "http://governance:8002"
     incidents_url: str = "http://incidents:8005"
     internal_secret: str = "dev_internal_secret"
+    control_plane_internal_secret: str = "dev_internal_secret"
     slack_webhook_url: Optional[str] = None
     debug: bool = False
     groq_api_key: Optional[str] = None
