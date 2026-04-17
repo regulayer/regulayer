@@ -4,315 +4,191 @@ from .config import settings
 
 
 # ============================================================
-# Regulayer Enterprise Email System
+# Regulayer Email Templates
+# ============================================================
+# Design principles: Stripe/Linear-level restraint.
+# - Logo: small wordmark, 36px height, top-left, no header bar
+# - Generous whitespace
+# - Two font sizes only: 15px body, 12px secondary
+# - Single accent: #111 for buttons, nothing else
+# - No decorative elements, no taglines, no gradients
 # ============================================================
 
 LOGO_URL = "https://regulayer.tech/_next/image?url=%2Fregulayer_logo.png&w=640&q=75"
 
 
-def _base_template(title: str, preheader: str, body_content: str) -> str:
-    """Master email wrapper. Every Regulayer email renders through this."""
+def _base(title: str, preheader: str, inner: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{title}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f2f2f2;">{preheader}</div>
+<body style="margin:0;padding:0;background-color:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<div style="display:none;max-height:0;overflow:hidden;">{preheader}</div>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fafafa;">
+<tr><td align="center" style="padding:48px 24px 56px;">
+<table width="480" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;width:100%;">
 
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f2f2;">
-    <tr>
-      <td align="center" style="padding:40px 16px 48px;">
+<!-- Logo -->
+<tr><td style="padding:0 0 40px;">
+<img src="{LOGO_URL}" alt="Regulayer" width="36" height="36" style="display:block;width:36px;height:36px;border:0;border-radius:6px;" />
+</td></tr>
 
-        <!-- Container -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e0e0e0;">
+{inner}
 
-          <!-- Header Bar -->
-          <tr>
-            <td style="background-color:#0f0f0f;padding:24px 40px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <img src="{LOGO_URL}" alt="Regulayer" width="120" style="display:block;width:120px;height:auto;border:0;" />
-                  </td>
-                  <td align="right" style="font-size:12px;color:#9ca3af;font-weight:400;letter-spacing:0.3px;">
-                    AI Compliance Platform
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+<!-- Divider -->
+<tr><td style="padding:40px 0 0;">
+<div style="height:1px;background-color:#eee;"></div>
+</td></tr>
 
-          <!-- Body -->
-          <tr>
-            <td style="padding:40px 40px 36px;">
-              {body_content}
-            </td>
-          </tr>
+<!-- Footer -->
+<tr><td style="padding:20px 0 0;">
+<p style="margin:0;font-size:12px;color:#999;line-height:1.6;">
+Regulayer<br/>
+This is an automated message. If you did not expect it, no action is needed.
+</p>
+</td></tr>
 
-          <!-- Footer Divider -->
-          <tr>
-            <td style="padding:0 40px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr><td style="border-top:1px solid #ebebeb;font-size:0;line-height:0;height:1px;">&nbsp;</td></tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding:24px 40px 28px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="font-size:12px;color:#9ca3af;line-height:1.7;">
-                    <strong style="color:#6b7280;font-weight:600;">Regulayer</strong><br/>
-                    EU AI Act Compliance Infrastructure<br/>
-                    Cryptographic Decision Audit &middot; Governance &middot; Regulatory Reporting
-                  </td>
-                  <td align="right" valign="top" style="font-size:12px;color:#9ca3af;">
-                    <a href="https://regulayer.tech" style="color:#6b7280;text-decoration:none;font-weight:500;">regulayer.tech</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-        </table>
-
-        <!-- Below-card notice -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
-          <tr>
-            <td align="center" style="padding:20px 0 0;font-size:11px;color:#b0b0b0;line-height:1.5;">
-              This is an automated message from Regulayer. Please do not reply directly.
-            </td>
-          </tr>
-        </table>
-
-      </td>
-    </tr>
-  </table>
+</table>
+</td></tr>
+</table>
 </body>
 </html>"""
 
 
 # ============================================================
-# 1. OTP Verification Email
+# OTP
 # ============================================================
 
 def _build_otp_html(otp_code: str) -> str:
-    body = f"""
-    <p style="margin:0 0 4px;font-size:20px;font-weight:600;color:#111827;line-height:1.3;">
-      Verify your email address
-    </p>
-    <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.7;">
-      To continue signing in to your Regulayer account, please enter the
-      verification code shown below. This code will expire in 10 minutes.
-    </p>
+    inner = f"""
+<tr><td>
+<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111;">Verify your email address</p>
+<p style="margin:0 0 32px;font-size:15px;color:#555;line-height:1.7;">
+Enter this code to continue signing in to Regulayer. It expires in 10 minutes.
+</p>
+</td></tr>
 
-    <!-- Code -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
-      <tr>
-        <td align="center">
-          <table cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
-            <tr>
-              <td style="padding:18px 36px;font-size:30px;font-weight:700;letter-spacing:8px;color:#111827;font-family:'Courier New',Courier,monospace;">
-                {otp_code}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+<tr><td style="padding:0 0 32px;">
+<table cellpadding="0" cellspacing="0" border="0">
+<tr><td style="background-color:#f5f5f5;border:1px solid #e5e5e5;border-radius:6px;padding:16px 32px;font-size:28px;font-weight:700;letter-spacing:6px;color:#111;font-family:'Courier New',monospace;">
+{otp_code}
+</td></tr>
+</table>
+</td></tr>
 
-    <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-      If you did not request this code, no action is required. Your account
-      remains secure and no changes have been made.
-    </p>
-    """
-    return _base_template(
-        title="Verification Code - Regulayer",
-        preheader=f"Your Regulayer verification code is {otp_code}",
-        body_content=body,
-    )
+<tr><td>
+<p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
+If you did not request this code, you can ignore this email.
+</p>
+</td></tr>
+"""
+    return _base("Verification Code - Regulayer", f"Your code is {otp_code}", inner)
 
 
 # ============================================================
-# 2. Team Invitation Email
+# Invitation
 # ============================================================
 
 def _build_invite_html(inviter_name: str, org_name: str, role: str, invite_link: str, expiry_date: str) -> str:
-    body = f"""
-    <p style="margin:0 0 4px;font-size:20px;font-weight:600;color:#111827;line-height:1.3;">
-      You have been invited to join {org_name}
-    </p>
-    <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.7;">
-      {inviter_name} has invited you to collaborate on the Regulayer platform
-      as a member of <strong style="color:#374151;">{org_name}</strong>.
-    </p>
+    inner = f"""
+<tr><td>
+<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111;">Join {org_name} on Regulayer</p>
+<p style="margin:0 0 32px;font-size:15px;color:#555;line-height:1.7;">
+{inviter_name} invited you to join <strong style="color:#111;">{org_name}</strong> as <strong style="color:#111;">{role}</strong>.
+</p>
+</td></tr>
 
-    <!-- Details card -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:28px;">
-      <tr>
-        <td style="padding:20px 24px;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="padding-bottom:12px;">
-                <span style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Organization</span><br/>
-                <span style="font-size:15px;font-weight:600;color:#111827;">{org_name}</span>
-              </td>
-              <td style="padding-bottom:12px;">
-                <span style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Your Role</span><br/>
-                <span style="font-size:15px;font-weight:600;color:#111827;">{role}</span>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <span style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Invited By</span><br/>
-                <span style="font-size:15px;font-weight:600;color:#111827;">{inviter_name}</span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+<tr><td style="padding:0 0 32px;">
+<a href="{invite_link}" style="display:inline-block;background-color:#111;color:#fff;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:500;text-decoration:none;">Accept Invitation</a>
+</td></tr>
 
-    <!-- CTA -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
-      <tr>
-        <td>
-          <a href="{invite_link}"
-             style="display:inline-block;background-color:#111827;color:#ffffff;
-                    padding:14px 32px;border-radius:8px;font-size:14px;font-weight:600;
-                    text-decoration:none;line-height:1;">
-            Accept Invitation
-          </a>
-        </td>
-      </tr>
-    </table>
-
-    <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-      This invitation expires on {expiry_date}. If you were not expecting
-      this message, you may safely ignore it.
-    </p>
-    """
-    return _base_template(
-        title=f"Invitation to {org_name} - Regulayer",
-        preheader=f"{inviter_name} invited you to join {org_name} on Regulayer",
-        body_content=body,
-    )
+<tr><td>
+<p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
+This invitation expires on {expiry_date}. If you were not expecting this, please disregard.
+</p>
+</td></tr>
+"""
+    return _base(f"Join {org_name} - Regulayer", f"{inviter_name} invited you to {org_name}", inner)
 
 
 # ============================================================
-# 3. Password Reset Email
+# Password Reset
 # ============================================================
 
 def _build_reset_html(reset_link: str, expiry_time: str) -> str:
-    body = f"""
-    <p style="margin:0 0 4px;font-size:20px;font-weight:600;color:#111827;line-height:1.3;">
-      Reset your password
-    </p>
-    <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.7;">
-      We received a request to reset the password for your Regulayer account.
-      Click the button below to set a new password. For security, this link
-      will expire in {expiry_time}.
-    </p>
+    inner = f"""
+<tr><td>
+<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111;">Reset your password</p>
+<p style="margin:0 0 32px;font-size:15px;color:#555;line-height:1.7;">
+Someone requested a password reset for your Regulayer account. Use the button below to choose a new password. This link expires in {expiry_time}.
+</p>
+</td></tr>
 
-    <!-- CTA -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
-      <tr>
-        <td>
-          <a href="{reset_link}"
-             style="display:inline-block;background-color:#111827;color:#ffffff;
-                    padding:14px 32px;border-radius:8px;font-size:14px;font-weight:600;
-                    text-decoration:none;line-height:1;">
-            Reset Password
-          </a>
-        </td>
-      </tr>
-    </table>
+<tr><td style="padding:0 0 32px;">
+<a href="{reset_link}" style="display:inline-block;background-color:#111;color:#fff;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:500;text-decoration:none;">Reset Password</a>
+</td></tr>
 
-    <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;line-height:1.6;">
-      If you did not request this, please ignore this email. Your password
-      will remain unchanged.
-    </p>
-    """
-    return _base_template(
-        title="Password Reset - Regulayer",
-        preheader="Reset the password for your Regulayer account",
-        body_content=body,
-    )
+<tr><td>
+<p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
+If you did not request this, no action is needed. Your password will not change.
+</p>
+</td></tr>
+"""
+    return _base("Password Reset - Regulayer", "Reset your Regulayer password", inner)
 
 
 # ============================================================
-# 4. Account Deletion OTP Email
+# Account Deletion
 # ============================================================
 
 def _build_account_delete_html(otp_code: str, org_name: str) -> str:
-    body = f"""
-    <p style="margin:0 0 4px;font-size:20px;font-weight:600;color:#111827;line-height:1.3;">
-      Confirm account deletion
-    </p>
-    <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;">
-      A request has been made to permanently delete the organization
-      <strong style="color:#111827;">{org_name}</strong> and all associated data
-      from the Regulayer platform. This action cannot be reversed.
-    </p>
+    inner = f"""
+<tr><td>
+<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111;">Confirm account deletion</p>
+<p style="margin:0 0 24px;font-size:15px;color:#555;line-height:1.7;">
+A request was made to permanently delete <strong style="color:#111;">{org_name}</strong> and all its data. This cannot be undone.
+</p>
+</td></tr>
 
-    <!-- Warning -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:24px;">
-      <tr>
-        <td style="padding:16px 20px;font-size:13px;color:#991b1b;line-height:1.7;">
-          <strong style="font-size:14px;color:#7f1d1d;">This will permanently remove:</strong>
-          <table cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;">
-            <tr><td style="padding:2px 0;font-size:13px;color:#991b1b;">All team members, projects, and API keys</td></tr>
-            <tr><td style="padding:2px 0;font-size:13px;color:#991b1b;">All governance policies and audit records</td></tr>
-            <tr><td style="padding:2px 0;font-size:13px;color:#991b1b;">All billing data, sessions, and the organization itself</td></tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+<tr><td style="padding:0 0 24px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:6px;">
+<tr><td style="padding:14px 16px;font-size:13px;color:#991b1b;line-height:1.7;">
+All team members, projects, API keys, governance policies, audit records, billing data, and the organization itself will be permanently removed.
+</td></tr>
+</table>
+</td></tr>
 
-    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.7;">
-      To proceed, enter the verification code below. It expires in 10 minutes.
-    </p>
+<tr><td>
+<p style="margin:0 0 16px;font-size:15px;color:#555;line-height:1.7;">
+Enter this code to confirm. It expires in 10 minutes.
+</p>
+</td></tr>
 
-    <!-- Code -->
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
-      <tr>
-        <td align="center">
-          <table cellpadding="0" cellspacing="0" border="0" style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;">
-            <tr>
-              <td style="padding:18px 36px;font-size:30px;font-weight:700;letter-spacing:8px;color:#991b1b;font-family:'Courier New',Courier,monospace;">
-                {otp_code}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
+<tr><td style="padding:0 0 32px;">
+<table cellpadding="0" cellspacing="0" border="0">
+<tr><td style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:16px 32px;font-size:28px;font-weight:700;letter-spacing:6px;color:#991b1b;font-family:'Courier New',monospace;">
+{otp_code}
+</td></tr>
+</table>
+</td></tr>
 
-    <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-      If you did not initiate this request, please disregard this email and
-      consider resetting your password immediately.
-    </p>
-    """
-    return _base_template(
-        title=f"Confirm Deletion - {org_name} - Regulayer",
-        preheader=f"Confirm the deletion of {org_name} on Regulayer",
-        body_content=body,
-    )
+<tr><td>
+<p style="margin:0;font-size:13px;color:#999;line-height:1.6;">
+If you did not request this, ignore this email and consider changing your password.
+</p>
+</td></tr>
+"""
+    return _base(f"Confirm Deletion - Regulayer", f"Confirm deletion of {org_name}", inner)
 
 
 # ============================================================
-# Email Sender Functions
+# Sender Functions
 # ============================================================
 
 async def _send_email(message: EmailMessage):
-    """Shared SMTP send logic."""
     try:
         await aiosmtplib.send(
             message,
@@ -364,7 +240,7 @@ async def send_invitation_email(
     message = EmailMessage()
     message["From"] = settings.from_email or "no-reply@regulayer.tech"
     message["To"] = to_email
-    message["Subject"] = f"You have been invited to {org_name} on Regulayer"
+    message["Subject"] = f"Join {org_name} on Regulayer"
 
     html_content = _build_invite_html(inviter_name, org_name, role, invite_link, expiry_date)
 
