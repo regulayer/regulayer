@@ -137,6 +137,8 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - DOMAIN=${DOMAIN:-localhost}
       - FROM_EMAIL=${FROM_EMAIL:-no-reply@regulayer.tech}
+      - REPORTS_URL=http://reports:8003
+      - REPORTS_INTERNAL_SECRET=${REPORTS_INTERNAL_SECRET}
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 10s

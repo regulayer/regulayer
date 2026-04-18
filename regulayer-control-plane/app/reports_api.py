@@ -1,103 +1,149 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import List, Optional
-from datetime import datetime, date
-import json
+"""
+Regulayer Control Plane - Reports Proxy
+
+Proxies report requests to the dedicated Reports microservice
+via the gateway, ensuring real data is returned instead of stubs.
+
+This router exists on the control plane so that frontends configured
+to talk directly to the control plane (port 8100) can still access
+reports without reconfiguration.
+"""
+
+from fastapi import APIRouter, Request, Response, Depends, HTTPException, Header
+from typing import Optional
+import httpx
+import os
 
 from .models import TenantContext, UserRole
-from .middleware import require_tenant_context, get_db
+from .middleware import require_tenant_context
 
 router = APIRouter(prefix="/v1/reports", tags=["reports"])
 
-@router.get("/chain/default")
-async def get_chain_integrity_report(
-    format: str = Query("json", description="Output format"),
-    tenant: TenantContext = Depends(require_tenant_context),
-    db: Session = Depends(get_db)
+REPORTS_SERVICE_URL = os.getenv("REPORTS_URL", "http://reports:8003")
+REPORTS_INTERNAL_SECRET = os.getenv("REPORTS_INTERNAL_SECRET", "")
+
+
+async def _proxy_to_reports(
+    request: Request,
+    path: str,
+    tenant: TenantContext,
+    method: str = "GET",
+    body: bytes = None
+) -> Response:
+    """Forward the request to the real Reports microservice."""
+    
+    # Build headers for internal auth
+    headers = {
+        "X-Internal-Auth": REPORTS_INTERNAL_SECRET,
+        "X-Org-Id": str(tenant.organization_id),
+        "X-Actor-Role": tenant.role.value if tenant.role else "member",
+    }
+    if tenant.email:
+        headers["X-Actor-Email"] = tenant.email
+    
+    # Forward query parameters
+    query_string = str(request.query_params)
+    url = f"{REPORTS_SERVICE_URL}{path}"
+    if query_string:
+        url += f"?{query_string}"
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            if method == "POST":
+                headers["Content-Type"] = request.headers.get("content-type", "application/json")
+                resp = await client.post(url, headers=headers, content=body)
+            else:
+                resp = await client.get(url, headers=headers)
+            
+            # Forward the response exactly as-is (preserving PDF bytes, JSON, etc.)
+            response_headers = {}
+            if "content-disposition" in resp.headers:
+                response_headers["Content-Disposition"] = resp.headers["content-disposition"]
+            
+            return Response(
+                content=resp.content,
+                status_code=resp.status_code,
+                media_type=resp.headers.get("content-type", "application/json"),
+                headers=response_headers
+            )
+    except httpx.ConnectError:
+        raise HTTPException(status_code=502, detail="Reports service unavailable")
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Reports service timeout")
+
+
+@router.get("/chain/{chain_id}")
+async def proxy_chain_report(
+    chain_id: str,
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
 ):
-    """Generate a Chain Integrity Report (mocked for V1 launch)."""
     if tenant.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.AUDITOR]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return await _proxy_to_reports(request, f"/v1/reports/chain/{chain_id}", tenant)
 
-    # In a real implementation this would pull the hash ledger
-    return {
-        "report_id": f"chain_rep_{tenant.organization_id.hex[:8]}",
-        "organization_id": str(tenant.organization_id),
-        "generated_at": datetime.utcnow().isoformat(),
-        "status": "verified",
-        "chain_length": 1425,
-        "last_verified_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    }
 
 @router.get("/governance")
-async def get_governance_report(
-    format: str = Query("json"),
-    tenant: TenantContext = Depends(require_tenant_context),
-    db: Session = Depends(get_db)
+async def proxy_governance_report(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
 ):
-    """Governance summary report of all reviews."""
     if tenant.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.AUDITOR]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return await _proxy_to_reports(request, "/v1/reports/governance", tenant)
 
-    return {
-        "report_id": f"gov_rep_{tenant.organization_id.hex[:8]}",
-        "organization_id": str(tenant.organization_id),
-        "generated_at": datetime.utcnow().isoformat(),
-        "period": "Trailing 30 Days",
-        "total_flagged": 42,
-        "approved": 38,
-        "rejected": 4,
-        "escalations": 1
-    }
 
 @router.get("/incidents")
-async def get_incidents_report(
-    format: str = Query("json"),
-    tenant: TenantContext = Depends(require_tenant_context),
-    db: Session = Depends(get_db)
+async def proxy_incidents_report(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
 ):
-    """Incident summary report."""
     if tenant.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.AUDITOR]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return await _proxy_to_reports(request, "/v1/reports/incidents", tenant)
 
-    return {
-        "report_id": f"inc_rep_{tenant.organization_id.hex[:8]}",
-        "organization_id": str(tenant.organization_id),
-        "generated_at": datetime.utcnow().isoformat(),
-        "active_incidents": 0,
-        "resolved_incidents": 2,
-        "mean_time_to_resolution_hours": 4.5
-    }
 
 @router.get("/usage")
-async def get_usage_report(
-    format: str = Query("json"),
-    tenant: TenantContext = Depends(require_tenant_context),
-    db: Session = Depends(get_db)
+async def proxy_usage_report(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
 ):
-    """Full Usage Report."""
-    return {
-        "report_id": f"use_rep_{tenant.organization_id.hex[:8]}",
-        "organization_id": str(tenant.organization_id),
-        "generated_at": datetime.utcnow().isoformat(),
-        "decisions_recorded": 12500,
-        "storage_used_bytes": 1024 * 1024 * 45, # 45 MB
-        "api_requests": 25000
-    }
+    return await _proxy_to_reports(request, "/v1/reports/usage", tenant)
+
 
 @router.get("/sla")
-async def get_sla_report(
-    format: str = Query("json"),
-    tenant: TenantContext = Depends(require_tenant_context),
-    db: Session = Depends(get_db)
+async def proxy_sla_report(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
 ):
-    """SLA and Uptime Report."""
-    return {
-        "report_id": f"sla_rep_{tenant.organization_id.hex[:8]}",
-        "organization_id": str(tenant.organization_id),
-        "generated_at": datetime.utcnow().isoformat(),
-        "uptime_percentage": 99.99,
-        "p95_latency_ms": 45.2,
-        "governance_queue_time_avg_minutes": 14.5
-    }
+    return await _proxy_to_reports(request, "/v1/reports/sla", tenant)
+
+
+@router.get("/system")
+async def proxy_system_report(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    return await _proxy_to_reports(request, "/v1/reports/system", tenant)
+
+
+@router.post("/ai-act/draft")
+async def proxy_ai_act_draft(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.AUDITOR]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    body = await request.body()
+    return await _proxy_to_reports(request, "/v1/reports/ai-act/draft", tenant, method="POST", body=body)
+
+
+@router.post("/ai-act/attest")
+async def proxy_ai_act_attest(
+    request: Request,
+    tenant: TenantContext = Depends(require_tenant_context)
+):
+    if tenant.role not in [UserRole.OWNER, UserRole.ADMIN, UserRole.AUDITOR]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    body = await request.body()
+    return await _proxy_to_reports(request, "/v1/reports/ai-act/attest", tenant, method="POST", body=body)
