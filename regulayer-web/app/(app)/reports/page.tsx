@@ -23,6 +23,8 @@ import api, {
     getIncidentsReport,
     getUsageReport,
     getSlaReport,
+    getProjects,
+    getMe,
     GovernanceReport,
     IncidentsReport,
     UsageReport,
@@ -95,17 +97,23 @@ const reportOptions: ReportOption[] = [
 ];
 
 /* -------- Report card component -------- */
-function ReportCard({ report }: { report: ReportOption }) {
+function ReportCard({ report, projects = [] }: { report: ReportOption; projects?: any[] }) {
     const [downloading, setDownloading] = useState(false);
     const [downloadingPdf, setDownloadingPdf] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedProject, setSelectedProject] = useState<string>('all');
 
     const downloadFile = async (format: 'json' | 'pdf') => {
         const isPdf = format === 'pdf';
         isPdf ? setDownloadingPdf(true) : setDownloading(true);
         setError(null);
         try {
-            const res = await api.get(`${report.endpoint}?format=${format}`, {
+            let endpoint = report.endpoint;
+            if (report.id === 'chain' && selectedProject !== 'all') {
+                endpoint = `/v1/reports/chain/${selectedProject}`;
+            }
+
+            const res = await api.get(`${endpoint}?format=${format}`, {
                 responseType: 'blob',
             });
 
@@ -163,6 +171,22 @@ function ReportCard({ report }: { report: ReportOption }) {
                         <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm mb-4 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg border border-red-100 dark:border-red-500/20">
                             <IconAlertCircle size={16} />
                             {error}
+                        </div>
+                    )}
+
+                    {report.id === 'chain' && projects && projects.length > 0 && (
+                        <div className="mb-4">
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">Select Project Chain:</label>
+                            <select 
+                                value={selectedProject}
+                                onChange={(e) => setSelectedProject(e.target.value)}
+                                className="h-9 px-3 w-full max-w-[240px] text-[13px] bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                            >
+                                <option value="all">Global Chain (All Projects)</option>
+                                {projects.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
                         </div>
                     )}
 
@@ -227,6 +251,7 @@ export default function ReportsPage() {
     const [incidentsReport, setIncidentsReport] = useState<IncidentsReport | null>(null);
     const [usageReport, setUsageReport] = useState<UsageReport | null>(null);
     const [slaReport, setSlaReport] = useState<SlaReport | null>(null);
+    const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -234,6 +259,14 @@ export default function ReportsPage() {
         setIsMounted(true);
         const fetchReportData = async () => {
             try {
+                const meResp = await getMe();
+                const currentOrgId = meResp.data?.org?.id;
+                
+                if (currentOrgId) {
+                    const projsResp = await getProjects(currentOrgId);
+                    setProjects(projsResp.data || []);
+                }
+
                 const [gov, inc, usage, sla] = await Promise.allSettled([
                     getGovernanceReport(),
                     getIncidentsReport(),
@@ -513,7 +546,7 @@ export default function ReportsPage() {
             {/* Report Options */}
             <div className="grid gap-6">
                 {reportOptions.map((report) => (
-                    <ReportCard key={report.id} report={report} />
+                    <ReportCard key={report.id} report={report} projects={projects} />
                 ))}
             </div>
 
