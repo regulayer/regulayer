@@ -284,8 +284,11 @@ async def ingest_decision(
     4. Record decision
     """
     try:
-        # Default to global if not provided (legacy/fallback)
-        project_id = x_regulayer_project_id or "global"
+        # FastAPI merges duplicated HTTP headers with a comma. httpx often sends duplicate 
+        # headers when forwarding proxy headers. We only want the first valid project_id.
+        project_id = "global"
+        if x_regulayer_project_id:
+            project_id = x_regulayer_project_id.split(',')[0].strip() or "global"
 
         # =========================================================
         # PHASE I.1: Cross-Environment Rejection (Edge-Hardening A)

@@ -383,7 +383,9 @@ async def get_chain_report(
     
     Fetches real chain verification data from the Recorder service.
     """
-    actual_chain_id = x_org_id if chain_id == "default" and x_org_id else chain_id
+    # Use 'global' keyword when default is requested so the Recorder bypasses the WHERE clause
+    # to scan the entire universal database ledger.
+    actual_chain_id = "global" if chain_id == "default" or chain_id == "all" else chain_id
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         # Fetch full chain verification from Recorder
