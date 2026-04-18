@@ -28,6 +28,8 @@ async def auto_discovery_worker():
                 key_str = k.decode() if isinstance(k, bytes) else k
                 # Format: "ingestion:<uuid>"
                 pid = key_str.split(":")[-1]
+                if pid == "dlq":
+                    continue
                 project_ids.append(pid)
             
             if project_ids:
