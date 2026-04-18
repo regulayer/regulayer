@@ -124,7 +124,10 @@ async def create_ai_act_draft(
     active_incidents = 0
     mttr = 0.0
     if x_org_id:
-        inc_headers = {"X-Internal-Auth": settings.incidents_internal_secret}
+        inc_headers = {
+            "X-Internal-Auth": settings.incidents_internal_secret,
+            "X-Org-Id": x_org_id
+        }
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/incidents"
@@ -147,6 +150,24 @@ async def create_ai_act_draft(
         except Exception:
             pass
 
+    latest_record_hash = "N/A"
+    if x_org_id:
+        rec_headers = {"X-Regulayer-Project-Id": req.project_id}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                url = f"{RECORDER_URL}/v1/decisions?limit=1"
+                resp = await client.get(url, headers=rec_headers)
+                if resp.status_code == 200:
+                    decisions = resp.json()
+                    if decisions and len(decisions) > 0:
+                        latest_record_hash = decisions[0].get("record_hash", "N/A")
+        except Exception:
+            pass
+
+    risk_score = 100 - (active_incidents * 5) - min(hitl_interventions, 20)
+    risk_score = max(0, risk_score)
+    risk_grade = "A+" if risk_score > 90 else "A" if risk_score > 80 else "B" if risk_score > 70 else "C"
+
     context_telemetry = {
         "system_name": actual_system_name,
         "description": system_description,
@@ -157,7 +178,10 @@ async def create_ai_act_draft(
         "active_incidents": active_incidents,
         "mttr": mttr,
         "hitl_interventions": hitl_interventions,
+        "latest_record_hash": latest_record_hash,
         "blocked_anomalies": 0,
+        "risk_score": risk_score,
+        "risk_grade": risk_grade,
         "is_valid": True
     }
     
@@ -351,17 +375,20 @@ async def get_decision_report(
 )
 async def get_chain_report(
     chain_id: str,
-    format: Literal["json", "pdf"] = "json"
+    format: Literal["json", "pdf"] = "json",
+    x_org_id: Optional[str] = Header(None, alias="X-Org-Id")
 ) -> Response:
     """
     Generate a Chain Integrity Report.
     
     Fetches real chain verification data from the Recorder service.
     """
+    actual_chain_id = x_org_id if chain_id == "default" and x_org_id else chain_id
+
     async with httpx.AsyncClient(timeout=10.0) as client:
         # Fetch full chain verification from Recorder
         try:
-            chain_resp = await client.get(f"{RECORDER_URL}/v1/verify/chain/full")
+            chain_resp = await client.get(f"{RECORDER_URL}/v1/verify/chain/full?chain_id={actual_chain_id}")
         except httpx.ConnectError:
             raise HTTPException(status_code=502, detail="Cannot reach Recorder service")
         
@@ -475,8 +502,6 @@ async def get_incidents_report(
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             url = f"{os.getenv('INCIDENTS_URL', 'http://incidents:8000')}/v1/incidents"
-            if x_org_id:
-                url += f"?org_id={x_org_id}"
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 incidents = resp.json()

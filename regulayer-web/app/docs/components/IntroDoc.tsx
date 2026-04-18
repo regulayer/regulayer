@@ -94,9 +94,9 @@ export default function IntroDocComponent() {
           <div className="w-10 h-10 border border-[hsl(15,30%,85%)] bg-[hsl(30,60%,99%)] rounded-[3px] flex items-center justify-center mb-6 group-hover:bg-[hsl(15,45%,15%)] transition-colors">
             <FileText className="w-4 h-4 text-[hsl(15,30%,45%)] group-hover:text-white" />
           </div>
-          <h3 className="text-[17px] font-bold text-[hsl(15,45%,15%)] mb-3">Automated EU AI Act Reporting</h3>
+          <h3 className="text-[17px] font-bold text-[hsl(15,45%,15%)] mb-3">ISO 42001 Audits & Grading</h3>
           <p className="text-[13px] text-[hsl(15,30%,45%)] font-light leading-relaxed">
-            We continuously synthesize the ledger data to instantly generate required regulatory PDFs, including your Technical Conformity Assessments and Fundamental Rights Impact Assessments (FRIA).
+            We continuously synthesize the ledger data to instantly generate executive-grade EU AI Act PDFs, fully mapping your telemetry to ISO 42001 standards and assigning an automated Risk Grade.
           </p>
         </div>
       </div>

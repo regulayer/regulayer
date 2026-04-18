@@ -334,20 +334,6 @@ async def get_usage(
     }
 
 
-@app.get("/v1/orgs/{org_id}/audit-logs", response_model=List[AuditLog], tags=["audit"])
-def get_org_audit_logs(
-    org_id: UUID,
-    db: Session = Depends(get_db),
-    tenant: TenantContext = Depends(require_tenant_context)
-):
-    """Get audit logs for an organization."""
-    if org_id != tenant.organization_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-        
-    audit_service = AuditService(db)
-    return audit_service.get_logs(org_id)
-
-
 class UserMember(BaseModel):
     id: UUID
     email: EmailStr

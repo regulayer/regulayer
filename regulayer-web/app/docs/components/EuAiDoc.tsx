@@ -182,8 +182,8 @@ export default function EuAiDocComponent() {
         <div className="flex gap-4">
           <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0 mt-1">6</div>
           <div>
-            <h4 className="font-semibold text-slate-700 mb-2">Download Your Compliance Report</h4>
-            <p className="text-sm text-slate-500 mb-3">Navigate to <strong>Dashboard → Compliance Report</strong> to generate a professional, print-ready EU AI Act compliance report for any registered AI system. The report includes an article-by-article assessment with evidence statements, an overall compliance score, and priority actions. Systems that achieve ≥80% compliance receive the <strong>Regulayer Verified</strong> seal.</p>
+            <h4 className="font-semibold text-slate-700 mb-2">Automated ISO 42001 Cryptographic Reports</h4>
+            <p className="text-sm text-slate-500 mb-3">Navigate to <strong>Dashboard → Compliance Reports</strong>. With one click, Regulayer synthesizes your live metric telemetry into a comprehensive, court-grade EU AI Act technical document. You receive an explicit <strong>Compliance Grade (A+, A, B, C)</strong> derived algorithmically from your incident/override metrics, backed mathematically by the SHA-256 chain from your WORM ledger.</p>
           </div>
         </div>
       </div>
@@ -192,8 +192,8 @@ export default function EuAiDocComponent() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
           <div>
-            <h4 className="font-semibold text-emerald-800 mb-1">Regulayer Verified Seal</h4>
-            <p className="text-sm text-emerald-700 leading-relaxed">When your AI system achieves ≥80% compliance across all 10 assessed EU AI Act articles, the downloadable report includes the <strong>&quot;Regulayer Verified&quot;</strong> seal — a professional indicator that your system meets the platform&apos;s compliance threshold. This report is suitable for board presentations, regulatory submissions, and investor due diligence.</p>
+            <h4 className="font-semibold text-emerald-800 mb-1">Evidentiary Standard of Trust</h4>
+            <p className="text-sm text-emerald-700 leading-relaxed">Unlike manual tier compliance platforms, Regulayer generates documentation natively mapped to <strong>ISO/IEC 42001:2023</strong> standards. By anchoring compliance statements directly to your irrefutable cryptographic audit trail, your enterprise possesses mathematical proof of responsible AI operations—ready for regulatory audits, C-suite reviews, or legal inquiries.</p>
           </div>
         </div>
       </div>

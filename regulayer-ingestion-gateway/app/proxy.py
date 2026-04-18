@@ -258,17 +258,20 @@ async def proxy_handler(request: Request, path: str):
     
     # 5. Route to Incidents
     if any(full_path.startswith(prefix) for prefix in INCIDENTS_PREFIXES):
+        extra_headers = {
+            "X-Internal-Auth": settings.incidents_internal_secret
+        }
         if full_path == "/v1/incidents": # Protected listing
              auth_header = request.headers.get("Authorization")
              if not auth_header:
                  raise HTTPException(status_code=401, detail="Authentication required to list incidents")
-             # We validate session to ensure valid user, even if we don't strictly use context yet
-             await validate_user_session(auth_header)
+             # We validate session to ensure valid user, and extract context
+             context = await validate_user_session(auth_header)
+             if context.get("org_id"):
+                 extra_headers["X-Org-Id"] = context["org_id"]
+             if context.get("role"):
+                 extra_headers["X-Actor-Role"] = context["role"]
         
-        # Inject Internal Secret
-        extra_headers = {
-            "X-Internal-Auth": settings.incidents_internal_secret
-        }
         return await forward_request(request, settings.incidents_url, extra_headers=extra_headers)
 
     # 6. Route to Reports Service

@@ -13,57 +13,57 @@ import { motion, useInView } from "framer-motion";
 const features = [
     {
         id: "01",
-        title: "Proxy Interception Gateway",
-        specs: "Latency: < 0.4ms | Deployment: Edge/On-Prem",
-        desc: "A strictly defined edge node sits transparently in your API path, intercepting and evaluating every generated AI inference instantaneously against corporate policy."
+        title: "Zero-Latency Quality Gate",
+        specs: "Latency: < 0.4ms | Impact: Immediate Protection",
+        desc: "Stop hallucinations and policy violations before they reach your customers. Our edge node sits invisibly in your API path, evaluating every AI response in real-time."
     },
     {
         id: "02",
         title: "Human-In-The-Loop Governance",
-        specs: "Routing: Rule-based | Action: Override/Approve",
-        desc: "Dynamically route ambiguous or high-risk model inferences to designated human compliance officers for manual review before the response is ever transmitted to the end user."
+        specs: "Routing: Smart Queues | Action: Manual Override",
+        desc: "When AI gets confused, humans take the wheel. Suspicious or high-risk AI decisions are automatically paused and routed to your compliance team for review and approval."
     },
     {
         id: "03",
-        title: "Downloadable Compliance Reports",
-        specs: "Framework: EU AI Act | Format: Print-ready PDF",
-        desc: "Generate professional, article-by-article EU AI Act compliance reports for any registered AI system. Systems achieving ≥80% compliance receive the Regulayer Verified seal — ready for board presentations and regulatory submissions."
+        title: "One-Click EU AI Act Audits",
+        specs: "Standard: ISO 42001 | Framework: EU AI Act",
+        desc: "Turn months of manual auditing into a single click. Regulayer generates complete, court-ready ISO 42001 technical documentation backed by your live operational telemetry."
     },
     {
         id: "04",
-        title: "Immutable Vault & Cryptographic Sealing",
-        specs: "Algorithm: Ed25519 | Storage: SEC 17a-4 WORM",
-        desc: "Every AI inference payload, user input, and human override action is cryptographically signed and archived into a tamper-proof write-once vault, guaranteeing absolute record non-repudiation."
+        title: "Algorithmic Risk Grading",
+        specs: "Metrics: Incident Data | Output: Executive Dashboard",
+        desc: "Stop guessing if your AI is safe. We continuously calculate your incident ratios and intervention rates to assign your systems a living, quantitative Risk Score and Compliance Grade."
     },
     {
         id: "05",
-        title: "Runtime FRIA Enforcement",
-        specs: "Scope: Algorithmic bias | Reporting: Real-time",
-        desc: "Deploy automated Fundamental Rights Impact Assessments (FRIA) checks during runtime to detect and halt systematic discrimination or bias in generative payloads."
+        title: "Tamper-Proof Audit Trails",
+        specs: "Algorithm: SHA-256 | Storage: Immutable Ledger",
+        desc: "Every AI decision and human override is cryptographically chained into a Write-Once-Read-Many (WORM) vault, ensuring your audit records are legally irrefutable."
     },
     {
         id: "06",
-        title: "Enterprise Data Residency",
-        specs: "Isolation: Zero-Trust | Encryption: AES-256-GCM",
-        desc: "Strict logical separation between organizations, projects, and active data streams. Cryptographic separation ensures compliance with rigorous corporate data sovereignty policies."
+        title: "Enterprise Data Sovereignty",
+        specs: "Isolation: Zero-Trust | Privacy: Deep Masking",
+        desc: "Protect your intellectual property. We enforce strict data, project, and tenant isolation so absolutely no sensitive data leaks between enterprise departments or compliance scopes."
     },
     {
         id: "07",
-        title: "Interactive Queue Workflows",
+        title: "Interactive Slack Governance",
         specs: "Integration: Native Dashboard & Slack",
-        desc: "When the policy engine blocks an autonomous action, rich interactive cards are immediately routed to enterprise governance queues, allowing instantaneous approvals directly from Slack."
+        desc: "Compliance doesn't have to slow you down. When an AI action is blocked, rich interactive approval cards are sent directly to your Slack channels so your team can unblock the workflow instantly."
     },
     {
         id: "08",
-        title: "Statistical Model Anomaly Freeze",
-        specs: "Detection: Z-Score Thresholds | Response: < 5ms",
-        desc: "Advanced ML tracks the baseline operating deviation of autonomous AI decisions. If an agent loops or hallucinates outside defined risk vectors, Regulayer instantly severs the connection."
+        title: "Autonomous Crisis Freezing",
+        specs: "Detection: Z-Score Thresholds | Response: Instant",
+        desc: "If a specific model starts hallucinating or drifting systematically, Regulayer automatically severs the connection to contain the blast radius, preventing cascading enterprise damage."
     },
     {
         id: "09",
-        title: "Granular RBAC & Policy Inheritance",
+        title: "Granular Role-Based Access",
         specs: "Directory: SSO/SAML | Granularity: Project-level",
-        desc: "Enforce the principle of least privilege. Define intricate governance rules, data visibility matrices, and review authorities scoped precisely to independent organizational units."
+        desc: "Enforce the principle of least privilege. Easily define exactly who is allowed to audit systems, who can review Governance Queues, and who can generate EU AI Act reports."
     }
 ];
 

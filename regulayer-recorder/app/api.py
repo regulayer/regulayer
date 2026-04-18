@@ -630,12 +630,15 @@ async def verify_decision_spot(decision_id: str, session: AsyncSession = Depends
 
 
 @router.get("/verify/chain/full")
-async def verify_chain_full(session: AsyncSession = Depends(get_db_session)):
-    """Spot verification for the entire chain."""
+async def verify_chain_full(chain_id: Optional[str] = None, session: AsyncSession = Depends(get_db_session)):
+    """Spot verification for the entire chain or a specific sub-chain."""
     from sqlalchemy import select, func
     from .storage import DecisionRecordDB
     
     stmt = select(func.count()).select_from(DecisionRecordDB)
+    if chain_id and chain_id != "default" and chain_id != "global":
+        stmt = stmt.where(DecisionRecordDB.chain_id == chain_id)
+        
     result = await session.execute(stmt)
     count = result.scalar() or 0
     

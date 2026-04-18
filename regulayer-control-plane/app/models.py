@@ -47,7 +47,7 @@ class Organization(BaseModel):
 class OrganizationUpdate(BaseModel):
     """Request to update organization details."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    logo_url: Optional[str] = None
+    logo_url: Optional[str] = Field(None, max_length=3000000, description="Max ~2.2MB base64 payload")
     data_region: Optional[str] = None
 
 

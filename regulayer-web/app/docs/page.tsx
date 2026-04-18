@@ -124,7 +124,22 @@ export default function DocsPage() {
               <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </a>
             <p className="text-[11px] text-[hsl(15,30%,50%)] mt-2.5 px-0.5 leading-relaxed">
-              Feed this .txt to ChatGPT, Claude, or Cursor to instantly train it on Regulayer's core proxy architecture.
+              Feed this .txt to ChatGPT or Claude to instantly train it on Regulayer's core proxy architecture.
+            </p>
+
+            <a
+              href="/regulayer-agentic-master-prompt.txt"
+              download="regulayer-agentic-master-prompt.txt"
+              className="mt-5 flex items-center justify-between px-4 py-3 bg-white text-[hsl(15,45%,15%)] border border-[hsl(15,45%,15%)] rounded-[4px] text-[12px] font-bold tracking-wide hover:bg-[hsl(15,45%,15%)] hover:text-white transition-colors w-full shadow-sm group"
+            >
+              <div className="flex items-center gap-2">
+                <FileCode2 className="w-4 h-4" />
+                <span>Agent Integration Manual</span>
+              </div>
+              <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            </a>
+            <p className="text-[11px] text-[hsl(15,30%,50%)] mt-2.5 px-0.5 leading-relaxed">
+              Supreme codebase integration snippets for your AI IDE (Cursor, Copilot).
             </p>
           </div>
         </aside>

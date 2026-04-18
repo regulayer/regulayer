@@ -48,6 +48,10 @@ DOCUMENT STRUCTURE — You MUST follow this exact Markdown structure and headers
 
 ---
 
+## EXECUTIVE SUMMARY & STATEMENT OF CONFORMITY
+
+[Provide a high-level executive briefing adjudicating the system's overall compliance posture. Explicitly cite the provided Risk Grade and Risk Score as empirical indicators of automated health. Conclude with a definitive formal "Statement of Conformity" affirming that the system operational telemetry aligns with EU legislative requirements.]
+
 ## SECTION 1 — DESCRIPTION OF THE AI SYSTEM AND INTENDED PURPOSE
 
 *Obligations pursuant to Article 11(1)(a) and Annex IV, Section 1*
@@ -112,6 +116,12 @@ Synthesize how the Regulayer interventions explicitly mitigate fundamental right
 
 [Finalize the documentation by explaining how the Regulayer infrastructure acts as the technical enforcement layer for the deployer's Quality Management System (QMS). Frame the infrastructure as the central accountability framework (Art. 17(1)(h)) and the system for record-keeping management (Art. 17(1)(j)).]
 
+## SECTION 11 — CRYPTOGRAPHIC AUDIT VERIFICATION & ISO 42001 MAPPING
+
+*Evidentiary standard for immutable compliance*
+
+[Detailed verification that the technical system establishes an immutable cryptographic chain of custody. You MUST explicitly provide an ISO/IEC 42001:2023 Cross-Reference Matrix mapping the Act's requirements to specific systemic controls. Cite the cryptographically verified `latest_record_hash` below as absolute cryptographic proof of an intact immutable chain. Detail that because records are stored in SEC 17a-4(f) compliant WORM infrastructure with an unbroken SHA-256 chain, the telemetry is court-admissible and cannot be altered by the deployer retroactive to an incident.]
+
 ---
 
 *LEGAL DISCLAIMER: This Master Document is generated using cryptographically verified system telemetry and constitutes the primary regulatory reporting artifact under the EU AI Act. It becomes legally binding upon cryptographic attestation by an Authorized Officer.*
@@ -134,14 +144,16 @@ async def generate_ai_act_draft(api_key: str, provider: str, context: Dict[str, 
 │ Intended Purpose:           {context.get('intended_purpose', 'Unspecified')}
 │ System Description:         {context.get('description', 'Unspecified')}
 │ Risk Classification (EU):   {context.get('risk_tier', 'high')} Risk (Category: {context.get('annex_category', 'none')})
+│ Overall Compliance Grade:   {context.get('risk_grade', 'N/A')} (Score: {context.get('risk_score', 0)}/100)
 │ Total WORM Audit Logs:      {context.get('total_logs', 0):,} verified entries
 │ Active Security Incidents:  {context.get('active_incidents', 0)}
 │ Mean Time to Resolution:    {context.get('mttr', 0)} hours
 │ HITL Governance Actions:    {context.get('hitl_interventions', 0)} human interventions
 │ System Integrity Status:    {"PASSED — All cryptographic chains verified" if context.get('is_valid', True) else "DEGRADED — Action required"}
+│ Latest WORM SHA-256 Hash:   {context.get('latest_record_hash', 'N/A')}
 └─────────────────────────────────────────────────────┘
 
-INSTRUCTION: Draft the complete 10-section Technical Documentation & FRIA as specified in your template. Embed these metrics as verifiable evidence. Do not fabricate additional metrics. Where data is unavailable, state that additional evidence should be supplied by the deployer's compliance team."""
+INSTRUCTION: Draft the complete 11-section Technical Documentation & FRIA as specified in your template. Embed these metrics as verifiable evidence. Do not fabricate additional metrics. Where data is unavailable, state that additional evidence should be supplied by the deployer's compliance team."""
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         if provider == "anthropic":
@@ -184,6 +196,8 @@ INSTRUCTION: Draft the complete 10-section Technical Documentation & FRIA as spe
             elif provider == "openai":
                 url = "https://api.openai.com/v1/chat/completions"
                 payload["model"] = "gpt-4o"
+            else:
+                raise Exception(f"Unsupported LLM Provider: {provider}")
 
             response = await client.post(url, headers=headers, json=payload)
             if response.status_code != 200:

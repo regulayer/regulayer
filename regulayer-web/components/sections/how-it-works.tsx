@@ -14,28 +14,28 @@ import { motion, useScroll, useTransform, useInView } from "framer-motion";
 const steps = [
     {
         id: "sys_capture",
-        title: "Proxy Interception",
-        desc: "The Regulayer edge proxy binds to your inference path. It captures the complete request-response binary pair seamlessly. The primary ML execution thread is routed through policy without adding perceptible latency.",
-        spec: "NODE_01 :: CAPTURE",
+        title: "Intelligent AI Interception",
+        desc: "Without changing a single line of your core application logic, Regulayer securely routes your AI traffic through our edge node. It calculates AI risk in < 0.4ms before any customer sees a response.",
+        spec: "NODE_01 :: ZERO-LATENCY PROXY",
         code: `POST /v1/chat/completions\n{ "model": "gpt-4", "messages": [...] }`,
         color: "hsl(15,85%,58%)",
         align: "left"
     },
     {
         id: "sys_policy",
-        title: "Policy & Governance",
-        desc: "The payload is instantaneously evaluated against EU AI Act and corporate standards. Suspicious or high-risk inferences are routed to a Human-in-the-Loop (HITL) queue for manual compliance officer review.",
-        spec: "NODE_02 :: POLICY_ENGINE",
-        code: `EVALUATE(payload, enterprise_policies)\nIF risk > threshold: ROUTE_TO_HITL()`,
+        title: "The Human-in-the-Loop Pause",
+        desc: "If the AI goes off-script or hits a policy violation, we instantly freeze the connection. A beautiful interactive card is sent directly to your Compliance Team's Slack or Dashboard for manual human approval.",
+        spec: "NODE_02 :: GOVERNESS QUEUE",
+        code: `EVALUATE(payload, enterprise_policies)\nIF risk > threshold: REQUIRE_HUMAN_APPROVAL()`,
         color: "hsl(15,45%,15%)",
         align: "right"
     },
     {
         id: "sys_doc",
-        title: "Compliance Documentation",
-        desc: "The inference, human override decisions, and metadata are cryptographically sealed. Regulayer automatically generates board-ready Technical Conformity Assessments, FRIA reports, and print-ready PDF Compliance Reports carrying the Regulayer Verified seal.",
-        spec: "NODE_03 :: AUDIT_TRAIL",
-        code: `STATE: IMMUTABLE\nGENERATE_PDF(Conformity_Assessment)`,
+        title: "Mathematical Proof of Compliance",
+        desc: "Every suspended action, human override, and clean response is cryptographically cemented into a WORM vault. When the EU or auditors knock, generate absolute, court-grade ISO 42001 documentation in literally one click.",
+        spec: "NODE_03 :: WORM LEDGER",
+        code: `STATE: IMMUTABLE\nGENERATE_EVIDENCE(EU_AI_Act_Report)`,
         color: "hsl(15,25%,45%)",
         align: "left"
     }
@@ -112,7 +112,7 @@ export function HowItWorks() {
                         <span className="text-[11px] font-mono tracking-[0.2em] text-[hsl(15,30%,45%)] uppercase mb-6 block">The Trust Layer Flow</span>
                         <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] font-bold tracking-tight leading-[1.1] text-[hsl(15,45%,15%)]" style={{ fontFamily: "var(--font-space-grotesk)" }}>
                             You build the AI app.<br />
-                            <span className="font-light text-[hsl(15,25%,45%)]">We inject the compliance.</span>
+                            <span className="font-light text-[hsl(15,25%,45%)]">We protect the enterprise.</span>
                         </h2>
                     </div>
                 </div>

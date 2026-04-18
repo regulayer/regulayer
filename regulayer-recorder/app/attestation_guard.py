@@ -55,9 +55,7 @@ class AttestationGuard:
                  raise InvalidAttestationError("Invalid legacy payload type")
             
             if not legacy_signature or not legacy_algorithm:
-                # raise SignatureVerificationError("Missing signature headers for legacy ingestion")
-                logger.warning("Missing signature headers for legacy ingestion. ALLOWING for debug/dev.")
-            
+                raise SignatureVerificationError("Missing signature headers for legacy ingestion")
             else:
                 # Legacy HMAC Verification
                 verifier = create_verifier(settings.hmac_secret_key)

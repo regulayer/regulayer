@@ -11,9 +11,9 @@ const CodeBlock = ({ children, title }: { children: string; title?: string }) =>
 export default function ReportsDocComponent() {
   return (
     <div>
-      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Compliance Reports</h1>
+      <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4 border-b border-slate-200 pb-6">Executive Compliance Reports</h1>
       <p className="text-lg text-slate-500 mb-10 leading-relaxed">
-        Regulayer generates board-ready compliance reports automatically from your AI governance data. Reports can be accessed via the API or exported from the dashboard. Available on Pro and Enterprise plans.
+        Regulayer synthesizes your raw WORM telemetry into board-ready, ISO 42001-aligned executive documentation. Reports can be assessed natively in the dashboard, pulled via API, or exported as cryptographic PDFs for external auditors.
       </p>
 
       <h2 className="text-2xl font-semibold mb-6">Available Report Types</h2>

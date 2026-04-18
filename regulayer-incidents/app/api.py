@@ -108,7 +108,7 @@ async def create_incident(
 
 @router.get("/v1/incidents", response_model=List[IncidentRead])
 async def list_incidents(
-    org_id: Optional[UUID4] = None,
+    org_id: Optional[UUID4] = Header(None, alias="X-Org-Id"),
     severity: Optional[str] = None,
     limit: int = 50,
     session: AsyncSession = Depends(get_db_session)
@@ -137,7 +137,7 @@ async def list_incidents(
 @router.post("/v1/incidents/{incident_id}/resolve", response_model=IncidentRead)
 async def resolve_incident(
     incident_id: UUID4,
-    org_id: Optional[UUID4] = Query(None, description="Optional Org ID to ensure isolation"),
+    org_id: Optional[UUID4] = Header(None, alias="X-Org-Id"),
     session: AsyncSession = Depends(get_db_session)
 ):
     """

@@ -282,9 +282,15 @@ def delete_organization(
         raise HTTPException(status_code=404, detail="Organization not found")
         
     # Order matters for foreign keys
-    db.query(UsageMeterDB).filter(UsageMeterDB.project_id.in_(
-        db.query(ProjectDB.id).filter(ProjectDB.organization_id == org_id)
-    )).delete(synchronize_session=False)
+    project_ids = db.query(ProjectDB.id).filter(ProjectDB.organization_id == org_id).all()
+    project_ids_list = [p.id for p in project_ids]
+    
+    if project_ids_list:
+        db.query(ApiKeyDB).filter(ApiKeyDB.project_id.in_(project_ids_list)).delete(synchronize_session=False)
+        db.query(UsageEventDB).filter(UsageEventDB.project_id.in_(project_ids_list)).delete(synchronize_session=False)
+        db.query(UsageMeterDB).filter(UsageMeterDB.project_id.in_(project_ids_list)).delete(synchronize_session=False)
+
+    db.query(InvitationDB).filter(InvitationDB.organization_id == org_id).delete()
     
     # Needs cascading or manual cleanup...
     db.execute(SessionDB.__table__.delete().where(SessionDB.user_id.in_(db.query(UserDB.id).filter(UserDB.organization_id == org_id))))

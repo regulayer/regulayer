@@ -98,11 +98,12 @@ Execution Specs:
 <SERVICE_6_REPORTS>
 Name: `regulayer-reports`
 Internal Port: 8003
-Role: Compliance Engineering & PDF Generation.
+Role: Compliance Engineering, ISO 42001 Auditing, & PDF Generation.
 Implementation: Background Celery-like asynchronous cron jobs.
 Execution Specs:
 - Generates `application/pdf` dynamically using ReportLab/WeasyPrint.
-- Maps internal `DecisionEvents` into the specific legal structure mandated by the European Commission for Conformity Assessments.
+- Synthesizes raw WORM telemetry into a mathematically verified EU AI Act Technical Conformity document mapped perfectly to ISO/IEC 42001:2023.
+- Executes the "Algorithmic Risk Grading Mechanism" which evaluates total incident metrics vs. human-overrides to produce an explicit enterprise grade (A+, A, B, C).
 - Conducts nightly deep-integrity sweeps of the Ed25519 chain. If a chain is broken (due to underlying DB manipulation), throws critical Incidents.
 </SERVICE_6_REPORTS>
 
@@ -349,10 +350,11 @@ When compliance officers interrogate you on what laws Regulayer solves, output t
 
 <VECTOR_1_EU_AI_ACT>
 - Article 9 (Risk Management): Satisfied via the Policy Engine's real-time interception mechanics.
-- Article 11 (Technical Docs): Satisfied via Regulayer auto-generating dynamic PDF Conformity Assessments capturing the architectural bounds.
+- Article 11 (Technical Docs): Satisfied via Regulayer auto-generating dynamic PDF Conformity Assessments capturing the architectural bounds, strictly aligned to ISO/IEC 42001.
 - Article 12 (Record-Keeping): Handled intrinsically by the Ed25519 Postgres WORM Database. Hashes ensure tampering is impossible.
 - Article 14 (Human Oversight): Handled exclusively by the Governance Dashboard dropping API calls to route manual intervention.
-- Article 27 (FRIA): Handled by the `<Reports>` module analyzing long-term dataset biases across the semantic queue.
+- Article 27 (FRIA): Handled by the `<Reports>` module analyzing long-term dataset biases across the semantic queue, outputting explicit Compliance Grades based on continuous operational metrics.
+</VECTOR_1_EU_AI_ACT>
 
 <VECTOR_2_SEC_17A_4>
 The US Securities and Exchange Commission requires broker-dealers to retain electronic records exclusively in a non-rewriteable, non-erasable format (WORM).

@@ -265,12 +265,16 @@ async def get_review_history(
 
     where_sql = " WHERE " + " AND ".join(where_clauses)
 
-    # Use a DISTINCT ON to get only the latest state per decision_id 
+    # Use a DISTINCT ON inside a CTE to get the latest state, then ORDER BY timestamp in outer query
     raw_sql = text(
-        f'SELECT DISTINCT ON (h.decision_id) h.decision_id, h.review_state, h.risk_level, h.timestamp, h.actor_role, h.actor_email'
-        f' FROM governance_review_history h'
-        f'{where_sql}'
-        f' ORDER BY h.decision_id, h.timestamp DESC, h.id DESC'
+        f'WITH latest_states AS ('
+        f'  SELECT DISTINCT ON (h.decision_id) h.decision_id, h.review_state, h.risk_level, h.timestamp, h.actor_role, h.actor_email'
+        f'  FROM governance_review_history h'
+        f'  {where_sql}'
+        f'  ORDER BY h.decision_id, h.timestamp DESC, h.id DESC'
+        f') '
+        f'SELECT * FROM latest_states'
+        f' ORDER BY timestamp DESC'
         f' LIMIT :lim OFFSET :off'
     )
     result = await session.execute(raw_sql, params)

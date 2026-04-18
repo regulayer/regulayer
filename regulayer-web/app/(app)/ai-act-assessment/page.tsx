@@ -118,6 +118,8 @@ export default function AiActAssessmentPage() {
 
     const mdToHtml = (md: string): string => {
         let html = md;
+        // Escape HTML tags to prevent XSS
+        html = html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         // Horizontal rules
         html = html.replace(/^---+$/gm, '<hr>');
         // Headers
