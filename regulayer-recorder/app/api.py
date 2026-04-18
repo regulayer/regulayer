@@ -640,7 +640,8 @@ async def verify_chain_full(chain_id: Optional[str] = None, session: AsyncSessio
     
     stmt = select(func.count()).select_from(DecisionRecordDB)
     if chain_id and chain_id != "default" and chain_id != "global":
-        stmt = stmt.where(DecisionRecordDB.chain_id == chain_id)
+        chain_ids = [c.strip() for c in chain_id.split(",") if c.strip()]
+        stmt = stmt.where(DecisionRecordDB.chain_id.in_(chain_ids))
         
     result = await session.execute(stmt)
     count = result.scalar() or 0

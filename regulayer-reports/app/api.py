@@ -383,9 +383,24 @@ async def get_chain_report(
     
     Fetches real chain verification data from the Recorder service.
     """
-    # Use 'global' keyword when default is requested so the Recorder bypasses the WHERE clause
-    # to scan the entire universal database ledger.
-    actual_chain_id = "global" if chain_id == "default" or chain_id == "all" else chain_id
+    actual_chain_id = chain_id
+    if chain_id in ["default", "all"] and x_org_id:
+        # Secure Multi-Tenant Global Verification
+        # We must NOT query 'global' because that scans the entire SaaS database.
+        # Instead, fetch all Projects for this Org and request precise ledger sums.
+        async with httpx.AsyncClient(timeout=5.0) as cp_client:
+            resp = await cp_client.get(
+                f"http://control-plane:8000/v1/orgs/{x_org_id}/projects",
+                headers={"X-Internal-Auth": settings.control_plane_internal_secret}
+            )
+            if resp.status_code == 200:
+                projects = resp.json()
+                if projects:
+                    actual_chain_id = ",".join(p["id"] for p in projects)
+                else:
+                    actual_chain_id = "EMPTY_ORG"
+            else:
+                actual_chain_id = "EMPTY_ORG"
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         # Fetch full chain verification from Recorder
