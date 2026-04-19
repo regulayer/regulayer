@@ -61,11 +61,38 @@ export async function POST() {
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const triggerPing = searchParams.get('ping');
+
+    if (triggerPing === 'true') {
+        try {
+            const bingResponse = await fetch('https://api.indexnow.org/indexnow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    host: SITE_HOST,
+                    key: INDEXNOW_KEY,
+                    keyLocation: `https://${SITE_HOST}/${INDEXNOW_KEY}.txt`,
+                    urlList: ALL_URLS,
+                }),
+            });
+
+            return NextResponse.json({
+                success: true,
+                bing_status: bingResponse.status,
+                urls_submitted: ALL_URLS.length,
+                message: `Pinged IndexNow via Browser Bypass with ${ALL_URLS.length} URLs`,
+            });
+        } catch (error) {
+            return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+        }
+    }
+
     return NextResponse.json({
         service: 'IndexNow Ping',
         urls_registered: ALL_URLS.length,
         key: INDEXNOW_KEY,
-        instruction: 'Send POST request to this endpoint after deployment to instantly notify Bing & Yandex of all page updates.',
+        instruction: 'Cloudflare terminal block active. Paste "https://regulayer.tech/api/indexnow?ping=true" into your browser URL bar to hit the endpoint.',
     });
 }
