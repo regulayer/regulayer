@@ -28,8 +28,9 @@ export function Navbar() {
     }, []);
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50">
+        <header className="fixed top-0 left-0 right-0 z-50" itemScope itemType="https://schema.org/WPHeader">
             <motion.nav
+                itemScope itemType="https://schema.org/SiteNavigationElement"
                 initial={{ y: -100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
@@ -51,18 +52,18 @@ export function Navbar() {
                     {/* Desktop Nav */}
                     <div className="hidden md:flex items-center gap-0.5" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                         {links.map((link) => (
-                            <Link key={link.href} href={link.href}
+                            <Link key={link.href} href={link.href} itemProp="url"
                                 className={`relative px-4 py-2 text-[13px] font-medium rounded-full transition-all duration-300 ${pathname === link.href ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                                     }`}>
                                 {pathname === link.href && (
                                     <motion.div
                                         layoutId="activeNav"
                                         className="absolute inset-0 rounded-full"
-                                        style={{ background: "hsla(14, 60%, 55%, 0.06)" }}
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                                        style={{ backgroundColor: "hsla(30,25%,85%,0.6)", zIndex: -1 }}
+                                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
                                     />
                                 )}
-                                <span className="relative z-10">{link.label}</span>
+                                <span itemProp="name">{link.label}</span>
                             </Link>
                         ))}
                     </div>

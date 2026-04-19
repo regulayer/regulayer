@@ -87,7 +87,9 @@ const jsonLd = [
         'sameAs': [
             'https://github.com/Zor-AI/regulayer',
             'https://twitter.com/regulayer',
-            'https://linkedin.com/company/regulayer'
+            'https://linkedin.com/company/regulayer',
+            'https://www.wikidata.org/wiki/Q106364006', /* Artificial Intelligence Act */
+            'https://www.wikidata.org/wiki/Q110086821' /* NIST AI Risk Management Framework */
         ],
         'description': 'Regulayer is the leading provider of enterprise AI Risk Management and EU AI Act Compliance software, securing inference pipelines via cryptographic network proxies.',
         'foundingDate': '2024',
@@ -248,6 +250,24 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning className={`scroll-smooth ${outfit.variable} ${spaceGrotesk.variable} ${lilitaOne.variable} ${footerDisplay.variable}`}>
             <head>
+                {/* === ADVANCED SEO: DNS Prefetching === */}
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link rel="dns-prefetch" href="https://regulayer.tech" />
+
+                {/* === ADVANCED SEO: Global / Alternative Search Engines === */}
+                {/* 1. Yandex Verification */}
+                <meta name="yandex-verification" content="yandex-verification-placeholder" />
+                
+                {/* 2. Baidu Mobile Conformance */}
+                <meta name="applicable-device" content="pc,mobile" />
+                <meta name="mobile-agent" content="format=html5;url=https://regulayer.tech" />
+
+                {/* 3. Geo-Semantic Targeting (ICBM) */}
+                <meta name="ICBM" content="48.8566, 2.3522" /> {/* Paris: Core EU Hub */}
+                <meta name="geo.position" content="48.8566;2.3522" />
+                <meta name="geo.region" content="FR-IDF" />
+                <meta name="geo.placename" content="Paris" />
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 

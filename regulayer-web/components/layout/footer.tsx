@@ -45,7 +45,7 @@ const footerLinks = {
 export function Footer() {
 
     return (
-        <footer className="relative overflow-x-clip">
+        <footer className="relative overflow-x-clip" itemScope itemType="https://schema.org/WPFooter">
             {/* Fully transparent to use global shading */}
             <div className="relative">
                 {/* Central glow */}

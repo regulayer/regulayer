@@ -9,8 +9,7 @@ import { NextResponse } from 'next/server';
  * Can be called from CI/CD pipeline:
  *   curl -X POST https://regulayer.tech/api/indexnow
  */
-
-const INDEXNOW_KEY = 'regulayer-indexnow-key';
+const INDEXNOW_KEY = '06bd0cccf42e49e18ed1340372dc6a08';
 const SITE_HOST = 'regulayer.tech';
 
 const ALL_URLS = [
