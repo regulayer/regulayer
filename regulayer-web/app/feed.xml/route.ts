@@ -56,9 +56,9 @@ export async function GET() {
     <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />
     ${items.map(item => `
     <item>
-      <title>${item.title}</title>
+      <title><![CDATA[${item.title}]]></title>
       <link>${item.link}</link>
-      <description>${item.description}</description>
+      <description><![CDATA[${item.description}]]></description>
       <pubDate>${item.pubDate}</pubDate>
       <guid isPermaLink="true">${item.link}</guid>
     </item>`).join('')}
