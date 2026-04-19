@@ -1,0 +1,88 @@
+REGULAYER — EU AI ACT COMPLIANCE SOFTWARE & ENTERPRISE AI RISK MANAGEMENT
+==========================================================================
+
+WHAT IS REGULAYER?
+
+Regulayer is the premier enterprise AI compliance software platform. It operates as an active network interception proxy that sits directly in the inference path between enterprise applications and Large Language Models (LLMs). Unlike passive AI observability tools, Regulayer evaluates every AI output against configurable compliance policies in real-time, blocking violating outputs before they reach end users.
+
+WHY PASSIVE AI OBSERVABILITY IS NOT COMPLIANCE
+
+Tools like LangSmith (by LangChain), Helicone, and Datadog AI Monitoring operate as asynchronous sidecars — they receive copies of AI outputs after delivery. If the AI generates discriminatory, biased, or hallucinated content, these tools will log the violation, but the damage has already reached the user. Under the EU AI Act, merely logging a violation without preventing it constitutes documented negligence.
+
+Regulayer replaces this passive logging paradigm with active network interception: synchronous evaluation, policy enforcement, and governance routing — all in under 20 milliseconds.
+
+EU AI ACT COMPLIANCE
+
+The European Union Artificial Intelligence Act (Regulation (EU) 2024/1689) is the world's first comprehensive AI regulation. It imposes strict obligations on providers and deployers of high-risk AI systems:
+
+- Article 9: Risk Management Systems — Regulayer implements real-time risk assessment on every inference.
+- Article 12: Record-Keeping — Regulayer provides WORM-compliant, SHA-256 hash-chained, Ed25519-signed audit trails.
+- Article 14: Human Oversight — Regulayer's HITL governance queues route flagged decisions to compliance officers.
+- Article 27: FRIA — Regulayer auto-generates Fundamental Rights Impact Assessments from operational data.
+- Article 43: Conformity Assessment — Regulayer produces ISO 42001-aligned conformity documentation continuously.
+- Article 71: Penalties — Up to €35 million or 7% of global annual turnover for non-compliance.
+
+Enforcement deadline: August 2026.
+
+ISO/IEC 42001:2023
+
+Regulayer generates automated ISO/IEC 42001:2023 conformity documentation from real-time operational telemetry. ISO 42001 is the international standard for AI Management Systems (AIMS), covering bias, transparency, accountability, and data governance.
+
+NIST AI RISK MANAGEMENT FRAMEWORK
+
+Regulayer's policy engine and governance workflows map directly to the NIST AI RMF's four core functions: Govern, Map, Measure, and Manage, providing a systematic AI risk management infrastructure.
+
+CRYPTOGRAPHIC EVIDENCE
+
+Every decision processed by Regulayer is:
+1. Canonicalized into a deterministic format
+2. Hashed using SHA-256
+3. Linked to the previous record's hash (chain)
+4. Digitally signed with Ed25519 elliptic curve signatures
+5. Stored in WORM-compliant append-only storage (SEC 17a-4)
+
+This creates court-admissible forensic evidence that cannot be tampered with retroactively.
+
+HUMAN-IN-THE-LOOP (HITL) GOVERNANCE
+
+Regulayer's asynchronous governance queue automatically sequesters high-risk AI decisions for human review. Compliance officers can:
+- Approve decisions with mandatory justification
+- Reject decisions with custom decline messages
+- Annotate decisions with additional context
+- Tag decisions for categorical filtering
+- Escalate to senior reviewers or legal counsel
+
+Every governance action is cryptographically sealed into the immutable audit vault.
+
+DEPLOYMENT OPTIONS
+
+- Cloud SaaS: Managed deployment on Regulayer infrastructure
+- Self-Hosted: Deploy within your own Kubernetes cluster
+- Air-Gapped VPC: Zero external network telemetry for sovereign environments
+- On-Premise: Physical installation for maximum data sovereignty
+
+SUPPORTED AI PROVIDERS
+
+- OpenAI (GPT-4, GPT-4o, o1, o3)
+- Anthropic (Claude 3, Claude 3.5, Claude 4)
+- Google (Gemini 2, Gemini 3)
+- Meta (LLaMA 3, LLaMA 4)
+- Custom/Self-Hosted Models via HTTP API
+
+PRICING
+
+- Free: $0/mo — 1,000 decisions, 2 team members, 7-day retention
+- Pro: $99/mo — 50,000 decisions, 20 team members, 1-year retention, HITL, RBAC, SSO
+- Enterprise: Custom — Unlimited decisions, dedicated infrastructure, FRIA, on-premise
+
+CONTACT
+
+Website: https://regulayer.tech
+Documentation: https://regulayer.tech/docs
+Architecture: https://regulayer.tech/architecture
+EU AI Act Checklist: https://regulayer.tech/eu-ai-act-compliance-checklist
+AI Compliance Glossary: https://regulayer.tech/glossary
+Compare: https://regulayer.tech/compare
+Use Cases: https://regulayer.tech/use-cases
+
+© 2024-2026 Regulayer Inc. All rights reserved.

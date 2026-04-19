@@ -10,13 +10,19 @@ const footerLinks = {
     Product: [
         { label: "Features", href: "/#features" },
         { label: "Pricing", href: "/pricing" },
+        { label: "Compare", href: "/compare" },
+        { label: "Compliance Badge", href: "/badge" },
         { label: "Integrations", href: "/integrations" },
         { label: "System Status", href: "/status" },
     ],
     Resources: [
         { label: "Documentation", href: "/docs" },
         { label: "API Reference", href: "/docs/api" },
+        { label: "AI Compliance Glossary", href: "/glossary" },
+        { label: "EU AI Act Checklist", href: "/eu-ai-act-compliance-checklist" },
+        { label: "Penalty Calculator", href: "/eu-ai-act-penalty-calculator" },
         { label: "Governance Docs", href: "/docs/governance" },
+        { label: "Use Cases", href: "/use-cases" },
         { label: "Open Source", href: "https://github.com/regulayer" },
     ],
     Company: [
@@ -76,7 +82,7 @@ export function Footer() {
                     </div>
 
                     {/* Massive brand text */}
-                    <div className="w-full flex justify-center mt-8 lg:mt-12 pointer-events-none relative z-0 overflow-hidden">
+                    <div className="w-full flex justify-center mt-8 lg:mt-12 pointer-events-none relative z-0 overflow-hidden mb-12">
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -88,11 +94,22 @@ export function Footer() {
                                 color: "transparent",
                                 WebkitTextStroke: "1px hsl(15,20%,80%)",
                                 lineHeight: 1.2,
-                                marginBottom: "-1rem",
                                 opacity: 0.7
                             }}>
                             Regulayer
                         </motion.div>
+                    </div>
+
+                    {/* SEO Semantic Context Block */}
+                    <div className="pt-8 mb-8 max-w-5xl mx-auto text-center border-t" style={{ borderColor: "hsla(28,22%,80%,0.3)" }}>
+                        <h2 className="text-[10px] font-bold tracking-widest uppercase mb-4" style={{ color: "hsl(15,40%,45%)" }}>Enterprise AI Risk Management & Compliance Software</h2>
+                        <p className="text-[11px] leading-relaxed max-w-4xl mx-auto" style={{ color: "hsl(15,30%,50%)" }}>
+                            Regulayer is the definitive cryptographic trust proxy architected for absolute <strong>EU AI Act compliance software</strong> implementation, <strong>ISO/IEC 42001:2023</strong> certification, and adherence to the <strong>NIST AI RMF</strong>. 
+                            As the legal mandate forces global enterprises into strict systemic <strong>Risk Management of AI</strong>, passive data observability is no longer legally sufficient proof. 
+                            Regulayer provides an active network firewall that intercepts, evaluates, and cryptographically sequesters programmatic LLM inference before it harms users. 
+                            By deploying immutable Write-Once-Read-Many (WORM) storage protocols and Ed25519 digital hash trails, Regulayer mathematically guarantees end-to-end Enterprise AI security, stopping LLM prompt injections, data loss, and algorithmic bias in real-time. 
+                            We automate Article 12 forensic record-keeping and orchestrate Article 14 <strong>Human-in-the-Loop AI governance (HITL)</strong>, allowing Fortune 500 engineering teams to scale sovereign generative AI pipelines without absorbing extreme regulatory liability or incurring EU AI Act Article 71 penalties.
+                        </p>
                     </div>
 
                     {/* Bottom */}
@@ -108,6 +125,14 @@ export function Footer() {
                             <motion.a href="https://github.com/regulayer" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.15, y: -2 }}
                                 className="transition-colors duration-300 p-1 hover:text-orange-500" style={{ color: "hsl(15,30%,45%)" }}>
                                 <Github className="w-4 h-4" />
+                            </motion.a>
+                            <motion.a href="https://twitter.com/regulayer" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.15, y: -2 }}
+                                className="transition-colors duration-300 p-1 hover:text-orange-500" style={{ color: "hsl(15,30%,45%)" }}>
+                                <Twitter className="w-4 h-4" />
+                            </motion.a>
+                            <motion.a href="https://linkedin.com/company/regulayer" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.15, y: -2 }}
+                                className="transition-colors duration-300 p-1 hover:text-orange-500" style={{ color: "hsl(15,30%,45%)" }}>
+                                <Linkedin className="w-4 h-4" />
                             </motion.a>
                         </div>
                     </div>

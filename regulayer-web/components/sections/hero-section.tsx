@@ -104,7 +104,7 @@ export function HeroSection() {
                 className="w-full h-[30vh] md:h-auto md:col-span-5 md:row-span-2 bg-[hsl(30,60%,99%)] flex items-end p-8 md:p-12 lg:p-14"
             >
                 <motion.p custom={3} variants={textVariants} initial="hidden" animate="visible" className="text-[16px] md:text-[20px] text-[hsl(15,30%,40%)] leading-[1.6] font-light max-w-[500px]">
-                    We protect your enterprise by placing an intelligent safety net between your users and your generative AI. Regulayer instantly enforces safe policies, pauses risky actions for human review, and translates your operational telemetry into mathematically verified EU AI Act compliance reports.
+                    Regulayer is the enterprise AI compliance software that protects your organization from EU AI Act penalties. Our intelligent proxy intercepts risky AI outputs, enforces compliance policies, pauses flagged decisions for human review, and generates court-admissible ISO 42001 conformity reports — automatically.
                 </motion.p>
             </motion.div>
 

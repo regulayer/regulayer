@@ -9,10 +9,11 @@ import { RegulayerLogo } from "@/components/ui/regulayer-logo";
 
 const links = [
     { label: "Product", href: "/#features" },
+    { label: "Use Cases", href: "/use-cases" },
     { label: "Pricing", href: "/pricing" },
     { label: "Docs", href: "/docs" },
+    { label: "Glossary", href: "/glossary" },
     { label: "Blog", href: "/blog" },
-    { label: "About", href: "/about" },
 ];
 
 export function Navbar() {
