@@ -24,7 +24,13 @@ export function middleware(request: NextRequest) {
         pathname.startsWith('/integrations') ||
         pathname.startsWith('/careers') ||
         pathname.startsWith('/blog') ||
-        pathname.startsWith('/accept-invite')
+        pathname.startsWith('/accept-invite') ||
+        pathname.startsWith('/compare') ||
+        pathname.startsWith('/use-cases') ||
+        pathname.startsWith('/glossary') ||
+        pathname.startsWith('/eu-ai-act-compliance-checklist') ||
+        pathname.startsWith('/eu-ai-act-penalty-calculator') ||
+        pathname.startsWith('/badge')
 
     // Check if it's a static asset or API route (handled by matcher config usually, but good to be safe)
     if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('.')) {
