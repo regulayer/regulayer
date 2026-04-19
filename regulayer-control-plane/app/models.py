@@ -230,6 +230,7 @@ class KeyValidationResult(BaseModel):
     governance_mode: str = "observe"
     is_demo_key: bool = False
     scopes: List[ApiKeyScope] = Field(default_factory=list)
+    custom_decision_cap: Optional[int] = None
     error: Optional[str] = None
 
 # ============================================================

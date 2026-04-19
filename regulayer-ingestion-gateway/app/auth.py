@@ -26,6 +26,7 @@ class TenantContext:
     org_status: str
     governance_mode: str
     scopes: list[str]
+    custom_decision_cap: Optional[int] = None
     
     def has_scope(self, scope: str) -> bool:
         return scope in self.scopes
@@ -110,7 +111,8 @@ async def validate_api_key(api_key: str, project_id: str) -> TenantContext:
         environment=data.get("environment", "production"),
         org_status=data.get("org_status", "active"),
         governance_mode=data.get("governance_mode", "observe"),
-        scopes=scopes
+        scopes=scopes,
+        custom_decision_cap=data.get("custom_decision_cap")
     )
 
 

@@ -35,49 +35,48 @@ class QuotaEnforcer:
         self.redis = redis.from_url(settings.redis_url, encoding="utf-8", decode_responses=True)
     
     def _get_key(self, project_id: str) -> str:
-        """Get Redis key for project daily quota."""
-        today = date.today().isoformat()
-        return f"{settings.redis_stream_prefix}:quota:{project_id}:{today}"
+        """Get Redis key for project monthly quota."""
+        current_month = date.today().strftime("%Y-%m")
+        return f"{settings.redis_stream_prefix}:quota:{project_id}:{current_month}"
     
-    async def check(self, project_id: str) -> None:
+    async def check(self, project_id: str, tier_limit: Optional[int] = None) -> None:
         """
         Check if quota allows request.
         
         Raises QuotaExceededError if limit exceeded.
         """
+        limit = tier_limit if tier_limit is not None else self.daily_limit
         key = self._get_key(project_id)
         current = await self.redis.get(key)
         
-        if current and int(current) >= self.daily_limit:
+        if current and int(current) >= limit:
             raise QuotaExceededError(
-                f"Daily quota exceeded. Limit: {self.daily_limit}. Resets at midnight UTC."
+                f"Monthly quota exceeded. Limit: {limit}. Resets at midnight UTC on the 1st of next month."
             )
     
-    async def consume(self, project_id: str) -> int:
+    async def consume(self, project_id: str, tier_limit: Optional[int] = None) -> int:
         """
         Consume one from quota. Returns remaining.
         
         Raises QuotaExceededError if limit exceeded.
         """
+        limit = tier_limit if tier_limit is not None else self.daily_limit
         key = self._get_key(project_id)
         
         # Atomic Increment
         new_val = await self.redis.incr(key)
         
-        # Set expiry on first write (24h + 1h buffer)
+        # Set expiry on first write (32 days in seconds to cover any month length safely)
         if new_val == 1:
-            await self.redis.expire(key, 90000)
+            await self.redis.expire(key, 2764800)
             
         # Strict Enforcement: Check AFTER atomic increment
-        # If we exceeded, we still burned the counter, but request is rejected.
-        if new_val > self.daily_limit:
+        if new_val > limit:
              raise QuotaExceededError(
-                f"Daily quota exceeded. Limit: {self.daily_limit}."
+                f"Monthly quota exceeded. Limit: {limit}."
             )
             
-        return max(0, self.daily_limit - new_val)
-            
-        return max(0, self.daily_limit - new_val)
+        return max(0, limit - new_val)
     
     async def get_usage(self, project_id: str) -> dict:
         """Get current usage for a project."""
@@ -87,7 +86,7 @@ class QuotaEnforcer:
         
         return {
             "project_id": project_id,
-            "date": date.today().isoformat(),
+            "month": date.today().strftime("%Y-%m"),
             "used": count,
             "limit": self.daily_limit,
             "remaining": max(0, self.daily_limit - count),
@@ -112,11 +111,15 @@ def get_quota_enforcer() -> QuotaEnforcer:
     return _quota_enforcer
 
 
-async def check_quota(project_id: str) -> None:
+async def check_quota(project_id: str, tier_limit: Optional[int] = None) -> None:
     """Check quota for a project."""
-    await get_quota_enforcer().check(project_id)
+    import sys
+    limit = tier_limit if tier_limit is not None else sys.maxsize # Default to unlimited if none configured
+    await get_quota_enforcer().check(project_id, tier_limit=limit)
 
 
-async def consume_quota(project_id: str) -> int:
+async def consume_quota(project_id: str, tier_limit: Optional[int] = None) -> int:
     """Consume quota and return remaining."""
-    return await get_quota_enforcer().consume(project_id)
+    import sys
+    limit = tier_limit if tier_limit is not None else sys.maxsize
+    return await get_quota_enforcer().consume(project_id, tier_limit=limit)

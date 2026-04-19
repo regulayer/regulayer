@@ -127,6 +127,17 @@ class AuthService:
         db_key.last_used_at = datetime.now(timezone.utc)
         self.db.commit()
         
+        # Determine the effective daily limit
+        # 1. Custom limit set by superadmin dashboard
+        # 2. Pro Tier limit (active subscription)
+        # 3. Free Tier limit
+        effective_limit = 1000 # Default Free Tier Limit
+        
+        if org.custom_decision_cap is not None:
+            effective_limit = org.custom_decision_cap
+        elif org.subscription_status == "active":
+            effective_limit = 50000 # Pro Tier Limit
+            
         return KeyValidationResult(
             valid=True,
             organization_id=org.id,
@@ -135,7 +146,8 @@ class AuthService:
             org_status=org.status,  # Pass status to Gateway
             governance_mode=project.governance_mode,
             is_demo_key=db_key.is_demo_key,
-            scopes=[ApiKeyScope(s) for s in db_key.scopes]
+            scopes=[ApiKeyScope(s) for s in db_key.scopes],
+            custom_decision_cap=effective_limit
         )
     
     def revoke_api_key(self, key_id: UUID) -> bool:

@@ -111,8 +111,8 @@ async def ingest_decision(request: Request, response: Response):
         # 4. Check rate limits (per API key)
         await check_rate_limit(str(tenant_context.key_id))
         
-        # 4. Check quotas (per project)
-        remaining = await consume_quota(str(tenant_context.project_id))
+        # 4. Check quotas (per project) using tier limit from dashboard
+        remaining = await consume_quota(str(tenant_context.project_id), tier_limit=tenant_context.custom_decision_cap)
         
         # 5. Read body (byte-for-byte)
         body = await request.body()
