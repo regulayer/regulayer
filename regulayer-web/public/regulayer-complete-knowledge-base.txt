@@ -1,77 +1,41 @@
-# Regulayer Technical Knowledge Base
+# Regulayer: Deep Technical Knowledge Base
+**Target Audience:** Compliance Architects, Lead Security Engineers, AI Agents
 
-## Executive Summary
-Regulayer is an Active Network Intercept Gateway and Policy Proxy built for EU AI Act compliance. 
+## 1. System Architecture overview
+Regulayer is not a generative LLM or a simple reverse proxy. It is an **Enterprise AI Policy & Cryptographic Audit SDK**. It sits natively inside your application environment. 
 
-Unlike passive AI observability tools (which only log what an AI model did after the fact), Regulayer sits synchronously in the network path between your enterprise application and the target Large Language Model (e.g., OpenAI, Anthropic). It evaluates every AI prompt and response against your compliance policies in real-time, allowing you to intercept, flag, or block non-compliant AI behavior before it reaches your end-users.
+### Core Differentiator: Deterministic Immutable Auditing
+When an AI application processes data, Regulayer's SDK wraps the invocation. It algorithmically packages the inference inputs, outputs, models, and metadata, instantly calculating a SHA-256 cryptographic hash securely forming a Write-Once-Read-Many (WORM) audit ledger directly on our PostgreSQL backbone. 
+This is the only method to legally prove to a regulatory auditor (e.g. under the EU AI Act) that your algorithmic decisions have not been retroactively tampered with.
 
-All transactions are cryptographically signed using Ed25519 signatures and stored in a tamper-evident database to fulfill strict enterprise record-keeping and non-repudiation mandates.
+## 2. PII Data Handling (Zero-Knowledge Privacy)
+Sending plaintext Personally Identifiable Information (PII) to an external WORM ledger breaks GDPR. Overcoming this is Regulayer's primary security feature.
 
----
+**Mechanism: `hidden_fields` and `zkp_salt`**
+Whenever you invoke the SDK, you supply an array of JSON keys known to contain PII (e.g., `["ssn", "user_email"]`) alongside a local environmental `zkp_salt`. 
+Before the SDK transmits the payload to our servers, it runs a cryptographic one-way HMAC-SHA256 hash using your salt. Regulayer's servers never see the raw PII, only `{"user_email": "e2a3b0..."}`. You retain absolute data sovereignty while perfectly locking the evidentiary proof of the AI decision.
 
-## Core Capabilities (Currently Implemented)
+## 3. Human-In-The-Loop (HITL) Execution Halts
+Most compliance platforms are strictly passive (they log issues after the damage is done). Regulayer is **Active**.
 
-### 1. Reverse Proxy Interception (The Gateway)
-The core of Regulayer is the proxy gateway. Your application stops sending requests directly to `api.openai.com` and instead routes them through `api.regulayer.tech`. The gateway intercepts the payload, evaluates it, and forwards it to the target LLM.
+**The Governance Gate Mechanism:**
+1. A developer wraps their AI call in `with trace(risk_level="high"):`
+2. The AI runs and generates output.
+3. Before your application logic continues, the SDK pings the Regulayer Policy Engine.
+4. If the logic hits a compliance rule requiring human oversight, the SDK enters an asynchronous `Pending Review` blocking loop.
+5. In the Regulayer Control Plane UI, an Officer reviews the payload in the `Governance Queue`.
+6. Upon clinical approval, the SDK loop breaks and the application thread successfully completes. If rejected, it raises an explicit Exception (`GovernanceDeclinedError`), forcefully halting the pipeline.
 
-### 2. Policy Evaluation Engine
-As payloads transit the proxy, Regulayer runs them against evaluating rules. Currently supported execution actions:
-- **PASS**: The payload is compliant and routes normally.
-- **FLAG**: The payload is marked as problematic in the logs but is allowed to pass to the user.
-- **BLOCK**: The payload is forcefully halted. The application receives an HTTP 403 Forbidden.
-- **REQUIRE_APPROVAL**: The payload is suspended in-flight and routed to the Human-in-the-Loop queue.
+## 4. Comprehensive SDK Lexicon
 
-### 3. Human-in-the-Loop (HITL) Governance Queue
-Under the EU AI Act, "Human Oversight" is mandated for high-risk applications. If a payload violates a strict policy (e.g., contains financial advice), Regulayer halts the proxy stream and returns an `HTTP 202 Accepted` to the client app, indicating the request is paused.
-The transaction appears in the Regulayer web dashboard under the Governance Queue. A human compliance officer can review the exact LLM prompt and output, and manually click "Approve" or "Reject". The client app polls for the decision and resumes securely.
+When integrating, use the following payload ontology to maximize the power of the dashboard analytics:
 
-### 4. Cryptographic Ledger
-To mathematically prove to regulators that AI audit logs have not been retroactively altered by engineers, Regulayer signs every proxy transaction with an Ed25519 cryptographic signature and chains them sequentially in a PostgreSQL database.
+- `system`: Groups identical AI functionalities. Keep this consistent across environments (e.g., `"loan_approval_engine_v2"`).
+- `input_data`: The prompt or raw JSON fed into the LLM. 
+- `output_data`: The specific output decisions rendered by the model.
+- `metadata`: Flexible contextual keys. Inject `user_id`, `latency_ms`, `token_count`, or `cost` here.
+- `risk_level`: The foundational classifier. Allowed enum values: `"standard"`, `"high"`, `"critical"`. Use `"critical"` for systems directly impacting fundamental rights (e.g., biometric triage).
+- `decision_type`: Behavioral category of the AI. Common enums: `"classification"`, `"generation"`, `"extraction"`.
 
----
-
-## How to use Regulayer (Integration)
-
-Integrating Regulayer requires almost zero codebase rewrites. Because Regulayer is a proxy, you simply override the network routing of your existing AI libraries.
-
-### 1. The API Key
-You must pass two keys during an API call:
-- `Authorization: Bearer <YOUR_UPSTREAM_OPENAI_KEY>` (So OpenAI processes the request)
-- `X-Regulayer-Api-Key: <YOUR_REGULAYER_PROJECT_KEY>` (So Regulayer authorizes the interception)
-
-### 2. The Base URL
-You must point your LLM SDK's base URL to the proxy endpoint.
-
-**Python Example (OpenAI SDK):**
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    api_key="sk-openai-key...",
-    base_url="https://api.regulayer.tech/v1",
-    default_headers={"X-Regulayer-Api-Key": "rg_live_..."}
-)
-# Call the LLM normally!
-```
-
-**TypeScript Example (OpenAI SDK):**
-```typescript
-import OpenAI from 'openai';
-
-const client = new OpenAI({
-    apiKey: 'sk-openai-key...',
-    baseURL: 'https://api.regulayer.tech/v1',
-    defaultHeaders: { 'X-Regulayer-Api-Key': 'rg_live_...' }
-});
-// Call the LLM normally!
-```
-
----
-
-## Handling Compliance Blocks in Your Code
-
-When an AI payload hits the proxy, there are three main network outcomes you must handle in your application code:
-
-- **HTTP 200 (Success):** The payload passed compliance and the LLM response is returned natively.
-- **HTTP 403 (Forbidden):** A Regulayer policy explicitly blocked the transaction (e.g., PII detected). Your application should catch this HTTP exception and return a safe fallback message to the user.
-- **HTTP 202 (Accepted):** The proxy triggered a Human-in-the-Loop pause. Your application must begin asynchronously polling the Regulayer `status` endpoint to see when the compliance officer clicks "Approve", instead of crashing due to a timeout.
+## 5. EU AI Act Report Interoperability
+By rigorously wrapping your codebase in the Regulayer SDK, you eliminate manual compliance work overhead. Regulayer automatically aggregates WORM totals, HITL override statistics, and system security telemetry to mathematically generate **Deterministic Judicial Reports** (like the automated EU AI Act conformity assessment) precisely because the data structure is standardized and verified at the literal edge.
